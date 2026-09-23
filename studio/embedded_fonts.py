@@ -12,6 +12,7 @@ from defusedxml import ElementTree as ET
 from fontTools.ttLib import TTFont
 from .fonts import font_key
 from .security import digest, InputRejected
+from .text_layout import WORD_JOINERS
 
 P = "{http://schemas.openxmlformats.org/presentationml/2006/main}"
 R = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
@@ -135,7 +136,7 @@ def extract_embedded_font(pptx, directory, requested):
 def check_glyphs(path, text):
     with TTFont(path, lazy=True) as font:
         supported = set((font.getBestCmap() or {}).keys())
-    missing = sorted({ord(c) for c in text if not c.isspace()}-supported)
+    missing = sorted({ord(c) for c in text if not c.isspace() and c not in WORD_JOINERS}-supported)
     if missing:
         examples = ", ".join(f"U+{c:04X}" for c in missing[:8])
         raise InputRejected("В шрифте нет символов нового текста ("+examples+"). Возможно, в PPTX встроена только часть символов. Сохраните шаблон с встраиванием всех символов или предоставьте полный TTF.")

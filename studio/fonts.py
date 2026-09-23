@@ -4,6 +4,7 @@ from PIL import ImageFont
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from .config import ROOT
+from .text_layout import layout_words
 import hashlib
 import threading
 import os
@@ -79,16 +80,17 @@ def wrap_text(text, font_path, size, width):
     result = []
     for paragraph in text.split("\n"):
         current = ""
-        for word in paragraph.split():
+        for units in layout_words(paragraph):
+            word = "".join(units)
             if pdfmetrics.stringWidth(word, name, size) > width:
                 if current:
                     result.append(current)
                     current = ""
-                for char in word:
-                    if current and pdfmetrics.stringWidth(current + char, name, size) > width:
+                for unit in units:
+                    if current and pdfmetrics.stringWidth(current + unit, name, size) > width:
                         result.append(current)
                         current = ""
-                    current += char
+                    current += unit
                 continue
             candidate = (current + " " + word).strip()
             if current and pdfmetrics.stringWidth(candidate, name, size) > width:

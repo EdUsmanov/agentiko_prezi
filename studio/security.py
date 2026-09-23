@@ -5,6 +5,7 @@ import stat
 from pathlib import PurePosixPath
 from zipfile import ZipFile, BadZipFile
 from defusedxml import ElementTree as SafeET
+from .text_layout import without_word_joiners
 
 class InputRejected(ValueError):
     pass
@@ -22,7 +23,7 @@ def digest(data: bytes) -> str:
 def scan_text(text: str, source: str = "user_text"):
     clean, findings = [], []
     for i, line in enumerate(text.splitlines(), 1):
-        if INJECTION.search(line):
+        if INJECTION.search(without_word_joiners(line)):
             findings.append({"source": source, "line": i, "code": "instruction_in_data", "sha256": digest(line.encode())})
             clean.append("")
         else:
