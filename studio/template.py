@@ -9,6 +9,7 @@ from pptx import Presentation
 from defusedxml import ElementTree as SafeET
 from .models import TemplateProfile, Pattern, Asset, Box
 from .fonts import resolve_font
+from .embedded_fonts import extract_embedded_font
 from .security import validate_pptx, scan_text, digest, InputRejected
 
 EMU = 12700
@@ -117,9 +118,16 @@ def analyze_template(path: Path, artifact_dir: Path) -> TemplateProfile:
     if not allowed_fonts:
         raise InputRejected("В шаблоне не найден шрифт")
     font = allowed_fonts[0]
-    font_file = resolve_font(font)
+    font_file, font_origin, font_issues = extract_embedded_font(path, artifact_dir, font)
+    warnings.extend(font_issues)
     if not font_file:
-        warnings.append(f"Шрифт {font} отсутствует. Для генерации установите его TTF в fonts/ и повторите анализ.")
+        font_file = resolve_font(font)
+        if font_file:
+            font_origin = {"kind":"local", "sha256":digest(Path(font_file).read_bytes()),
+                           "template_embedding":font_origin["kind"]}
+            warnings.append(f"Шрифт {font}: использовано точное локальное начертание; подходящий встроенный шрифт в PPTX отсутствует или недоступен.")
+    if not font_file:
+        raise InputRejected(f"Шрифт {font} указан в шаблоне, но его доступных данных нет ни в PPTX, ни в локальном каталоге. Сохраните PPTX с встраиванием всех символов шрифта либо добавьте его TTF в fonts/ и повторите анализ. " + " ".join(font_issues))
     palette = list(dict.fromkeys([c for c, _ in colors.most_common(64)] + theme_colors))
     if not palette:
         raise InputRejected("В шаблоне не найдена палитра")
@@ -167,7 +175,7 @@ def analyze_template(path: Path, artifact_dir: Path) -> TemplateProfile:
         slide_count=len(prs.slides), master_count=len(prs.slide_masters),
         layout_count=sum(len(m.slide_layouts) for m in prs.slide_masters),
         object_count=counts["objects"], placeholder_count=counts["placeholders"],
-        fonts=allowed_fonts, font=font, font_file=font_file, font_sizes=scale, title_size=title_size, body_size=body_size,
+        fonts=allowed_fonts, font=font, font_file=font_file, font_origin=font_origin, font_sizes=scale, title_size=title_size, body_size=body_size,
         colors=palette, background=background, foreground=foreground, accent=accent, margin=margin,
         patterns=patterns, assets=assets, warnings=sorted(set(warnings)),
         source_kind="layout_rich" if ratio > .25 else "example_deck", layout_index=layout_index)

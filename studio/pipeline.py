@@ -18,6 +18,7 @@ from .composer import compose_variant
 from .audit import audit_scenes, repair_scenes
 from .render import render_variant
 from .author import expand_brief
+from .embedded_fonts import check_glyphs
 
 def revision():
     try:
@@ -40,11 +41,14 @@ def prepare(store,job_id,text,audience,instructions,slides):
         template.name=store.get(job_id).get("template_name",path.name)
         store.update(job_id,phase="Факты, таблицы и ограничения",progress=65)
         content=parse_content(text)
+        check_glyphs(template.font_file,content.title+"\n"+"\n".join(f.text for f in content.facts)+"\n"+
+            "\n".join(cell for t in content.tables for row in [t.headers]+t.rows for cell in row))
         constraints=parse_constraints(slides,audience,instructions)
         if not template.font_file:
             raise InputRejected(template.warnings[-1])
         export_design(template,directory)
         manifest={"template_sha256":template.sha256,"content_sha256":digest(text.encode()),
+            "font":{"name":template.font,**template.font_origin},
             "constraints_sha256":digest(constraints.model_dump_json().encode()),"versions":versions(),
             "git_commit":revision(),"opendesign":provenance(),"analysis_seconds":round(time.monotonic()-started,3),
             "security":"no tools for model; XML/ZIP validation; no remote assets"}
@@ -71,6 +75,9 @@ def load_package(store,package_id):
     package=PreparedPackage.model_validate_json(raw)
     if digest((store.directory(package_id)/"input.pptx").read_bytes())!=package.template.sha256:
         raise ValueError("Исходный шаблон изменён после анализа")
+    font_hash=package.template.font_origin.get("sha256")
+    if font_hash and digest(Path(package.template.font_file).read_bytes())!=font_hash:
+        raise ValueError("Шрифт изменён после анализа. Повторите подготовку.")
     return package
 
 async def generate(store,job_id,settings):

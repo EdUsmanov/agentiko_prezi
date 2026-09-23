@@ -63,6 +63,7 @@ class TemplateProfile(StrictModel):
     fonts: list[str]
     font: str
     font_file: str = ""
+    font_origin: dict = Field(default_factory=dict)
     font_sizes: list[float]
     title_size: float
     body_size: float

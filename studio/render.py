@@ -18,6 +18,7 @@ from reportlab.lib.colors import HexColor
 from .models import Element, Box
 from .fonts import pdf_font, wrap_text
 from .template import contrast
+from .embedded_fonts import check_glyphs, P, R
 
 _pdfium_lock=threading.Lock()
 
@@ -60,6 +61,21 @@ def set_text(frame,text,e,profile,width=None):
 
 def clean_base(source,profile):
     prs=Presentation(source)
+    # Keep only the validated font part actually selected for this package.
+    selected=profile.font_origin.get("relationship_id") if profile.font_origin.get("kind")=="embedded" else None
+    font_list=prs.part._element.find(P+"embeddedFontLst")
+    if font_list is not None:
+        for item in list(font_list):
+            for node in list(item):
+                if node.tag!=P+"font" and node.get(R+"id")!=selected:
+                    item.remove(node)
+            if not any(node.get(R+"id")==selected for node in item if node.tag!=P+"font"):
+                font_list.remove(item)
+        if not len(font_list):
+            prs.part._element.remove(font_list)
+    for rel in list(prs.part.rels.values()):
+        if rel.reltype.endswith("/font") and rel.rId!=selected:
+            prs.part.drop_rel(rel.rId)
     for entry in list(prs.slides._sldIdLst):
         prs.part.drop_rel(entry.rId)
         prs.slides._sldIdLst.remove(entry)
@@ -192,6 +208,13 @@ def render_html(scenes,profile,path):
     path.write_text("".join(out))
 
 def render_variant(scenes,profile,source,directory):
+    rendered_text=[]
+    for scene in scenes:
+        for original in scene.elements:
+            for element in primitives(original,profile):
+                rendered_text.append(element.text)
+                rendered_text.extend(cell for row in element.rows for cell in row)
+    check_glyphs(profile.font_file,"\n".join(rendered_text))
     directory.mkdir(parents=True,exist_ok=True)
     render_pptx(scenes,profile,source,directory/"deck.pptx")
     render_pdf(scenes,profile,directory/"deck.pdf")

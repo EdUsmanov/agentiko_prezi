@@ -1,3 +1,4 @@
 # Preserve third-party license text verbatim, including its original spacing.
 fonts/OFL.txt -whitespace
+fonts/*-OFL.txt -whitespace
 vendor/opendesign/** -whitespace

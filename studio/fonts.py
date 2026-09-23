@@ -6,27 +6,63 @@ from reportlab.pdfbase.ttfonts import TTFont
 from .config import ROOT
 import hashlib
 import threading
+import os
+import re
+import unicodedata
 
 _lock = threading.Lock()
 
-@lru_cache(maxsize=1)
+def font_roots():
+    home = Path.home()
+    roots = [ROOT / "fonts", home / "Library/Fonts", Path("/Library/Fonts"),
+             Path("/System/Library/Fonts"), home / ".local/share/fonts", home / ".fonts",
+             Path("/usr/share/fonts"), Path("/usr/local/share/fonts")]
+    if os.name == "nt":
+        roots.extend([Path(os.environ.get("WINDIR", "C:/Windows")) / "Fonts",
+                      Path(os.environ.get("LOCALAPPDATA", str(home))) / "Microsoft/Windows/Fonts"])
+    return roots
+
+
+def font_key(name):
+    return re.sub(r"[\s_-]+", " ", unicodedata.normalize("NFKC", name).strip()).casefold()
+
+
 def font_catalog():
+    # Rescan names/stats cheaply so adding a font does not require a restart.
+    # Cache the expensive metadata parsing by file fingerprint, not forever.
+    files = []
+    for root in font_roots():
+        if root.is_dir():
+            for path in sorted(root.rglob("*")):
+                if path.suffix.lower() != ".ttf":
+                    continue
+                try:
+                    stat = path.stat()
+                    if path.is_file():
+                        files.append((str(path), stat.st_mtime_ns, stat.st_size))
+                except OSError:
+                    continue
+    return dict(_font_catalog(tuple(files)))
+
+
+@lru_cache(maxsize=2)
+def _font_catalog(files):
     entries = {}
-    roots = [ROOT / "fonts", Path("/System/Library/Fonts/Supplemental"), Path("/Library/Fonts"), Path("/usr/share/fonts/truetype")]
-    for root in roots:
-        if not root.exists():
+    for path, _, _ in files:
+        try:
+            name, style = ImageFont.truetype(path, 16).getname()
+            aliases = [name + " " + style]
+            # Do not silently resolve a family to Bold/Italic when Regular is absent.
+            if style.casefold() in ("regular", "normal", "book", "roman"):
+                aliases.append(name)
+            for alias in aliases:
+                entries.setdefault(font_key(alias), path)
+        except (OSError, ValueError):
             continue
-        for path in sorted(root.rglob("*.ttf")):
-            try:
-                name, style = ImageFont.truetype(str(path), 16).getname()
-                if name.casefold() not in entries or style.lower() in ("regular", "normal", "book"):
-                    entries[name.casefold()] = str(path)
-            except (OSError, ValueError):
-                continue
     return entries
 
 def resolve_font(name):
-    return font_catalog().get(name.casefold(), "")
+    return font_catalog().get(font_key(name), "")
 
 @lru_cache(maxsize=64)
 def pdf_font(path):
