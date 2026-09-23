@@ -7,7 +7,7 @@ import subprocess
 import time
 from zipfile import ZipFile, ZIP_DEFLATED
 from .config import ROOT
-from .models import PreparedPackage, Finding
+from .models import PreparedPackage, Finding, ContextualAudit
 from .security import digest, InputRejected
 from .template import analyze_template
 from .content import parse_content, parse_constraints
@@ -19,6 +19,7 @@ from .audit import audit_scenes, repair_scenes
 from .render import render_variant
 from .author import expand_brief
 from .embedded_fonts import check_glyphs
+from .native_template import compile_backgrounds
 
 def revision():
     try:
@@ -37,6 +38,9 @@ def prepare(store,job_id,text,audience,instructions,slides):
     try:
         path=directory/"input.pptx"
         template=analyze_template(path,directory)
+        if any(p.title_zone for p in template.patterns):
+            store.update(job_id,phase="Подготовка исходных макетов и фирменной графики",progress=40)
+            compile_backgrounds(template,path,directory)
         # Keep original user-visible filename, never use it as a filesystem path.
         template.name=store.get(job_id).get("template_name",path.name)
         store.update(job_id,phase="Факты, таблицы и ограничения",progress=65)
@@ -48,6 +52,7 @@ def prepare(store,job_id,text,audience,instructions,slides):
             raise InputRejected(template.warnings[-1])
         export_design(template,directory)
         manifest={"template_sha256":template.sha256,"content_sha256":digest(text.encode()),
+            "template_layers":{str(Path(p.background_image).relative_to(directory)):digest(Path(p.background_image).read_bytes()) for p in template.patterns if p.background_image},
             "font":{"name":template.font,**template.font_origin},
             "constraints_sha256":digest(constraints.model_dump_json().encode()),"versions":versions(),
             "git_commit":revision(),"opendesign":provenance(),"analysis_seconds":round(time.monotonic()-started,3),
@@ -78,6 +83,10 @@ def load_package(store,package_id):
     font_hash=package.template.font_origin.get("sha256")
     if font_hash and digest(Path(package.template.font_file).read_bytes())!=font_hash:
         raise ValueError("Шрифт изменён после анализа. Повторите подготовку.")
+    for relative,sha in package.manifest.get("template_layers",{}).items():
+        layer=store.directory(package_id)/relative
+        if not layer.is_file() or digest(layer.read_bytes())!=sha:
+            raise ValueError("Фоновый слой изменён после анализа. Повторите подготовку.")
     return package
 
 async def generate(store,job_id,settings):
@@ -104,8 +113,9 @@ async def generate(store,job_id,settings):
         repairs=repair_scenes(scenes,package)
         findings=audit_scenes(scenes,package)
         remaining()
-        render_variant(scenes,package.template,source,directory/variant.key)
+        rendering=render_variant(scenes,package.template,source,directory/variant.key)
         return {"key":variant.key,"title":variant.title,"slides":len(scenes),
+            "rendering":rendering,"template_strategies":sorted({s.strategy for s in scenes}),
             "findings":[f.model_dump() for f in findings],"repairs":[f.model_dump() for f in repairs],
             "initial_errors":sum(f.severity=="error" for f in initial),"scene":scenes}
     results=await asyncio.gather(*[asyncio.to_thread(build,v) for v in plans.variants])
@@ -113,10 +123,8 @@ async def generate(store,job_id,settings):
     contextual={"status":"not_run","reason":"Модель не подключена; контекстуальная оценка не имитируется","findings":[]}
     if settings.mode=="api" and remaining()>35:
         try:
-            contextual_raw=await gateway.json_request("critic",{"source":package.content.model_dump(),"plans":plans.model_dump()},timeout=min(25,remaining(10)))
-            if set(contextual_raw)!={"findings"} or not isinstance(contextual_raw["findings"],list):
-                raise ValueError("Неверная схема аудита")
-            contextual={"status":"completed","type":"text_model_review","findings":[Finding.model_validate(f).model_dump() for f in contextual_raw["findings"]]}
+            contextual_raw=await gateway.json_request("critic",{"source":package.content.model_dump(),"plans":plans.model_dump()},timeout=min(25,remaining(10)),schema=ContextualAudit.model_json_schema())
+            contextual={"status":"completed","type":"text_model_review",**ContextualAudit.model_validate(contextual_raw).model_dump()}
         except Exception as exc:
             contextual={"status":"failed","reason":type(exc).__name__,"findings":[]}
     for result in results:
@@ -126,6 +134,12 @@ async def generate(store,job_id,settings):
         warnings.append(fallback)
     if author_warning:
         warnings.append(author_warning)
+    native_preview=all(r["rendering"]["native_render"] for r in results)
+    template_degraded=any("native_template" not in r["template_strategies"] or "token_composition" in r["template_strategies"] for r in results)
+    if not native_preview:
+        warnings.append("LibreOffice не найден: предпросмотр построен из модели сцены, а не из готового PPTX.")
+    if template_degraded:
+        warnings.append("Часть слайдов не использует исходные макеты. Соответствие шаблону требует проверки.")
     if settings.mode=="extractive":
         warnings.append("Автономный экстрактивный режим: LLM/VLM не использовались. Результат не доказывает качество модельного режима.")
     model_degraded=settings.mode=="api" and bool(fallback or author_warning or contextual["status"]!="completed")
@@ -143,7 +157,7 @@ async def generate(store,job_id,settings):
         "started_at":job["created"],"deadline_at":deadline,"variants":results,
         "contextual_audit":contextual,"warnings":warnings,"errors":errors,
         "checks":{"native_pptx_reopened":True,"pdf_pages":True,"html_live_dom":True,
-            "powerpoint_visual_check":False,"ocr_check":False}}
+            "native_pptx_render":native_preview,"powerpoint_visual_check":False,"ocr_check":False}}
     (directory/"manifest.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2))
     with ZipFile(directory/"presentations.zip","w",ZIP_DEFLATED) as z:
         for file in sorted(directory.rglob("*")):
@@ -160,10 +174,11 @@ async def generate(store,job_id,settings):
             if file.is_file() and file.suffix in (".pptx",".pdf",".html",".json"):
                 z.write(file,file.relative_to(directory))
     remaining()
-    needs_review=bool(errors or model_degraded)
+    needs_review=bool(errors or model_degraded or template_degraded or not native_preview)
     store.update(job_id,"needs_review" if needs_review else "completed",phase="Требуется проверка" if needs_review else "Три презентации готовы",progress=100,
         elapsed_seconds=round(time.time()-job["created"],3),variants=results,warnings=warnings,
         contextual_audit=contextual,errors=errors,within_deadline=True,model_mode=settings.mode,
+        native_pptx_render=native_preview,
         model_degraded=model_degraded,planning_source=manifest["planning_source"])
 
 def index_examples(paths,settings):

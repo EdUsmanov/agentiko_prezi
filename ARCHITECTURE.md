@@ -7,7 +7,8 @@ index-examples → reference profiles (independent styles)
 
 PPTX + text + audience + instructions
   → ZIP/XML validation
-  → template tokens + ordinary-slide zones + safe assets
+  → template tokens + native source patterns + safe assets
+  → sanitized source artwork → LibreOffice → cached template layers for HTML
   → facts + tables + constraints
   → PreparedPackage + DESIGN.md + hashes
   → READY
@@ -33,6 +34,8 @@ POST /api/generate (timer starts here)
 |---|---|
 | `security.py` | Bounded ZIP/XML, triage строк с инструкциями |
 | `template.py` | Анализ OOXML, tokens, геометрия групп, паттерны и ограниченный asset catalog |
+| `native_template.py` | Каталог исходных макетов, перенос графики и фоновых relationships, подготовка кэша слоёв |
+| `office.py` | Ограниченный по времени subprocess LibreOffice, отдельный профиль и шрифты документа |
 | `content.py` | Декомпозиция текста, Markdown-таблицы, интерпретация числа слайдов |
 | `opendesign.py` | Vendored craft + экспорт переносимого design package |
 | `gateway.py` | Политика моделей, единственный inference endpoint, timeout, schema context |
@@ -48,7 +51,7 @@ POST /api/generate (timer starts here)
 
 ## Дедлайн
 
-`created_at` фиксируется при принятии generation request. `deadline_at=created_at+300`. Supervisor прерывает весь worker, поэтому зависший синхронный renderer не может продолжить работу после истечения времени. В worker нет дочерних subprocesses: ветки рендера — потоки одного процесса. Поздний результат не может заменить `timed_out` на `completed`.
+`created_at` фиксируется при принятии generation request. `deadline_at=created_at+300`. На POSIX supervisor завершает выделенную группу процессов worker вместе с дочерними LibreOffice; ветки рендера — три потока. Один вызов LibreOffice ограничен 45 секундами. Гарантия завершения дерева процессов на Windows требует отдельного Job Object и пока не проверена. Поздний результат не может заменить `timed_out` на `completed`.
 
 Расширение короткого brief ограничено 45 секундами, модельное планирование — 120 секундами с резервом на export. Один общий запрос описывает три варианта. Если JSON невалиден или запрос не удался, включается явно отмеченный экстрактивный fallback. Это не считается успешной проверкой модели. Текстовый critic получает отдельный ограниченный остаток бюджета. Native exports выполняются в трёх потоках, ограничивая число полных колод в памяти тремя. PDFium-вызовы сериализованы отдельным lock из-за ограничений потокобезопасности.
 
@@ -72,9 +75,11 @@ API не выдаёт `package.json` или исходный PPTX. Для ска
 
 ## Рендеринг
 
-Сохраняются реальные source master/layout/theme relationships. Старое содержимое master/layout очищается, чтобы не переносить текст и скрытые активы прошлого отчёта. Проверенные повторяющиеся маленькие брендовые изображения добавляются по исходным координатам. Текст, таблицы и бары диаграмм создаются отдельными объектами. Произвольный декор/сложные градиенты исходника пока не восстанавливаются полностью.
+Сохраняются source master/layout/theme, фоновые изображения и безопасная нативная графика выбранного примера. Удаляется старый текст, а не весь shape tree. Для ordinary slides не переносятся непроверенные фотографии, таблицы и charts. Новое содержимое располагается в исходных title/body zones; при необходимости единая body-зона делится на колонки. Выбор учитывает вместимость. Сложные picture-driven макеты не используются как пустые фоторамки.
 
-PPTX повторно открывается библиотекой и проверяется на отдельные текстовые объекты и внешние relationships. PDF/HTML/PNG строятся из той же сцены, но не являются визуальным round-trip из самого PPTX. Это ограничение явно отображается в UI и manifest.
+PPTX повторно открывается и проверяется на редактируемость и отсутствие external relationships. Затем LibreOffice отрисовывает именно этот PPTX в PDF; PNG получаются из PDF. HTML содержит подготовленный растровый фон плюс живое содержимое сцены, а PPTX — нативную графику, не этот растр. Цвет текста оценивается отдельно для каждой исходной зоны. Кэш слоёв защищён SHA-256 в PreparedPackage. При отсутствии LibreOffice используется явно отмеченный резервный PDF сцены и статус needs_review; дизайнерская/VLM-оценка не имитируется.
+
+Планировщик получает required_outline, если исходные «Слайд N» согласуются с заданным числом слайдов. При семантической ошибке предусмотрен один repair-запрос в пределах тех же 120 секунд; причина от локального валидатора записывается в manifest. Ошибки провайдера не отражаются целиком, чтобы не раскрыть payload или ключи. Critic получает обязательную JSON-схему findings.
 
 ## Подключённый inference и OCR-расширение
 

@@ -2,6 +2,16 @@ import re
 from .models import ContentModel, Fact, TableData, Constraints
 from .security import scan_text, InputRejected
 
+def plain_inline(value):
+    # Remove paired presentation markup, never punctuation within the fact itself.
+    value = re.sub(r"\*\*(.+?)\*\*|__(.+?)__", lambda m: m[1] or m[2], value)
+    value = re.sub(r"\[([^\]]+)\]\((https?://[^\s)]+)\)", r"\1 — \2", value)
+    return re.sub(r"`([^`]+)`", r"\1", value).strip()
+
+def slide_heading(section):
+    match = re.match(r"^(?:слайд|slide)\s+\d+\s*[.:)\-—–]?\s*(.*)$", section, re.I)
+    return match[1].strip() if match else None
+
 def parse_constraints(slides: int | None, audience: str, instructions: str):
     mode = "exact" if slides else "default"
     limit = slides or 10
@@ -24,11 +34,11 @@ def parse_content(text: str) -> ContentModel:
     i = 0
     while i < len(lines):
         raw = lines[i].strip()
-        if not raw:
+        if not raw or re.fullmatch(r"(?:-\s*){3,}|(?:\*\s*){3,}|(?:_\s*){3,}", raw):
             i += 1
             continue
-        if raw.startswith("#"):
-            heading = raw.lstrip("# ").strip()
+        if raw.startswith("#") or slide_heading(plain_inline(raw)) is not None:
+            heading = plain_inline(raw.lstrip("# "))
             title = title or heading
             section = heading
             i += 1
@@ -49,7 +59,7 @@ def parse_content(text: str) -> ContentModel:
             facts.append(Fact(id=f"f{len(facts)+1}", text=f"{section or 'Данные'}: " + "; ".join(" — ".join(row) for row in rows), section=section, source=tid, line=i+1))
             i = j
             continue
-        value = re.sub(r"^\s*[-*•]\s+", "", raw)
+        value = plain_inline(re.sub(r"^\s*[-*•]\s+", "", raw))
         # Split long paragraphs only at sentence boundaries, never fabricate facts.
         chunks = re.split(r"(?<=[.!?])\s+(?=[А-ЯA-Z])", value)
         for chunk in chunks:

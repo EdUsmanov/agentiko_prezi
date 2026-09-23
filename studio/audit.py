@@ -25,6 +25,8 @@ def audit_scenes(scenes, package):
         if not any(e.source_ids for e in s.elements):
             add("empty_slide","Слайд без исходных фактов",si)
         for ei,e in enumerate(s.elements):
+            if e.role=="template_background":
+                continue
             b=e.box
             if b.x < -.5 or b.y < -.5 or b.x+b.w > p.width+.5 or b.y+b.h > p.height+.5:
                 add("out_of_bounds","Объект выходит за границу слайда",si,ei)
@@ -36,7 +38,7 @@ def audit_scenes(scenes, package):
                 lines=wrap_text(e.text,p.font_file,e.size,b.w)
                 if len(lines)*e.size*1.25 > b.h+.5:
                     add("text_overflow","Текст не помещается; увеличьте число слайдов или сократите материал",si,ei)
-                if contrast(e.color,s.background)<4.5:
+                if contrast(e.color,e.background_hint or s.background)<4.5:
                     add("contrast","Контраст текста меньше 4.5:1",si,ei,severity="warning")
                 if re.search(r"\b(?:lorem ipsum|TODO|XXX)\b|вставьте текст",e.text,re.I):
                     add("placeholder","В исходном материале осталась заглушка",si,ei,severity="warning")
@@ -50,10 +52,12 @@ def audit_scenes(scenes, package):
                 if len(e.rows)>8 or len(e.rows[0])>5:
                     add("table_density","Таблица плотнее ориентира 7 строк × 5 колонок",si,ei,severity="warning")
         for ei,e in enumerate(s.elements):
+            if e.role=="template_background":
+                continue
             if e.kind not in ("text","table","chart","image"):
                 continue
             for other in s.elements[ei+1:]:
-                if other.kind in ("text","table","chart","image") and overlaps(e.box,other.box):
+                if other.role!="template_background" and other.kind in ("text","table","chart","image") and overlaps(e.box,other.box):
                     add("overlap","Пересечение содержательных блоков",si,ei)
     if used != expected:
         add("coverage","Не все исходные факты представлены в презентации")

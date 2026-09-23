@@ -42,6 +42,18 @@ class Pattern(StrictModel):
     source_layout: str
     text_zones: list[Box]
     role: str
+    master_index: int = 0
+    layout_index: int = 0
+    title_zone: Box | None = None
+    body_zones: list[Box] = Field(default_factory=list)
+    title_size: float = 0
+    background: str = ""
+    foreground: str = ""
+    background_image: str = ""
+    title_foreground: str = ""
+    title_background: str = ""
+    zone_backgrounds: list[str] = Field(default_factory=list)
+    zone_foregrounds: list[str] = Field(default_factory=list)
 
 class Asset(StrictModel):
     id: str
@@ -77,6 +89,7 @@ class TemplateProfile(StrictModel):
     warnings: list[str] = Field(default_factory=list)
     source_kind: str
     layout_index: int = 0
+    analysis_version: int = 1
 
 class PreparedPackage(StrictModel):
     schema_version: int = 1
@@ -118,6 +131,7 @@ class Element(StrictModel):
     unit: str = ""
     image_path: str = ""
     source_ids: list[str] = Field(default_factory=list)
+    background_hint: str = ""
 
 class SlideScene(StrictModel):
     title: str
@@ -128,6 +142,9 @@ class SlideScene(StrictModel):
     pattern_id: str | None = None
     strategy: str = "token_composition"
     notes: str = ""
+
+class ContextualAudit(StrictModel):
+    findings: list["Finding"] = Field(max_length=100)
 
 class Finding(StrictModel):
     code: str

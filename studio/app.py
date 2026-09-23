@@ -27,6 +27,16 @@ class ReviseRequest(BaseModel):
     instructions: str=Field(min_length=1,max_length=5000)
     slides: int | None=Field(default=None,ge=1,le=30)
 
+def kill_worker(process):
+    # Worker is started in a dedicated session; include its LibreOffice children.
+    try:
+        if os.name=="posix":
+            os.killpg(process.pid,signal.SIGKILL)
+        else:
+            process.kill()
+    except ProcessLookupError:
+        pass
+
 class UploadLimitMiddleware:
     def __init__(self,app,max_bytes):
         self.app=app;self.max_bytes=max_bytes
@@ -60,7 +70,7 @@ def create_app(settings=None):
         for process in processes.values():
             if process.returncode is None:
                 try:
-                    process.kill()
+                    kill_worker(process)
                 except ProcessLookupError:
                     pass
         for task in tasks:
@@ -123,12 +133,12 @@ def create_app(settings=None):
         except asyncio.TimeoutError:
             store.update(job["id"],"timed_out",phase="Время истекло",error="Все три презентации не готовы за общий лимит 300 секунд")
             if process and process.returncode is None:
-                process.kill()
+                kill_worker(process)
                 await process.wait()
         except asyncio.CancelledError:
             if process and process.returncode is None:
                 try:
-                    process.kill()
+                    kill_worker(process)
                 except ProcessLookupError:
                     pass
             store.update(job["id"],"cancelled",error="Запуск прерван")

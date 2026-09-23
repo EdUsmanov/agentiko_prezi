@@ -16,6 +16,9 @@ def text_element(text, box, profile, role="body", size=None, color=None, source_
         color=color or profile.foreground, role=role, source_ids=source_ids or [])
 
 def compose(slide, package, index, variant):
+    native = compose_native(slide,package,index,variant)
+    if native is not None:
+        return native
     p = package.template
     w, h, m = p.width, p.height, p.margin
     facts = {f.id: f for f in package.content.facts}
@@ -83,7 +86,6 @@ def compose(slide, package, index, variant):
         row_h=content_h/max(len(body),1)
         for i,f in enumerate(body):
             label_color=p.accent if contrast(p.accent,p.background)>=4.5 else p.foreground
-            elements.append(text_element(f.id.upper(),Box(x=m,y=y+i*row_h,w=w*.07,h=row_h-12),p,"label",color=label_color))
             elements.append(text_element(f.text,Box(x=m+w*.1,y=y+i*row_h,w=w-2*m-w*.1,h=row_h-12),p,source_ids=[f.id]))
     elif slide.layout == "process" and len(body)>=2:
         row_h=content_h/len(body)
@@ -129,3 +131,87 @@ def compose(slide, package, index, variant):
 
 def compose_variant(variant, package):
     return [compose(s,package,i,variant.key) for i,s in enumerate(variant.slides)]
+
+def compose_native(slide, package, index, variant):
+    """Fit editable content into source zones; never substitute a generic full-slide design."""
+    p=package.template
+    patterns=[pattern for pattern in p.patterns if pattern.title_zone and pattern.body_zones]
+    if not patterns:
+        return None
+    facts={f.id:f for f in package.content.facts}; tables={t.id:t for t in package.content.tables}
+    relevant=[facts[fid] for fid in slide.fact_ids]
+    body=[f for f in relevant if f.source not in tables]
+    if len({f.source for f in relevant if f.source in tables})>1:
+        raise ValueError("Несколько таблиц на одном слайде: увеличьте число слайдов")
+    desired=2 if len(body)>1 and slide.layout in ("split","columns") else 1
+    if slide.table_id:
+        desired=2 if body else 1
+
+    def zones_for(pattern):
+        zones=pattern.body_zones
+        if len(zones)==1 and desired==2 and zones[0].w>p.width*.65:
+            b=zones[0]; gap=p.width*.025
+            ratio=.6 if slide.table_id else .4 if slide.layout=="split" else .5
+            left=(b.w-gap)*ratio
+            return [Box(x=b.x,y=b.y,w=left,h=b.h),Box(x=b.x+left+gap,y=b.y,w=b.w-left-gap,h=b.h)]
+        return zones
+
+    def elements_for(pattern):
+        foreground=pattern.foreground or p.foreground
+        title=text_element(slide.title,pattern.title_zone,p,"title",pattern.title_size or p.title_size,color=pattern.title_foreground or foreground)
+        title.background_hint=pattern.title_background
+        elements=[title]; zones=zones_for(pattern)
+        if slide.table_id:
+            table=tables[slide.table_id]; b=zones[0]
+            numeric=numeric_column(table)
+            if slide.layout=="chart" and numeric and len(table.headers)==2:
+                col,values,unit=numeric
+                elements.append(Element(kind="chart",box=b,labels=[r[0] for r in table.rows],values=values,
+                    unit=table.headers[col]+(f" ({unit})" if unit else ""),font=p.font,size=p.body_size,
+                    color=foreground,fill=p.accent,source_ids=[f.id for f in relevant if f.source==table.id]))
+            else:
+                elements.append(Element(kind="table",box=b,rows=[table.headers]+table.rows,font=p.font,
+                    size=p.body_size,color=foreground,fill=p.accent,source_ids=[f.id for f in relevant if f.source==table.id]))
+            if body:
+                if len(zones)<2:
+                    return None
+                elements.append(text_element("\n\n".join(f.text for f in body),zones[1],p,color=foreground,source_ids=[f.id for f in body]))
+        else:
+            count=min(len(zones),len(body))
+            for i,b in enumerate(zones[:count]):
+                if slide.layout=="split" and count==2:
+                    group=body[:1] if i==0 else body[1:]
+                else:
+                    group=body[i*len(body)//count:(i+1)*len(body)//count]
+                elements.append(text_element("\n\n".join(f.text for f in group),b,p,color=foreground,source_ids=[f.id for f in group]))
+        for e in elements[1:]:
+            zone_index=next((i for i,b in enumerate(pattern.body_zones) if b.x<=e.box.x+1 and b.y<=e.box.y+1 and b.x+b.w>=e.box.x+e.box.w-1),0)
+            if pattern.zone_backgrounds:
+                e.background_hint=pattern.zone_backgrounds[zone_index]
+                e.color=pattern.zone_foregrounds[zone_index]
+        return elements
+
+    options=[]
+    for pattern in patterns:
+        elements=elements_for(pattern)
+        if elements is None:
+            continue
+        overflow=sum(max(0,len(wrap_text(e.text,p.font_file,e.size,e.box.w))*e.size*1.25-e.box.h) for e in elements if e.kind=="text")
+        small=sum(max(0,p.body_size-e.size) for e in elements if e.role=="body" and e.kind=="text")
+        count_penalty=abs(len(zones_for(pattern))-desired)*10
+        # Prioritize readability, then matching template examples, then requested composition.
+        score=overflow*100+small*2+count_penalty+(0 if pattern.source_slide else 3)
+        options.append((score,pattern,elements))
+    if not options:
+        return None
+    options.sort(key=lambda item:item[0])
+    best=options[0][0]
+    equivalent=[item for item in options if item[0]<=best+1]
+    offset={"executive":0,"analytical":1,"story":2}[variant]
+    _,pattern,elements=equivalent[(index+offset)%len(equivalent)]
+    if pattern.background_image:
+        elements.insert(0,Element(kind="image",box=Box(x=0,y=0,w=p.width,h=p.height),
+            image_path=pattern.background_image,role="template_background"))
+    return SlideScene(title=slide.title,background=pattern.background or p.background,elements=elements,
+        source_ids=slide.fact_ids,layout=slide.layout,pattern_id=pattern.id,strategy="native_template",
+        notes="\n".join(f"[{f.id}] {f.source}, строка {f.line}: {f.text}" for f in relevant))

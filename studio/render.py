@@ -19,6 +19,7 @@ from .models import Element, Box
 from .fonts import pdf_font, wrap_text
 from .template import contrast
 from .embedded_fonts import check_glyphs, P, R
+from .native_template import scrub_surface, source_slide
 
 _pdfium_lock=threading.Lock()
 
@@ -61,6 +62,8 @@ def set_text(frame,text,e,profile,width=None):
 
 def clean_base(source,profile):
     prs=Presentation(source)
+    prs._studio_sources=list(prs.slides)
+    prs._studio_brand_hashes={a.id for a in profile.assets}
     # Keep only the validated font part actually selected for this package.
     selected=profile.font_origin.get("relationship_id") if profile.font_origin.get("kind")=="embedded" else None
     font_list=prs.part._element.find(P+"embeddedFontLst")
@@ -81,10 +84,9 @@ def clean_base(source,profile):
         prs.slides._sldIdLst.remove(entry)
     # Keep actual source master/layout/theme relationships, but never old slide copy.
     for surface in list(prs.slide_masters)+[l for m in prs.slide_masters for l in m.slide_layouts]:
-        for shape in list(surface.shapes):
-            shape._element.getparent().remove(shape._element)
+        scrub_surface(surface)
         for rel in list(surface.part.rels.values()):
-            if rel.is_external or rel.reltype.rsplit("/",1)[-1] not in ("theme","slideLayout","slideMaster"):
+            if rel.is_external or rel.reltype.rsplit("/",1)[-1] not in ("theme","slideLayout","slideMaster","image"):
                 surface.part.drop_rel(rel.rId)
     for rel in list(prs.part.rels.values()):
         if rel.is_external:
@@ -94,15 +96,20 @@ def clean_base(source,profile):
     props.title="Generated presentation";props.subject="";props.comments="";props.keywords=""
     return prs
 
-def render_pptx(scenes,profile,source,path):
+def render_pptx(scenes,profile,source,path,verify_text=True):
     prs=clean_base(source,profile)
     for scene in scenes:
-        slide=prs.slides.add_slide(prs.slide_layouts[profile.layout_index])
-        for shape in list(slide.shapes):
-            shape._element.getparent().remove(shape._element)
-        slide._element.set("showMasterSp","0")
-        slide.background.fill.solid();slide.background.fill.fore_color.rgb=rgb(scene.background)
+        pattern=next((p for p in profile.patterns if p.id==scene.pattern_id and p.title_zone),None)
+        if pattern:
+            slide=source_slide(prs,pattern)
+        else:
+            slide=prs.slides.add_slide(prs.slide_layouts[profile.layout_index])
+            for shape in list(slide.shapes):
+                shape._element.getparent().remove(shape._element)
+            slide.background.fill.solid();slide.background.fill.fore_color.rgb=rgb(scene.background)
         for original in scene.elements:
+            if original.role=="template_background":
+                continue  # Native source artwork is already present, never rasterize it in PPTX.
             for e in primitives(original,profile):
                 b=e.box
                 if e.kind=="text":
@@ -137,7 +144,7 @@ def render_pptx(scenes,profile,source,path):
     prs.save(path)
     # Reopen native output and check its object content rather than trusting save().
     check=Presentation(path)
-    if len(check.slides)!=len(scenes) or any(not any(sh.has_text_frame for sh in s.shapes) for s in check.slides):
+    if len(check.slides)!=len(scenes) or (verify_text and any(not any(sh.has_text_frame for sh in s.shapes) for s in check.slides)):
         raise ValueError("PPTX не прошёл проверку редактируемости")
     with ZipFile(path) as z:
         if any(b'TargetMode="External"' in z.read(n) for n in z.namelist() if n.endswith(".rels")):
@@ -217,7 +224,10 @@ def render_variant(scenes,profile,source,directory):
     check_glyphs(profile.font_file,"\n".join(rendered_text))
     directory.mkdir(parents=True,exist_ok=True)
     render_pptx(scenes,profile,source,directory/"deck.pptx")
-    render_pdf(scenes,profile,directory/"deck.pdf")
+    from .office import to_pdf
+    native_preview=to_pdf(directory/"deck.pptx",directory,font_file=profile.font_file)
+    if not native_preview:
+        render_pdf(scenes,profile,directory/"deck.pdf")
     render_html(scenes,profile,directory/"deck.html")
     (directory/"slides.json").write_text(json.dumps([s.model_dump() for s in scenes],ensure_ascii=False,indent=2))
     import pypdfium2 as pdfium
@@ -230,3 +240,4 @@ def render_variant(scenes,profile,source,directory):
             bitmap=page.render(scale=1)
             bitmap.to_pil().save(directory/f"slide-{i+1}.png")
             bitmap.close();page.close()
+    return {"preview_source":"libreoffice_pptx" if native_preview else "scene_model", "native_render":native_preview}

@@ -171,11 +171,15 @@ def analyze_template(path: Path, artifact_dir: Path) -> TemplateProfile:
     layouts = list(prs.slide_layouts)
     layout_index = min(range(len(layouts)), key=lambda i: len(layouts[i].shapes)) if layouts else 0
     ratio = counts["placeholders"] / max(counts["objects"], 1)
+    from .native_template import native_patterns
+    native = native_patterns(prs)
+    if not native:
+        warnings.append("Не найден безопасный макет с заголовком и текстовыми зонами: используется композиция по токенам, сходство с шаблоном требует проверки.")
     return TemplateProfile(sha256=digest(path.read_bytes()), name=path.name, width=width, height=height,
         slide_count=len(prs.slides), master_count=len(prs.slide_masters),
         layout_count=sum(len(m.slide_layouts) for m in prs.slide_masters),
         object_count=counts["objects"], placeholder_count=counts["placeholders"],
         fonts=allowed_fonts, font=font, font_file=font_file, font_origin=font_origin, font_sizes=scale, title_size=title_size, body_size=body_size,
         colors=palette, background=background, foreground=foreground, accent=accent, margin=margin,
-        patterns=patterns, assets=assets, warnings=sorted(set(warnings)),
-        source_kind="layout_rich" if ratio > .25 else "example_deck", layout_index=layout_index)
+        patterns=native or patterns, assets=assets, warnings=sorted(set(warnings)),
+        source_kind="layout_rich" if ratio > .25 else "example_deck", layout_index=layout_index, analysis_version=2)
