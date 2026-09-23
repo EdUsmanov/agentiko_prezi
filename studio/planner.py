@@ -88,8 +88,23 @@ async def plan(package, gateway, timeout):
             raw = await gateway.json_request("planner", {"content": package.content.model_dump(),
                 "constraints": package.constraints.model_dump(), "font": package.template.font,
                 "palette": package.template.colors, "target_slides": min(package.constraints.slides, len(package.content.facts))},
-                timeout=timeout, schema=Plans.model_json_schema())
+                timeout=timeout, schema=planning_schema(package))
             return validate_plans(Plans.model_validate(raw), package), None
         except Exception as exc:
             fallback_reason = f"Модельный план отклонён ({type(exc).__name__}); использован экстрактивный план без новых фактов"
     return validate_plans(extractive_plans(package), package), fallback_reason
+
+def planning_schema(package):
+    """Constrain shape/count/references at decoding too; semantic checks still run."""
+    schema=Plans.model_json_schema()
+    definitions=schema["$defs"]
+    slides=definitions["VariantPlan"]["properties"]["slides"]
+    slides["minItems"]=slides["maxItems"]=min(package.constraints.slides,len(package.content.facts))
+    facts=definitions["SlidePlan"]["properties"]["fact_ids"]
+    facts["minItems"]=1
+    facts["maxItems"]=len(package.content.facts)
+    facts["items"]={"type":"string","enum":[f.id for f in package.content.facts]}
+    table=definitions["SlidePlan"]["properties"]["table_id"]
+    table.clear()
+    table.update({"enum":[None]+[t.id for t in package.content.tables]})
+    return schema

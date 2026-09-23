@@ -107,6 +107,12 @@ def create_app(settings=None):
                 "STUDIO_MODEL_ID":settings.model_id,"STUDIO_MODEL_API_KEY":settings.api_key,
                 "STUDIO_MODEL_PARAMETERS_B":str(settings.parameters_b),"STUDIO_MODEL_OPEN_WEIGHTS":str(settings.open_weights).lower(),
                 "STUDIO_MODEL_LICENSE":settings.license,"STUDIO_STAGE":settings.stage,"STUDIO_VK_ALLOWED_HOSTS":",".join(settings.vk_hosts)})
+            env["STUDIO_MODEL_STRUCTURED_OUTPUT"] = str(settings.structured_output).lower()
+            env["STUDIO_MODEL_CONCURRENCY"] = str(settings.model_concurrency)
+            if settings.thinking is not None:
+                env["STUDIO_MODEL_THINKING"] = str(settings.thinking).lower()
+            else:
+                env.pop("STUDIO_MODEL_THINKING", None)
             process=await asyncio.create_subprocess_exec(sys.executable,"-m","studio.worker",job["id"],str(settings.data_dir),
                 cwd=ROOT,env=env,stdout=asyncio.subprocess.DEVNULL,stderr=asyncio.subprocess.DEVNULL,start_new_session=True)
             processes[job["id"]]=process

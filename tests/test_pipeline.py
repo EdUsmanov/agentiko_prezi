@@ -88,3 +88,33 @@ def test_one_slide_table_still_has_three_variants(prepared):
     plans=validate_plans(extractive_plans(package),package)
     scenes=[compose_variant(v,package) for v in plans.variants]
     assert len({json.dumps([s.model_dump() for s in scene],sort_keys=True) for scene in scenes})==3
+
+def test_schema_constrains_count_and_source_ids(prepared):
+    from studio.planner import planning_schema
+    _,_,package=prepared
+    schema=planning_schema(package)
+    slides=schema['$defs']['VariantPlan']['properties']['slides']
+    assert slides['minItems']==slides['maxItems']==5
+    facts=schema['$defs']['SlidePlan']['properties']['fact_ids']
+    assert facts['items']['enum']==[f.id for f in package.content.facts]
+    assert facts['minItems']==1
+    assert schema['$defs']['SlidePlan']['properties']['table_id']['enum']==[None]
+
+def test_model_timeout_is_needs_review_not_green_success(prepared,monkeypatch):
+    from dataclasses import replace
+    from studio import pipeline
+    settings,store,package=prepared
+    settings=replace(settings,mode='api')
+    class FailingGateway:
+        def __init__(self,settings):
+            self.settings=settings;self.usage=[];self.calls=[]
+        async def json_request(self,*args,**kwargs):
+            raise TimeoutError()
+    monkeypatch.setattr(pipeline,'ModelGateway',FailingGateway)
+    job=store.create('generation',{'package_id':package.id,'deadline_at':time.time()+300})
+    asyncio.run(generate(store,job['id'],settings))
+    done=store.get(job['id'])
+    assert done['state']=='needs_review'
+    assert done['model_degraded'] is True
+    assert done['planning_source']=='extractive'
+    assert done['errors']==0

@@ -86,7 +86,7 @@ async def generate(store,job_id,settings):
     gateway=ModelGateway(settings)
     package,author_warning=await expand_brief(package,gateway,min(45,remaining(100)))
     (directory/"generation-content.json").write_text(package.content.model_dump_json(indent=2))
-    plans,fallback=await plan(package,gateway,min(70,remaining(60)))
+    plans,fallback=await plan(package,gateway,min(120,remaining(60)))
     (directory/"plans.json").write_text(plans.model_dump_json(indent=2))
     store.update(job_id,phase="Вёрстка, аудит и экспорт",progress=35)
     source=store.directory(package.id)/"input.pptx"
@@ -121,12 +121,18 @@ async def generate(store,job_id,settings):
         warnings.append(author_warning)
     if settings.mode=="extractive":
         warnings.append("Автономный экстрактивный режим: LLM/VLM не использовались. Результат не доказывает качество модельного режима.")
+    model_degraded=settings.mode=="api" and bool(fallback or author_warning or contextual["status"]!="completed")
+    if model_degraded:
+        warnings.append("Модельный путь выполнен не полностью: результат требует проверки, даже если геометрия корректна.")
     errors=sum(f["severity"]=="error" for r in results for f in r["findings"])+sum(f["severity"]=="error" for f in contextual["findings"])
     manifest={"run_id":job_id,"package_id":package.id,"package_hash":store.get(package.id)["package_hash"],
         "input_manifest":package.manifest,"generation_versions":versions(),"git_commit":revision(),
         "model_proposal_count":sum(f.source=="model_proposal" for f in package.content.facts),
         "model":{"mode":settings.mode,"id":settings.model_id or None,"parameters_b":settings.parameters_b,
-            "license":settings.license,"stage":settings.stage,"usage":gateway.usage},
+            "license":settings.license,"stage":settings.stage,"usage":gateway.usage,
+            "thinking_requested":settings.thinking,"structured_output":settings.structured_output,"calls":gateway.calls},
+        "model_degraded":model_degraded,
+        "planning_source":"extractive" if fallback or settings.mode=="extractive" else "model",
         "started_at":job["created"],"deadline_at":deadline,"variants":results,
         "contextual_audit":contextual,"warnings":warnings,"errors":errors,
         "checks":{"native_pptx_reopened":True,"pdf_pages":True,"html_live_dom":True,
@@ -147,9 +153,11 @@ async def generate(store,job_id,settings):
             if file.is_file() and file.suffix in (".pptx",".pdf",".html",".json"):
                 z.write(file,file.relative_to(directory))
     remaining()
-    store.update(job_id,"needs_review" if errors else "completed",phase="Требуется проверка" if errors else "Три презентации готовы",progress=100,
+    needs_review=bool(errors or model_degraded)
+    store.update(job_id,"needs_review" if needs_review else "completed",phase="Требуется проверка" if needs_review else "Три презентации готовы",progress=100,
         elapsed_seconds=round(time.time()-job["created"],3),variants=results,warnings=warnings,
-        contextual_audit=contextual,errors=errors,within_deadline=True,model_mode=settings.mode)
+        contextual_audit=contextual,errors=errors,within_deadline=True,model_mode=settings.mode,
+        model_degraded=model_degraded,planning_source=manifest["planning_source"])
 
 def index_examples(paths,settings):
     root=settings.data_dir/"references";root.mkdir(parents=True,exist_ok=True)

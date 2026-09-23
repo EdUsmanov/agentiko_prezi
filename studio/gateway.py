@@ -1,5 +1,6 @@
 import asyncio
 import json
+import time
 from urllib.parse import urlsplit
 import httpx
 from .config import Settings, ROOT, POLICY
@@ -30,13 +31,29 @@ def validate_model_policy(settings: Settings):
         raise ModelPolicyError("Финал допускает только явно настроенный VK endpoint")
 
 class ModelGateway:
-    def __init__(self, settings):
+    def __init__(self, settings, transport=None):
         validate_model_policy(settings)
         self.settings = settings
         self.limiter = asyncio.Semaphore(settings.model_concurrency)
         self.usage = []
+        self.transport = transport
+        self.calls = []
 
     async def json_request(self, prompt_name, payload, timeout=60, schema=None):
+        started = time.monotonic()
+        record = {"stage": prompt_name, "status": "failed"}
+        try:
+            result = await self._json_request(prompt_name, payload, timeout, schema)
+            record["status"] = "completed"
+            return result
+        except Exception as exc:
+            record["error_type"] = type(exc).__name__
+            raise
+        finally:
+            record["seconds"] = round(time.monotonic() - started, 3)
+            self.calls.append(record)
+
+    async def _json_request(self, prompt_name, payload, timeout, schema):
         if self.settings.mode != "api":
             raise ModelPolicyError("Модель не подключена")
         system = (ROOT / "prompts" / f"{prompt_name}.md").read_text()
@@ -49,14 +66,21 @@ class ModelGateway:
             {"role": "system", "content": system},
             {"role": "user", "content": json.dumps({"untrusted_input": payload}, ensure_ascii=False)}],
             "temperature": .25, "max_tokens": 10000, "response_format": {"type": "json_object"}}
+        if self.settings.thinking is not None:
+            body["chat_template_kwargs"] = {"enable_thinking": self.settings.thinking}
+        if schema and self.settings.structured_output:
+            body["response_format"] = {"type": "json_schema", "json_schema": {
+                "name": prompt_name, "schema": schema, "strict": True}}
         headers = {"Authorization": f"Bearer {self.settings.api_key}"} if self.settings.api_key else {}
         async with asyncio.timeout(timeout):
             async with self.limiter:
-                async with httpx.AsyncClient(timeout=timeout, follow_redirects=False, trust_env=False) as client:
+                async with httpx.AsyncClient(timeout=timeout, follow_redirects=False, trust_env=False, transport=self.transport) as client:
                     response = await client.post(self.settings.base_url.rstrip("/") + "/chat/completions", json=body, headers=headers)
                     response.raise_for_status()
                     result = response.json()
         self.usage.append(result.get("usage", {}))
+        if result["choices"][0].get("finish_reason") != "stop":
+            raise ValueError("Модель не завершила ответ; частичный JSON не принимается")
         value = result["choices"][0]["message"]["content"]
         if not isinstance(value, str) or len(value) > 200_000:
             raise ValueError("Некорректный ответ модели")
