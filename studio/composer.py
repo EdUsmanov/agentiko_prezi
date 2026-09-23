@@ -41,7 +41,14 @@ def compose(slide, package, index, variant):
         if other_tables:
             raise ValueError("Несколько таблиц на одном слайде: увеличьте число слайдов")
         visual_w = w-2*m if not body else (w-2*m)*.62
-        box = Box(x=m,y=y,w=visual_w,h=content_h)
+        table_x=m
+        if variant=="story":
+            visual_w*=.86
+            if not body:
+                table_x=m+(w-2*m-visual_w)/2
+        elif variant=="executive" and not body and slide.layout!="chart":
+            visual_w*=.94
+        box = Box(x=table_x,y=y,w=visual_w,h=content_h)
         if slide.layout == "chart" and numeric:
             column, values, unit = numeric
             elements.append(Element(kind="chart", box=box, labels=[r[0] for r in table.rows], values=values,

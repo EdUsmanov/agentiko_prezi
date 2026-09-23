@@ -15,6 +15,7 @@ def wait_job(client,jid):
 
 def test_api_upload_generate_and_xss(tmp_path,template,content):
     app=create_app(Settings(data_dir=tmp_path/'api'))
+    content+='\nВидимый текст <img src=x onerror=alert(1)> без выполнения кода.'
     with TestClient(app) as client:
         response=client.post('/api/prepare',data={'text':content,'slides':5},files={'template':('sample.pptx',template.read_bytes(),'application/octet-stream')})
         assert response.status_code==202,response.text
@@ -27,6 +28,8 @@ def test_api_upload_generate_and_xss(tmp_path,template,content):
         preview=client.get('/api/jobs/'+done['id']+'/files/executive/deck.html')
         assert preview.status_code==200
         assert 'sandbox' in preview.headers['content-security-policy']
+        assert '&lt;img' in preview.text
+        assert '<img src=x' not in preview.text
         assert client.get('/api/jobs/'+done['id']+'/files/input.pptx').status_code==404
         blocked=client.post('/api/generate',json={'package_id':ready['id']},headers={'Origin':'https://evil.example'})
         assert blocked.status_code==403

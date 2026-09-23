@@ -1,8 +1,10 @@
 from dataclasses import dataclass
 from pathlib import Path
 import os
+import json
 
 ROOT = Path(__file__).resolve().parent.parent
+POLICY = json.loads((ROOT / "config/policy.json").read_text())
 
 def load_env():
     path = ROOT / ".env"
@@ -26,8 +28,8 @@ class Settings:
     stage: str = "selection"
     vk_hosts: tuple[str, ...] = ()
     model_concurrency: int = 1
-    deadline_seconds: float = 300
-    max_upload_bytes: int = 60 * 1024 * 1024
+    deadline_seconds: float = POLICY["generation_deadline_seconds"]
+    max_upload_bytes: int = POLICY["max_upload_mb"] * 1024 * 1024
 
     @classmethod
     def from_env(cls):

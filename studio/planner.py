@@ -30,7 +30,9 @@ def extractive_plans(package):
         for i, group in enumerate(groups):
             tid = next((f.source for f in group if f.source in tables), None)
             if tid:
-                layout = "chart" if vi == 0 and numeric_column(tables[tid]) else "table"
+                layout = "chart" if vi == 0 and numeric_column(tables[tid]) else "split" if vi == 2 else "table"
+                if vi==0 and layout=="table":
+                    layout="evidence"
             elif key == "executive":
                 layout = "statement" if len(group) == 1 else "columns"
             elif key == "analytical":

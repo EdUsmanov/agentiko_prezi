@@ -2,7 +2,7 @@ import asyncio
 import json
 from urllib.parse import urlsplit
 import httpx
-from .config import Settings, ROOT
+from .config import Settings, ROOT, POLICY
 from .opendesign import craft_context
 
 class ModelPolicyError(ValueError):
@@ -20,7 +20,7 @@ def validate_model_policy(settings: Settings):
         raise ModelPolicyError("Некорректный адрес inference endpoint")
     if url.scheme == "http" and url.hostname not in ("localhost", "127.0.0.1", "::1"):
         raise ModelPolicyError("Внешний inference endpoint должен использовать HTTPS")
-    if not settings.open_weights or not (0 < settings.parameters_b <= 35) or settings.license not in ("Apache-2.0", "MIT"):
+    if not settings.open_weights or not (0 < settings.parameters_b <= POLICY["max_model_parameters_b"]) or settings.license not in POLICY["allowed_model_licenses"]:
         raise ModelPolicyError("Укажите открытые веса, размер до 35B и лицензию Apache-2.0/MIT")
     if not settings.model_id:
         raise ModelPolicyError("Не задан MODEL_ID")

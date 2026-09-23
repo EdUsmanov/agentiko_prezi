@@ -79,3 +79,12 @@ def test_no_default_padding(prepared):
     package.content.facts=package.content.facts[:1]
     plans=extractive_plans(package)
     assert all(len(v.slides)==1 for v in plans.variants)
+
+def test_one_slide_table_still_has_three_variants(prepared):
+    from studio.composer import compose_variant
+    _,_,package=prepared
+    package.content=parse_content('# Данные\n| Канал | Объём |\n|---|---|\n| A | 20 |\n| B | 30 |')
+    package.constraints.slides=1
+    plans=validate_plans(extractive_plans(package),package)
+    scenes=[compose_variant(v,package) for v in plans.variants]
+    assert len({json.dumps([s.model_dump() for s in scene],sort_keys=True) for scene in scenes})==3
