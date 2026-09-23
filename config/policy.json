@@ -1,0 +1,15 @@
+{
+  "generation_deadline_seconds": 300,
+  "variant_keys": ["executive", "analytical", "story"],
+  "default_slide_count": 10,
+  "max_model_parameters_b": 35,
+  "image_model_limit_pending_clarification_b": 20,
+  "allowed_model_licenses": ["Apache-2.0", "MIT"],
+  "max_repair_passes": 1,
+  "max_upload_mb": 60,
+  "max_unpacked_mb": 300,
+  "max_template_slides": 200,
+  "max_source_objects": 30000,
+  "no_external_assets": true,
+  "notes": "T2I is a final-stage extension, not implemented in this selection MVP."
+}

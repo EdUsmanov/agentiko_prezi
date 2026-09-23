@@ -1,0 +1,7 @@
+{
+  "repository": "https://github.com/nexu-io/open-design",
+  "commit": "f166c02636e60bc3e3a474fe79cf269aa7f053ea",
+  "license": "Apache-2.0",
+  "files": ["craft/typography.md", "craft/color.md"],
+  "integration": "Vendored craft context used by the local planner adapter; the OpenDesign daemon is not bundled or executed. Template-specific DESIGN.md and tokens are generated per preparation."
+}
