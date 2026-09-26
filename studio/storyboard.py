@@ -10,7 +10,8 @@ def planned_slide_count(package):
         count = budget.get('planned')
         if (type(count) is not int or not 1 <= count <= 30
                 or budget.get('requested') != package.constraints.slides
-                or len(package.analysis.get('storyboard', [])) != count):
+                or len(package.analysis.get('storyboard', [])) != count
+                or package.constraints.count_mode == 'minimum' and count < package.constraints.slides):
             raise ValueError('Некорректное согласование количества слайдов')
         return count
     return min(package.constraints.slides, len(package.content.facts))

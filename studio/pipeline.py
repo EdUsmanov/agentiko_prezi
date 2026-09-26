@@ -108,6 +108,8 @@ def prepare(store,job_id,text,audience,instructions,slides,settings=None,content
         store.update(job_id,phase="Факты, таблицы и ограничения",progress=65)
         # Revision reuses trusted immutable canonical content, not lossy Markdown.
         content=content_model.model_copy(deep=True) if content_model is not None else parse_content(text)
+        from .font_fallback import ensure_text_fonts, content_text
+        ensure_text_fonts(template,content_text(content),directory)
         check_glyphs(role_font(template,"title")[1],content.title)
         check_glyphs(template.font_file,"\n".join(f.text for f in content.facts)+"\n"+
             "\n".join(cell for t in content.tables for row in [t.headers]+t.rows for cell in row))
@@ -157,6 +159,10 @@ def prepare(store,job_id,text,audience,instructions,slides,settings=None,content
         package.analysis["image_security"]={"accepted":len(package.images),"metadata":"removed",
             "ocr":"not_run","pixels_in_planning":False,"placement":"server_owned",
             "visual_review":"advisory_only; cannot override deterministic checks"}
+        # Recheck model-authored labels before any final composition measurement.
+        template=package.template
+        ensure_text_fonts(template,content_text(package.content,package.prepared_plans),directory)
+        package.manifest["font"]={"name":template.font,**template.font_origin}
         # Check model-authored titles/proposals against the actual selected font too.
         check_glyphs(template.font_file,"\n".join(f.text for f in package.content.facts))
         progress("Проверка композиций и фиксация пакета",95)

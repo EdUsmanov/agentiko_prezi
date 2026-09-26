@@ -45,7 +45,7 @@ class Constraints(StrictModel):
     slides: int = Field(default=10, ge=1, le=30)
     audience: str = Field(default="", max_length=2000)
     instructions: str = Field(default="", max_length=5000)
-    count_mode: Literal["exact", "maximum", "default"] = "default"
+    count_mode: Literal["exact", "maximum", "minimum", "default"] = "default"
     size_preset: Literal["mini", "standard", "large"] | None = None
     summarize: bool = False
     confirm_plan: bool = False
@@ -114,6 +114,7 @@ class TemplateProfile(StrictModel):
     font_origin: dict = Field(default_factory=dict)
     font_roles: dict[str, str] = Field(default_factory=dict)
     font_assets: list[dict] = Field(default_factory=list)
+    font_substitutions: list[dict] = Field(default_factory=list)
     missing_fonts: list[dict] = Field(default_factory=list)
     font_sizes: list[float]
     title_size: float

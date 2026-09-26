@@ -21,7 +21,8 @@ def parse_constraints(slides: int | None, audience: str, instructions: str, size
     # Only the dedicated instruction field can change the output contract.
     directives=[]
     for pattern,kind in ((r"(?:не\s+более|не\s+больше|до|максимум|at most|up to)\s+(\d+)\s*(?:слайд|slides?)","maximum"),
-                         (r"(?:ровно|exactly)\s+(\d+)\s*(?:слайд|slides?)","exact")):
+                         (r"(?:ровно|exactly)\s+(\d+)\s*(?:слайд|slides?)","exact"),
+                         (r"(?:не\s+менее|не\s+меньше|как\s+минимум|at least)\s+(\d+)\s*(?:слайд|slides?)","minimum")):
         directives.extend((m.start(),int(m[1]),kind) for m in re.finditer(pattern,instructions,re.I))
     if directives:
         _,limit,mode=max(directives)

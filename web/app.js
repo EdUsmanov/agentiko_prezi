@@ -169,7 +169,7 @@ function displayProfile(job) {
     const item = el('div'); item.append(el('strong','',value),el('small','',label)); stats.append(item);
   });
   $('#profile').append(swatches,stats,
-    el('p','profile-detail',`Шрифт: ${t.font} (${t.font_origin?.kind === 'embedded' ? 'из шаблона' : 'точное локальное начертание'})`),
+    el('p','profile-detail',`Шрифт: ${t.font} (${t.font_origin?.kind === 'embedded' ? 'из шаблона' : t.font_origin?.kind === 'glyph_fallback' ? 'автоматическая замена для поддержки текста' : 'точное локальное начертание'})`),
     el('p','profile-detail',`${job.content.facts} фактов · ${job.content.tables} таблиц · ${job.content.images || 0} картинок · ${slideBudget?.status === 'needs_input' ? 'нужно сократить материал' : `${job.analysis?.planned_slides ?? job.constraints.slides} слайдов на вариант`}`));
   if (t.font_roles) {
     const labels = {title:'Заголовки',body:'Основной текст',table:'Таблицы',footer:'Колонтитулы',chart:'Графики'};

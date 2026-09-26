@@ -89,6 +89,8 @@ class TemplateCache:
         except (OSError,ValueError,KeyError,TypeError):return None
 
     def save(self,profile,directory,analysis):
+        # Substitutions depend on the current input text, unlike this shared cache.
+        if profile.font_substitutions:return False
         if self.root is None or any(f.get('required_for_generation',True) for f in profile.missing_fonts):return False
         if analysis.get('template_semantics',{}).get('status') not in ('completed','not_run'):return False
         if any(p.get('vl_status') in ('failed','not_run') for p in analysis.get('text_zone_review',{}).get('patterns',[])):return False

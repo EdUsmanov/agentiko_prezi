@@ -15,7 +15,8 @@ def styled_profile(profile, style, role):
         if style.get(flag) and suffix.casefold() not in requested.casefold():
             requested += ' ' + suffix
     style['requested_font'] = requested
-    asset = next((a for a in profile.font_assets if a['requested'] == requested), None)
+    from .fonts import font_asset
+    asset = font_asset(profile, requested)
     if asset is None:
         style['unresolved_font'] = True
         return profile, style

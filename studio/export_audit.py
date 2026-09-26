@@ -2,7 +2,7 @@
 from copy import deepcopy
 import re
 from pptx.util import Pt
-from .fonts import role_font, resolve_font, wrap_text, font_runs, table_cell_fits
+from .fonts import role_font, resolve_font, wrap_text, font_runs, table_cell_fits, text_width
 from .template import walk_shapes
 
 
@@ -108,6 +108,37 @@ def repair_symbols(prs,profile):
     return changed
 
 
+def explicit_line_widths(paragraph, profile, default_size):
+    """Measure saved OOXML lines and each run's actual face; never reflow no-wrap text."""
+    ns = '{http://schemas.openxmlformats.org/drawingml/2006/main}'
+    widths = [0.0]
+    runs = {run._r: run for run in paragraph.runs}
+    for node in paragraph._p:
+        if node.tag == ns+'br':
+            widths.append(0.0)
+        elif node.tag in (ns+'r', ns+'fld'):
+            run = runs.get(node)
+            if run is not None:
+                font = run.font
+                value = run.text
+                name = font.name or paragraph.font.name or profile.font
+                bold = font.bold if font.bold is not None else paragraph.font.bold
+                italic = font.italic if font.italic is not None else paragraph.font.italic
+                size = font.size.pt if font.size is not None else (paragraph.font.size.pt if paragraph.font.size is not None else default_size)
+            else:
+                # Field runs are not exposed by Paragraph.runs; read their direct style.
+                text_node, props = node.find(ns+'t'), node.find(ns+'rPr')
+                value = text_node.text or '' if text_node is not None else ''
+                latin = props.find(ns+'latin') if props is not None else None
+                name = latin.get('typeface') if latin is not None else paragraph.font.name or profile.font
+                bold = props.get('b') in ('1','true') if props is not None and props.get('b') is not None else paragraph.font.bold
+                italic = props.get('i') in ('1','true') if props is not None and props.get('i') is not None else paragraph.font.italic
+                size = int(props.get('sz'))/100 if props is not None and props.get('sz') else default_size
+            path = _face(profile, name, bold=bold, italic=italic)
+            widths[-1] += text_width(value, path, size)
+    return widths
+
+
 def geometry(prs, profile, repair=False):
     """Conservative text-fit bounds. Does not claim to replace rendered VLM QA.
 
@@ -151,6 +182,7 @@ def geometry(prs, profile, repair=False):
             occupied.append((shape.shape_id,Box(x=box.x+frame.margin_left/12700*sx,
                 y=box.y+frame.margin_top/12700*sy,w=max(0,width),h=max(0,height))))
             paragraphs=[]
+            no_wrap = frame.word_wrap is False
             for p in frame.paragraphs:
                 sizes=[r.font.size.pt for r in p.runs if r.font.size]
                 size=max(sizes or [p.font.size.pt if p.font.size else profile.body_size])
@@ -159,17 +191,34 @@ def geometry(prs, profile, repair=False):
                 bold=run.font.bold if run is not None and run.font.bold is not None else p.font.bold
                 italic=run.font.italic if run is not None and run.font.italic is not None else p.font.italic
                 paragraphs.append((p,size,_face(profile,name,bold=bold,italic=italic)))
+            explicit_widths = {id(p): explicit_line_widths(p, profile, size)
+                               for p,size,_ in paragraphs} if no_wrap else {}
             def needed(scale):
                 total=0
+                widest=0
                 for p,size,path in paragraphs:
                     points=size*scale
                     spacing=p.line_spacing
                     line_height=spacing.pt*scale*sy if hasattr(spacing,'pt') else points*(spacing if isinstance(spacing,float) else 1.2)*sy
                     # Respect explicit paragraph spacing; do not silently erase it.
-                    total+=len(wrap_text(p.text,path,points*sx,max(1,width*.96)))*line_height
+                    if no_wrap:
+                        lines=explicit_widths[id(p)]
+                        props=p._p.pPr
+                        margin=int(props.get('marL','0'))/12700 if props is not None else 0
+                        indent=int(props.get('indent','0'))/12700 if props is not None else 0
+                        # Text indents stay fixed when repair reduces the font size.
+                        widest=max(widest,max((value*scale+margin+(max(0,indent) if i==0 else 0))*sx
+                                              for i,value in enumerate(lines)))
+                        total+=len(lines)*line_height
+                    else:
+                        # Soft breaks are fixed line boundaries even when wrapping is enabled.
+                        total+=len(wrap_text(p.text.replace('\v','\n'),path,points*sx,max(1,width*.96)))*line_height
                     total+=sum(v.pt*sy for v in (p.space_before,p.space_after) if v)
-                return total
-            if needed(1)<=height+1:
+                return total,widest
+            def fits(scale):
+                required_height,required_width=needed(scale)
+                return required_height<=height+1 and required_width<=width+1
+            if fits(1):
                 continue
             minimum=min(size for _,size,_ in paragraphs)
             floor=min(1,12/max(minimum,.1))
@@ -177,7 +226,7 @@ def geometry(prs, profile, repair=False):
             if repair and floor<1:
                 for step in range(1,21):
                     candidate=max(floor,1-step*.035)
-                    if needed(candidate)<=height+1:
+                    if fits(candidate):
                         scale=candidate;break
                 if scale<1:
                     for p,size,_ in paragraphs:

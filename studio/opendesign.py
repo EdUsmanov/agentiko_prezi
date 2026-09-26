@@ -24,7 +24,8 @@ Effective opaque colors by object role: {json.dumps(profile.color_roles, ensure_
 Static OOXML evidence and unresolved properties: color-model.json. Photos and dynamic objects are not sampled; visual verification remains separate.
 
 ## Typography
-Primary family: {profile.font}. No font outside the source template is allowed.
+Primary family: {profile.font}. Use only validated font assets selected for this package.
+Automatic replacements for unsupported characters are disclosed in font-model.json.
 Title face: {role_font(profile,"title")[0]}. Body face: {role_font(profile,"body")[0]}.
 Font provenance and unresolved faces: font-model.json (when available).
 Extracted scale in points: {', '.join(map(str, profile.font_sizes))}.

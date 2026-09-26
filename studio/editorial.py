@@ -132,9 +132,13 @@ def validate_plan(raw,content,bounds,character_budget=600,require_cover=False):
                     raise ValueError(f's{slide_index}: invalid source table column projection')
             if slide.chart_type!='auto' and not (slide.source_table_id or slide.rows):
                 raise ValueError(f's{slide_index}: chart needs source data')
-            for row in slide.rows:
-                if row.fact_id not in slide_sources or row.label not in facts[row.fact_id].text or row.value not in facts[row.fact_id].text:
-                    raise ValueError(f's{slide_index}: Each data row needs a quoted label and value from the same cited fact')
+            for row_index,row in enumerate(slide.rows,1):
+                if row.fact_id not in slide_sources:
+                    raise ValueError(f's{slide_index} row {row_index}: cite the source fact {row.fact_id} in this slide before using its data')
+                for field in ('label','value'):
+                    value=getattr(row,field)
+                    if value not in facts[row.fact_id].text:
+                        raise ValueError(f's{slide_index} row {row_index}: {field} {value!r} must be a verbatim substring of source fact {row.fact_id}; copy the original spelling, without abbreviating or changing numbers')
             if slide.rows and (len(slide.rows)<2 or slide.relationship=='none' or len({r.label for r in slide.rows})!=len(slide.rows)):
                 raise ValueError(f's{slide_index}: Data relationship and distinct categories required')
             used.update(slide_sources)

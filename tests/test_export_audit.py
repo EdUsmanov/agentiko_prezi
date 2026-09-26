@@ -28,6 +28,8 @@ def test_actual_geometry_repair_changes_no_text_or_box(prepared):
     _,_,package=prepared
     prs=Presentation();slide=prs.slides.add_slide(prs.slide_layouts[6])
     shape=slide.shapes.add_textbox(Pt(30),Pt(30),Pt(220),Pt(50))
+    # This case relies on auto-wrapping; new text boxes default to no-wrap.
+    shape.text_frame.word_wrap=True
     r=shape.text_frame.paragraphs[0].add_run();r.text='Сначала принять заявку, затем проверить данные.'
     r.font.name='Play';r.font.size=Pt(28)
     before=(shape.left,shape.top,shape.width,shape.height,shape.text)

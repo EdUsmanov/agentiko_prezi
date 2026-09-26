@@ -74,9 +74,14 @@ def role_font(profile, role="body"):
     return (asset["requested"], asset["path"]) if asset else (profile.font, profile.font_file)
 
 
+def font_asset(profile, requested):
+    return (next((a for a in profile.font_assets if a["requested"] == requested), None) or
+            next((a for a in profile.font_assets if requested in a.get("template_aliases", [])), None))
+
+
 def element_font(profile, element):
     requested = getattr(element, 'field_style', {}).get('requested_font')
-    asset = next((a for a in profile.font_assets if a['requested'] == requested), None) if requested else None
+    asset = font_asset(profile, requested) if requested else None
     if asset:
         return asset['requested'], asset['path']
     role = element.kind if element.kind in ("table", "chart") else element.role

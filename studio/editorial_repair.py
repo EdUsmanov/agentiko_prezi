@@ -90,6 +90,8 @@ async def prepare_with_targeted_repairs(package,gateway,progress=None,*,starting
     bounds=SLIDE_RANGES.get(package.constraints.size_preset,(package.constraints.slides,package.constraints.slides))
     if package.constraints.count_mode=='exact':bounds=(package.constraints.slides,package.constraints.slides)
     elif package.constraints.count_mode=='maximum':bounds=(1,package.constraints.slides)
+    elif package.constraints.count_mode=='minimum':
+        bounds=(package.constraints.slides,max(package.constraints.slides,SLIDE_RANGES.get(package.constraints.size_preset,(1,10))[1]))
     cover=getattr(package.constraints,'include_cover',True) and bounds[1]>1
     payload={'source':content.model_dump(),'slide_range':list(bounds),'include_cover':cover,
         'audience':package.constraints.audience,'instructions':package.constraints.instructions,
@@ -189,16 +191,22 @@ async def prepare_with_targeted_repairs(package,gateway,progress=None,*,starting
         patch_schema['$defs']['Citation']['properties'].pop('quote',None)
         patch_schema['properties']['replacements'].update(minItems=len(allowed),maxItems=len(allowed))
         previous=deepcopy(raw)
+        from .editorial_patch_validation import (shortening_contracts, validate_contracts,
+            constrain_patch_schema, validate_repaired_plan)
+        contracts=shortening_contracts(previous,allowed,feedback,payload['characters_per_slide'])
+        patch_schema=constrain_patch_schema(patch_schema,contracts,allowed)
         context_plan=deepcopy(previous)
         for slide in context_plan['slides']:
             for bullet in slide['bullets']:
                 bullet['evidence']=[{'fact_id':e['fact_id']} for e in bullet['evidence']]
         repair_payload={**payload,'allowed_slide_indices':allowed,'previous_plan':context_plan,
-            'revision_feedback':feedback,'instruction':'Return replacements ONLY for the allowed slides. Keep total count and order. Preserve every previously corrected qualification. Use fact_id citations only. Do not edit neighbours.'}
+            'revision_feedback':feedback,'repair_contracts':contracts,'instruction':'Return replacements ONLY for the allowed slides. Keep total count and order. Preserve every previously corrected qualification. Use fact_id citations only. Do not edit neighbours.'}
         def validate_patch(value):
             changed=apply_replacements(previous,value,allowed)
             if plan_signature(changed,content) in seen_plans:
                 raise ValueError('Repair repeats an already rejected plan. Change the affected content or evidence to resolve revision_feedback; returning the same slide cannot fix it.')
+            validate_contracts(changed,contracts)
+            validate_repaired_plan(changed,content,bounds,payload['characters_per_slide'],cover,allowed)
             return EditorialPatch.model_validate(value).model_dump()
         patch=await validated_request(gateway,'editorial_repair',repair_payload,patch_schema,
             validate_patch,timeout=420,progress=progress)
