@@ -39,7 +39,7 @@ def validate_contracts(changed, contracts):
             raise ValueError(f'{prefix} must preserve the ordered event/group labels')
 
 
-def constrain_patch_schema(schema, contracts, allowed):
+def constrain_patch_schema(schema, contracts, allowed, previous=None):
     """Expose per-slide constraints to JSON-mode models, including scope IDs."""
     schema = deepcopy(schema)
     by_index = {row['slide']: row for row in contracts}
@@ -52,6 +52,16 @@ def constrain_patch_schema(schema, contracts, allowed):
             for key in ('purpose','source_table_id','source_columns','chart_type','relationship','rows'):
                 content['properties'][key] = {**content['properties'][key], 'const': by_index[index][key]}
             replacement['properties']['content'] = content
+        if previous and previous['slides'][index-1]['purpose']=='cover':
+            content=deepcopy(replacement['properties']['content'])
+            if '$ref' in content:content=deepcopy(schema['$defs']['EditorialSlide'])
+            content['properties']['purpose']={'type':'string','const':'cover'}
+            claim=deepcopy(schema['$defs']['Claim'])
+            claim['properties']['text']['maxLength']=140
+            content['properties']['bullets']={'type':'array','minItems':1,'maxItems':1,'items':claim}
+            content['properties']['source_table_id']={'type':'null'}
+            content['properties']['rows']={**content['properties']['rows'],'maxItems':0}
+            replacement['properties']['content']=content
         choices.append(replacement)
     schema['properties']['replacements']['items'] = {'oneOf': choices}
     return schema

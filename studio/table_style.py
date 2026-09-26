@@ -49,15 +49,34 @@ def cell_borders(cell, color):
 
 
 def compact_table(element, profile):
-    """Keep native equal rows readable without stretching them to the entire field."""
+    """Remove spare height after assigning each row its measured content height."""
     if element.kind != 'table' or not element.rows:
         return
-    from .fonts import element_font, wrap_text
+    from .fonts import element_font
     path=element_font(profile,element)[1]
     widths=column_widths(element.rows,element.box.w,path,element.size)
-    row_height=max(len(wrap_text(str(cell),path,element.size,max(1,(widths[ci]-16)*(.94 if ri==0 else 1))))
-                   for ri,row in enumerate(element.rows) for ci,cell in enumerate(row))*element.size*1.25+16
-    element.box.h=min(element.box.h,row_height*len(element.rows))
+    element.box.h=min(element.box.h,sum(row_heights(element.rows,widths,path,element.size)))
+
+
+def row_heights(rows, widths, font_file, size, height=None):
+    """Measure rows independently; constrained rows remain auditable on overflow.
+
+    Header uses the same bold face and width allowance as table_cell_fits.
+    Never expand a table beyond its reserved box or hide/truncate source cells.
+    """
+    from .fonts import wrap_text, _bold_measurement_face
+    from pathlib import Path
+    stat=Path(font_file).stat()
+    bold=_bold_measurement_face(str(font_file),stat.st_mtime_ns,stat.st_size)
+    natural=[max((len(wrap_text(str(cell),bold if ri==0 else font_file,size,
+                              max(1,(widths[ci]-16)*(.94 if ri==0 else 1))))
+                  for ci,cell in enumerate(row)),default=1)*size*1.25+16
+             for ri,row in enumerate(rows)]
+    if height is None or not natural:return natural
+    total=sum(natural)
+    if total>height:return [h*height/total for h in natural]
+    spare=(height-total)/len(natural)
+    return [h+spare for h in natural]
 
 
 def column_widths(rows, width, font_file, size):

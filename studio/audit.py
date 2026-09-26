@@ -2,7 +2,7 @@ import re
 from .models import Finding
 from .fonts import wrap_text, element_font, table_cell_fits
 from .template import contrast
-from .table_style import column_widths
+from .table_style import column_widths, row_heights
 
 def overlaps(a,b):
     return min(a.x+a.w,b.x+b.w)-max(a.x,b.x)>2 and min(a.y+a.h,b.y+b.h)-max(a.y,b.y)>2
@@ -88,11 +88,11 @@ def audit_scenes(scenes, package):
                 if re.search(r"\b(?:lorem ipsum|TODO|XXX)\b|вставьте текст",e.text,re.I):
                     add("placeholder","В исходном материале осталась заглушка",si,ei,severity="warning")
             if e.kind=="table":
-                row_h=b.h/len(e.rows)
                 widths=column_widths(e.rows,b.w,element_font(p,e)[1],e.size)
+                heights=row_heights(e.rows,widths,element_font(p,e)[1],e.size,b.h)
                 for ri,row in enumerate(e.rows):
                     for ci,cell in enumerate(row):
-                        if not table_cell_fits(cell,element_font(p,e)[1],e.size,widths[ci]-16,row_h-12,ri==0):
+                        if not table_cell_fits(cell,element_font(p,e)[1],e.size,widths[ci]-16,heights[ri]-12,ri==0):
                             add("table_overflow","Ячейки таблицы не помещаются",si,ei)
                             break
                 if len(e.rows)>8 or len(e.rows[0])>5:
@@ -140,10 +140,10 @@ def repair_scenes(scenes,package):
                         s.elements[ei]=e
                         repairs.append(Finding(code="chart_to_table",severity="info",message="График заменён редактируемой таблицей: подписи не помещались; значения сохранены",slide=si,element=ei,repaired=True))
             if e.kind=="table":
-                for size in sorted({e.size, *[x for x in package.template.font_sizes if 10 <= x <= e.size]},reverse=True):
-                    row_h=e.box.h/len(e.rows)
+                for size in sorted({e.size, *[x for x in [16,*package.template.font_sizes] if 10 <= x <= e.size]},reverse=True):
                     widths=column_widths(e.rows,e.box.w,element_font(package.template,e)[1],size)
-                    if all(table_cell_fits(cell,element_font(package.template,e)[1],size,widths[ci]-16,row_h-12,ri==0) for ri,row in enumerate(e.rows) for ci,cell in enumerate(row)):
+                    heights=row_heights(e.rows,widths,element_font(package.template,e)[1],size,e.box.h)
+                    if all(table_cell_fits(cell,element_font(package.template,e)[1],size,widths[ci]-16,heights[ri]-12,ri==0) for ri,row in enumerate(e.rows) for ci,cell in enumerate(row)):
                         if size!=e.size:
                             e.size=size
                             repairs.append(Finding(code="table_fit",severity="info",message="Размер текста таблицы скорректирован в пределах шкалы шаблона",slide=si,element=ei,repaired=True))

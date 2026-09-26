@@ -185,10 +185,10 @@ def table_capacity(table, box, profile, minimum_size=10):
     if not rows or not table.headers or box.w<=32*len(table.headers) or box.h<=18*len(rows):
         return sum(len(row) for row in rows) or 1
     font=role_font(profile,'table')[1]
-    from .table_style import column_widths
+    from .table_style import column_widths, row_heights
     widths=column_widths(rows,box.w,font,minimum_size)
-    height=box.h/len(rows)-12
-    return sum(not table_cell_fits(value,font,minimum_size,widths[ci]-16,height,ri==0)
+    heights=row_heights(rows,widths,font,minimum_size,box.h)
+    return sum(not table_cell_fits(value,font,minimum_size,widths[ci]-16,heights[ri]-12,ri==0)
                for ri,row in enumerate(rows) for ci,value in enumerate(row))
 
 

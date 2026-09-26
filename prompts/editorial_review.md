@@ -6,3 +6,7 @@ When repairs are needed, return repair_slide_indices (one-based) for slides that
 Audit every actor–action–object pair separately. Combining territories or actors under a single verb is invalid when the source assigns different actions to them (for example, annexation versus occupation). Check additional_checks individually against the source. Preserve qualifications needed to interpret charts and political appointments, not just the numerical values.
 
 The claims array contains each proposed bullet and its fact_id references. Each slide supplies claim_ids in display order; use these to connect its title, group labels and data to the claims. Resolve every fact_id against the full source; references alone are not proof of support.
+
+Keep issue explanations concise (prefer under 250 characters per claim); use empty issue for accepted claims. Preserve actionable qualifications when more detail is needed.
+
+Data-status caveats are essential evidence, not presentation metadata. If the source labels retained figures as illustrative, hypothetical, simulated, estimated, preliminary, or otherwise conditional, the summary must visibly preserve that qualification with grounded evidence. A statement that all figures are illustrative applies to the whole deck; its omission makes even accurately copied numbers misleading. Report its source fact ID in missing_essential_fact_ids and identify a suitable existing slide for restoration. Do not waive it because the audience wants a high-level summary.

@@ -27,7 +27,13 @@ def test_exact_count_is_binding_and_every_omission_is_accounted_for():
     raw=plan();raw['omitted']=[]
     assert validate_plan(raw,source(),(1,1))['omitted'][0]['fact_id']=='f3'
     raw=plan();raw['omitted'][0]['fact_id']='f1'
-    with pytest.raises(ValueError):validate_plan(raw,source(),(1,1))
+    accepted=validate_plan(raw,source(),(1,1))
+    assert [o['fact_id'] for o in accepted['omitted']]==['f3']
+    assert raw['omitted'][0]['fact_id']=='f1'  # No mutation of the model reply.
+    from studio.editorial import review_payload
+    payload=review_payload(accepted,source())
+    assert len(payload['source']['facts'])==3
+    assert payload['omitted'][0]['fact_id']=='f3'
 
 
 def test_synthesis_rejects_invented_number_and_forged_citation():

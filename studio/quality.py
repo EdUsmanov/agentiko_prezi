@@ -54,9 +54,11 @@ def scene_quality_findings(scenes, package):
     for index, scene in enumerate(scenes, 1):
         def warn(code, message):
             findings.append(Finding(code=code, severity='warning', slide=index, message=message))
-        if any(e.kind in ('text', 'table', 'chart') and (e.source_ids or e.role == 'title')
-               and e.size < (18 if e.role == 'title' else 16) - .1 for e in scene.elements):
-            warn('readability', 'Текст или подписи данных меньше порога читаемости: проверьте слайд.')
+        for ei,e in enumerate(scene.elements):
+            if (e.kind in ('text', 'table', 'chart') and (e.source_ids or e.role == 'title')
+                    and e.size < (18 if e.role == 'title' else 16) - .1):
+                findings.append(Finding(code='readability',severity='warning',slide=index,element=ei,
+                    message='Текст или подписи данных меньше порога читаемости: проверьте слайд.'))
         if unused_body_regions(scene, package):
             warn('unused_template_regions', 'В выбранном макете остались незаполненные содержательные поля.')
         pattern = next((p for p in package.template.patterns if p.id == scene.pattern_id), None)

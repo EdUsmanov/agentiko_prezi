@@ -4,7 +4,7 @@ from .content import numeric_column
 from .template import contrast
 from .contracts import body_and_title_sources, candidates as semantic_candidates
 from .field_style import field_style, styled_profile
-from .table_style import column_widths
+from .table_style import column_widths, row_heights
 
 def text_element(text, box, profile, role="body", size=None, color=None, source_ids=None, field_style=None):
     from .field_style import styled_profile
@@ -368,12 +368,10 @@ def compose_native(slide, package, index, variant):
             data_profile,data_style=styled_profile(p,selected_field.get("style",{}),"table")
             numeric=numeric_column(table)
             if slide.layout != 'chart':
-                # Equal native rows sized to actual text, within the authored field.
                 rows=[table.headers]+table.rows
                 widths=column_widths(rows,b.w,data_profile.font_file,data_profile.body_size)
-                natural=max(len(wrap_text(str(cell),data_profile.font_file,data_profile.body_size,max(1,(widths[ci]-16)*(.94 if ri==0 else 1))))
-                            for ri,row in enumerate(rows) for ci,cell in enumerate(row))*data_profile.body_size*1.25+16
-                b=b.model_copy(update={'h':min(b.h,natural*len(rows))})
+                natural=sum(row_heights(rows,widths,data_profile.font_file,data_profile.body_size))
+                b=b.model_copy(update={'h':min(b.h,natural)})
             if slide.layout=="chart":
                 from .charts import make_chart
                 elements.append(make_chart(table,slide,b,data_profile,foreground,[f.id for f in relevant if f.source==table.id]))
@@ -459,12 +457,13 @@ def compose_native(slide, package, index, variant):
             if e.kind=="table":
                 # A small text zone is not automatically a safe table zone.
                 # Compare overflow after the same bounded font repair used later.
-                sizes=sorted({e.size,*[s for s in p.font_sizes if 10<=s<=e.size]},reverse=True)
+                sizes=sorted({e.size,*[s for s in [16,*p.font_sizes] if 10<=s<=e.size]},reverse=True)
                 for size in sizes:
                     widths=column_widths(e.rows,e.box.w,element_font(p,e)[1],size)
-                    table_overflow=sum(max(0,len(wrap_text(cell,element_font(p,e)[1],size,widths[ci]-16))*size*1.25-(e.box.h/len(e.rows)-12)) for row in e.rows for ci,cell in enumerate(row))
+                    heights=row_heights(e.rows,widths,element_font(p,e)[1],size,e.box.h)
+                    table_overflow=max(0,sum(row_heights(e.rows,widths,element_font(p,e)[1],size))-e.box.h)
                     table_overflow+=sum(20 for ri,row in enumerate(e.rows) for ci,cell in enumerate(row) if not table_cell_fits(
-                        cell,element_font(p,e)[1],size,widths[ci]-16,e.box.h/len(e.rows)-12,ri==0))
+                        cell,element_font(p,e)[1],size,widths[ci]-16,heights[ri]-12,ri==0))
                     if table_overflow==0:
                         break
                 overflow+=table_overflow

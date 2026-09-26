@@ -225,3 +225,41 @@ def test_stacked_chart_requirement_and_editorial_plan_preserve_all_series():
     apply_plan(p,plan,{},(1,1))
     assert p.content.tables[0].visualization=='column_stacked'
     assert p.content.tables[0].rows==table.rows and p.content.tables[0].headers==table.headers
+
+
+def test_detailed_review_diagnostic_preserves_negative_verdict():
+    from studio.editorial import validate_review
+    message='The stated conclusion loses an essential qualification from the source. '*8
+    raw={'claims':[{'claim_id':'s1b1','supported':True,'meaning_preserved':False,'issue':message}],
+         'missing_essential_fact_ids':['f2'],'repair_slide_indices':[1],
+         'narrative_coherent':False,'explanation':'Restore the qualification.'}
+    result=validate_review(raw,['s1b1'],['f1','f2'])
+    assert result['claims'][0]['issue']==message
+    assert result['claims'][0]['meaning_preserved'] is False
+    assert result['missing_essential_fact_ids']==['f2']
+    import pytest
+    with pytest.raises(ValueError):validate_review(raw,['s2b1'],['f1','f2'])
+    with pytest.raises(ValueError):validate_review(raw,['s1b1'],['f1'])
+
+
+def test_cover_repair_schema_and_validator_keep_one_grounded_subtitle():
+    from studio.editorial_repair import EditorialPatch
+    from studio.editorial_patch_validation import constrain_patch_schema,validate_repaired_plan
+    content=parse_content('Project overview. Values are illustrative. Team delivers software.')
+    previous=EditorialPlan.model_validate({'slides':[
+        dict(claim('Project overview.'),purpose='cover'),
+        dict(claim('Team delivers software.','f3'),purpose='content')]}).model_dump()
+    schema=constrain_patch_schema(EditorialPatch.model_json_schema(),[],[1],previous)
+    cover=schema['properties']['replacements']['items']['oneOf'][0]['properties']['content']
+    assert cover['properties']['bullets']['maxItems']==1
+    assert cover['properties']['bullets']['items']['properties']['text']['maxLength']==140
+    replacement=deepcopy(previous['slides'][0])
+    replacement['bullets'].append({'text':'Values are illustrative.','group':'','parent_group':None,'evidence':[{'fact_id':'f2'}]})
+    changed=apply_replacements(previous,{'replacements':[{'slide':1,'content':replacement}]},[1])
+    with pytest.raises(ValueError,match='cover'):
+        validate_repaired_plan(changed,content,(2,2),500,True,[1])
+    replacement['bullets']=[{'text':'Project overview. Values are illustrative.','evidence':[{'fact_id':'f1'},{'fact_id':'f2'}]}]
+    changed=apply_replacements(previous,{'replacements':[{'slide':1,'content':replacement}]},[1])
+    validate_repaired_plan(changed,content,(2,2),500,True,[1])
+    assert changed['slides'][1]==previous['slides'][1]
+    assert {e['fact_id'] for e in changed['slides'][0]['bullets'][0]['evidence']}=={'f1','f2'}

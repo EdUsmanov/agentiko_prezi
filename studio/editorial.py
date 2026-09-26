@@ -48,7 +48,8 @@ class Verdict(StrictModel):
     claim_id: str
     supported: bool
     meaning_preserved: bool
-    issue: str = Field(default='', max_length=300)
+    # Review diagnostics are not slide copy; preserve actionable detail.
+    issue: str = Field(default='', max_length=2000)
 
 
 class EditorialReview(StrictModel):
@@ -160,10 +161,10 @@ def validate_plan(raw,content,bounds,character_budget=600,require_cover=False):
     # after validating table IDs, projections and column coverage above.
     displayed_tables={slide.source_table_id for slide in plan.slides if slide.source_table_id}
     displayed_facts={fid for fid,fact in facts.items() if fact.source in displayed_tables}
-    plan.omitted=[o for o in plan.omitted if o.fact_id not in displayed_facts]
+    # Explicit, validated citations also prove inclusion. A model's stale
+    # omission list must not contradict the content we actually render.
+    plan.omitted=[o for o in plan.omitted if o.fact_id not in displayed_facts | used]
     omitted=[o.fact_id for o in plan.omitted]
-    if used & set(omitted):
-        raise ValueError('Invalid or contradictory omission references')
     # Compute coverage on the server. The separate reviewer still sees every
     # omitted source fact and must flag any lost essential meaning.
     for fid in facts:

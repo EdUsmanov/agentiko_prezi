@@ -1,5 +1,5 @@
 """All exports consume the same scene; PPTX remains native and editable."""
-from .table_style import column_widths
+from .table_style import column_widths, row_heights
 import base64
 from copy import deepcopy
 from html import escape
@@ -181,9 +181,10 @@ def render_pptx(scenes,profile,source,path,verify_text=True):
                     table=slide.shapes.add_table(rows,cols,Pt(b.x),Pt(b.y),Pt(b.w),Pt(b.h)).table
                     table.first_row=False;table.horz_banding=False
                     widths=column_widths(e.rows,b.w,element_font(profile,e)[1],e.size)
+                    heights=row_heights(e.rows,widths,element_font(profile,e)[1],e.size,b.h)
                     for ci,width in enumerate(widths):table.columns[ci].width=Pt(width)
                     for ri,row in enumerate(e.rows):
-                        table.rows[ri].height=Pt(b.h/rows)
+                        table.rows[ri].height=Pt(heights[ri])
                         for ci,value in enumerate(row):
                             cell=table.cell(ri,ci)
                             from .table_style import cell_paint
@@ -240,17 +241,18 @@ def render_pdf(scenes,profile,path):
                 elif e.kind=="image":
                     c.drawImage(e.image_path,b.x,profile.height-b.y-b.h,b.w,b.h,mask="auto")
                 elif e.kind=="table":
-                    rw=b.h/len(e.rows);widths=column_widths(e.rows,b.w,element_font(profile,e)[1],e.size)
+                    widths=column_widths(e.rows,b.w,element_font(profile,e)[1],e.size)
+                    heights=row_heights(e.rows,widths,element_font(profile,e)[1],e.size,b.h)
                     for ri,row in enumerate(e.rows):
                         for ci,value in enumerate(row):
-                            cw=widths[ci];left=b.x+sum(widths[:ci])
+                            cw=widths[ci];left=b.x+sum(widths[:ci]);rw=heights[ri];top=b.y+sum(heights[:ri])
                             from .table_style import cell_paint
                             fill,opacity,color=cell_paint(e,ri,scene,profile)
                             if opacity:
                                 c.saveState();c.setFillAlpha(opacity)
-                                c.setFillColor(HexColor(fill));c.rect(left,profile.height-b.y-(ri+1)*rw,cw,rw,stroke=0,fill=1)
+                                c.setFillColor(HexColor(fill));c.rect(left,profile.height-top-rw,cw,rw,stroke=0,fill=1)
                                 c.restoreState()
-                            draw_text(value,left+8,b.y+ri*rw+6,cw-16,e.size,color)
+                            draw_text(value,left+8,top+6,cw-16,e.size,color)
         c.showPage()
     c.save()
 
@@ -297,12 +299,13 @@ def render_html(scenes,profile,path):
                     out.append(f'<img class="el" alt="{alt}" style="{style}" src="data:image/png;base64,{data}">')
                 elif e.kind=="table":
                     widths=column_widths(e.rows,b.w,file,e.size)
+                    heights=row_heights(e.rows,widths,file,e.size,b.h)
                     out.append(f'<div class="el" style="{style}"><table><colgroup>'+''.join(f'<col style="width:{width}px">' for width in widths)+'</colgroup>')
                     for ri,row in enumerate(e.rows):
                         from .table_style import cell_paint
                         fill,opacity,color=cell_paint(e,ri,scene,profile)
                         paint='transparent' if not opacity else f'rgba({int(fill[1:3],16)},{int(fill[3:5],16)},{int(fill[5:7],16)},{opacity})'
-                        out.append(f'<tr style="height:{b.h/len(e.rows)}px;background:{paint};color:{color}">')
+                        out.append(f'<tr style="height:{heights[ri]}px;background:{paint};color:{color}">')
                         for ci,cell in enumerate(row):
                             wrapped="\n".join(wrap_text(cell,file,e.size,widths[ci]-16))
                             out.append('<td>'+escape(wrapped)+'</td>')

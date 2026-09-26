@@ -201,7 +201,7 @@ async def prepare_with_targeted_repairs(package,gateway,progress=None,*,starting
         from .editorial_patch_validation import (shortening_contracts, validate_contracts,
             constrain_patch_schema, validate_repaired_plan, numeric_evidence_hints)
         contracts=shortening_contracts(previous,allowed,feedback,payload['characters_per_slide'])
-        patch_schema=constrain_patch_schema(patch_schema,contracts,allowed)
+        patch_schema=constrain_patch_schema(patch_schema,contracts,allowed,previous)
         context_plan=deepcopy(previous)
         for slide in context_plan['slides']:
             for bullet in slide['bullets']:
