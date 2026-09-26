@@ -54,6 +54,10 @@ def test_plain_background_is_not_a_reason_to_relayout():
 
 def test_background_compilation_applies_constraints_and_persists_diagnostics(prepared, tmp_path, monkeypatch):
     import json
+    import pytest
+    from studio.office import executable
+    if not executable():
+        pytest.skip('LibreOffice unavailable')
     import studio.artwork as artwork
     from studio.native_template import compile_backgrounds
     _, store, package = prepared

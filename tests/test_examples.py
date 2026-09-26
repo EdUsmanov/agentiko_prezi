@@ -125,7 +125,7 @@ def test_runtime_version_guard_is_preserved(tmp_path, monkeypatch):
 
 
 def test_user_analysis_completes_with_broken_organizer_library(tmp_path, template, content, monkeypatch):
-    import studio.analysis as analysis
+    import studio.template_analysis as analysis
     settings = Settings(data_dir=tmp_path / "data")
     seed(settings)
     store = Store(settings.data_dir)

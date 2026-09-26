@@ -161,13 +161,14 @@ def test_deadline_kills_dedicated_worker_group(monkeypatch):
     app.kill_worker(SimpleNamespace(pid=12345))
     assert calls==[(12345,app.signal.SIGKILL)]
 
+@pytest.mark.parametrize('content', ['# Проект\n'+'\n'.join(
+    f'## Этап {i}\nИсходный факт {i}.' for i in range(1,13))], ids=['roomy'])
 def test_variants_differ_in_visible_content_geometry(prepared):
-    import json
     _,_,package=prepared
-    from studio.diversity import ensure_diversity
+    from studio.diversity import ensure_diversity, geometry_signature
     decks={v.key:compose_variant(v,package) for v in extractive_plans(package).variants}
     assert ensure_diversity(decks,package)['verified']
     signatures=[]
     for scenes in decks.values():
-        signatures.append(json.dumps([[{'box':e.box.model_dump(),'text':e.text,'size':e.size} for e in s.elements if e.kind=='text'] for s in scenes],sort_keys=True))
+        signatures.append(geometry_signature(scenes))
     assert len(set(signatures))==3

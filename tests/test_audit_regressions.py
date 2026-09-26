@@ -239,6 +239,13 @@ def test_dense_slide_does_not_veto_other_safe_diversity(prepared,monkeypatch):
     from collections import Counter
     _,_,package=prepared
     scenes=compose_variant(extractive_plans(package).variants[0],package)
+    # The shared template produces one-line body boxes. Give the other slides
+    # real wrapping space: the quality guard must reject overflow even when
+    # this test's synthetic dense-slide error detector accepts a candidate.
+    for scene in scenes[1:]:
+        for element in scene.elements:
+            if element.kind=='text' and element.role=='body':
+                element.box.h=100
     baseline_width=next(e.box.w for e in scenes[0].elements if e.source_ids and e.role!='title')
     blocked_title=scenes[0].title
     # Make only the first slide too dense to shrink; the others still have room.
@@ -253,3 +260,4 @@ def test_dense_slide_does_not_veto_other_safe_diversity(prepared,monkeypatch):
     assert report['verified']
     assert all(c['strategy']=='safe_slide_reflow' for c in report['adjustments'])
     assert all(1 not in c['slides'] for c in report['adjustments'])
+    assert all(deck[0].model_dump()==scenes[0].model_dump() for deck in decks.values())

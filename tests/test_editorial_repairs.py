@@ -173,12 +173,12 @@ def test_readable_native_chart_wraps_dates_by_available_width(tmp_path):
     from pptx import Presentation
     from studio.charts import render_chart
     from studio.models import Element,Box
-    # Use an installed exact font, as rendering code normally receives.
+    # Use a bundled exact font, including on clean Linux installations.
     from studio.template import analyze_template
     prs=Presentation();slide=prs.slides.add_slide(prs.slide_layouts[6])
     from pptx.util import Pt
     sample=slide.shapes.add_textbox(Pt(20),Pt(20),Pt(500),Pt(80));sample.text='Пример'
-    sample.text_frame.paragraphs[0].runs[0].font.name='Arial'
+    sample.text_frame.paragraphs[0].runs[0].font.name='Play'
     sample.text_frame.paragraphs[0].runs[0].font.size=Pt(16)
     source=tmp_path/'template.pptx';prs.save(source)
     profile=analyze_template(source,tmp_path,allow_download=False)

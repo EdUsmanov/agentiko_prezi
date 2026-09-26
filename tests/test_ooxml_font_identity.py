@@ -54,7 +54,7 @@ def test_calibri_bold_native_render_does_not_fall_back(tmp_path):
     from studio.office import executable, to_pdf
     if not executable():
         pytest.skip('LibreOffice unavailable')
-    import pymupdf
+    from pypdf import PdfReader
     profile = SimpleNamespace(font_roles={'title': 'bold'}, font_assets=[
         {'id': 'bold', 'requested': 'Calibri Bold', 'path': path}],
         font='Calibri Bold', font_file=path)
@@ -65,7 +65,11 @@ def test_calibri_bold_native_render_does_not_fall_back(tmp_path):
     set_text(shape.text_frame,element.text,element,profile)
     prs.save(tmp_path/'deck.pptx')
     to_pdf(tmp_path/'deck.pptx',tmp_path,font_files=[path,str(ROOT/'fonts/Montserrat-Regular.ttf')])
-    with pymupdf.open(tmp_path/'deck.pdf') as doc:
-        spans = [s for b in doc[0].get_text('dict')['blocks'] for l in b.get('lines',[]) for s in l['spans']]
-        assert [s['text'] for s in spans] == ['Синтетический','пилот']
-        assert all(s['font'] == 'Calibri-Bold' for s in spans)
+    # Use the project's declared PDF dependency, including on clean installs.
+    spans=[]
+    def collect(text, _cm, _tm, font, _size):
+        face=str((font or {}).get('/BaseFont','')).lstrip('/').split('+')[-1]
+        spans.extend((line.strip(),face) for line in text.splitlines() if line.strip())
+    PdfReader(tmp_path/'deck.pdf').pages[0].extract_text(visitor_text=collect)
+    assert [text for text,_ in spans] == ['Синтетический','пилот']
+    assert all(face == 'Calibri-Bold' for _,face in spans)

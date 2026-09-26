@@ -57,7 +57,9 @@ def test_word_joiner_all_exports(tmp_path,template):
     assert '\u2060' in package.content.facts[0].text
     run=store.create('generation',{'package_id':job['id'],'deadline_at':time.time()+300})
     asyncio.run(generate(store,run['id'],settings))
-    assert store.get(run['id'])['state']=='completed'
+    done=store.get(run['id'])
+    assert done['state']=='needs_review',done
+    assert done['quality_report']['errors']==0
     for variant in ('executive','analytical','story'):
         folder=store.directory(run['id'])/variant
         prs=Presentation(folder/'deck.pptx')

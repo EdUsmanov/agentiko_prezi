@@ -84,7 +84,11 @@ def test_embedded_font_priority_and_exports(tmp_path,template,content,wrapped):
     assert Path(package.template.font_file).read_bytes()==raw
     gen=store.create('generation',{'package_id':job['id'],'deadline_at':time.time()+300})
     asyncio.run(generate(store,gen['id'],settings))
-    assert store.get(gen['id'])['state']=='completed'
+    # Exports without model/visual approval require review, even when their
+    # embedded fonts and deterministic checks are correct.
+    done=store.get(gen['id'])
+    assert done['state']=='needs_review',done
+    assert done['quality_report']['errors']==0
     with ZipFile(store.directory(gen['id'])/'executive/deck.pptx') as z:
         assert z.read('ppt/fonts/font1.fntdata')==(eot(raw) if wrapped else raw)
     Path(package.template.font_file).write_bytes(raw+b'changed')

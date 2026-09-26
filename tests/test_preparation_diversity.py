@@ -12,6 +12,8 @@ from studio.content import parse_content
 from studio.diversity import ensure_diversity, geometry_signature
 from studio.planner import extractive_plans, plan, validate_plans, assign_compositions
 
+@pytest.mark.parametrize('content', ['# Проект\n'+'\n'.join(
+    f'## Этап {i}\nИсходный факт {i}.' for i in range(1,13))], ids=['roomy'])
 def test_identical_model_layouts_are_accepted_without_retry(prepared):
     _,_,package = prepared
     raw = extractive_plans(package).model_dump()
@@ -134,6 +136,8 @@ def test_preparation_calls_real_stages_and_freezes_plans(prepared):
     assert result.analysis['visual_model_review']['status']=='not_run'
     assert result.analysis['template_semantics']['status']=='completed'
 
+@pytest.mark.parametrize('content', ['# Проект\n'+'\n'.join(
+    f'## Этап {i}\nИсходный факт {i}.' for i in range(1,13))], ids=['roomy'])
 def test_generation_uses_frozen_plan_no_repeated_planner_call(prepared,monkeypatch):
     from studio import pipeline
     settings,store,package=prepared
@@ -153,7 +157,10 @@ def test_generation_uses_frozen_plan_no_repeated_planner_call(prepared,monkeypat
     job=store.create('generation',{'package_id':package.id,'deadline_at':time.time()+300})
     asyncio.run(pipeline.generate(store,job['id'],replace(settings,mode='api')))
     done=store.get(job['id'])
-    assert stages==['critic'] and done['planning_source']=='model'
+    # A changed composition may need a second critic pass; the frozen semantic
+    # plan must never trigger another planner call.
+    assert stages and set(stages)=={'critic'}
+    assert done['planning_source']=='model'
     assert not done['model_degraded'] and done['composition_diversity']['verified']
 
 def test_expected_font_and_link_messages_are_info(prepared):
