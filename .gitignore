@@ -6,3 +6,21 @@ __pycache__/
 data/
 test-results/
 .DS_Store
+
+# Local environments, build output and developer caches.
+.env.*
+!.env.example
+!.env.team
+venv/
+build/
+dist/
+.coverage
+htmlcov/
+.ruff_cache/
+.mypy_cache/
+node_modules/
+playwright-report/
+*.log
+*.py[cod]
+.idea/
+.vscode/

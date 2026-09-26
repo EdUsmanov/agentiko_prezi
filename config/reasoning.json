@@ -1,0 +1,16 @@
+{
+  "document": 0,
+  "template_analyst": 0,
+  "visual_critic": 0,
+  "critic": 1024,
+  "pptagent_critic": 1024,
+  "repair": 1024,
+  "pptagent_repair": 1024,
+  "deeppresenter": 1024,
+  "pptagent": 512,
+  "text_zone": 0,
+  "editorial": 2048,
+  "editorial_review": 1024,
+  "editorial_outline": 1024,
+  "editorial_slides": 512
+}

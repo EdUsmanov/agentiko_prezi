@@ -45,3 +45,39 @@ def test_redirect_does_not_forward_credentials(tmp_path):
     with pytest.raises(httpx.HTTPStatusError):
         asyncio.run(ModelGateway(settings(tmp_path),transport=httpx.MockTransport(handler)).json_request("author",{}))
     assert calls==["https://example.test/v1/chat/completions"]
+
+
+def test_transient_transport_retry_is_bounded_and_recorded(tmp_path):
+    calls=[]
+    def handler(request):
+        calls.append(request)
+        if len(calls)==1:
+            raise httpx.ReadError('provider disconnected')
+        return httpx.Response(200,json={'choices':[{'finish_reason':'stop','message':{'content':'{}'}}]})
+    gateway=ModelGateway(settings(tmp_path),transport=httpx.MockTransport(handler))
+    assert asyncio.run(gateway.json_request('author',{},timeout=3))=={}
+    assert len(calls)==2 and gateway.calls[0]['attempts']==2
+
+
+def test_retries_do_not_expand_overall_timeout(tmp_path):
+    async def handler(request):
+        await asyncio.sleep(.2)
+        raise httpx.ReadError('provider disconnected')
+    gateway=ModelGateway(settings(tmp_path),transport=httpx.MockTransport(handler))
+    with pytest.raises(TimeoutError):
+        asyncio.run(gateway.json_request('author',{},timeout=.02))
+    assert gateway.calls[0]['attempts']==1
+
+
+def test_client_is_reused_and_closed_with_worker(tmp_path):
+    transport=httpx.MockTransport(lambda r:httpx.Response(200,json={
+        'choices':[{'finish_reason':'stop','message':{'content':'{}'}}]}))
+    gateway=ModelGateway(settings(tmp_path),transport=transport)
+    async def worker():
+        await gateway.json_request('author',{})
+        first=gateway.provider_client()
+        await gateway.json_request('author',{})
+        assert gateway.provider_client() is first and not first.is_closed
+        await gateway.aclose()
+        assert first.is_closed and not gateway._clients
+    asyncio.run(worker())

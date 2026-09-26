@@ -164,8 +164,10 @@ def test_deadline_kills_dedicated_worker_group(monkeypatch):
 def test_variants_differ_in_visible_content_geometry(prepared):
     import json
     _,_,package=prepared
+    from studio.diversity import ensure_diversity
+    decks={v.key:compose_variant(v,package) for v in extractive_plans(package).variants}
+    assert ensure_diversity(decks,package)['verified']
     signatures=[]
-    for variant in extractive_plans(package).variants:
-        scenes=compose_variant(variant,package)
+    for scenes in decks.values():
         signatures.append(json.dumps([[{'box':e.box.model_dump(),'text':e.text,'size':e.size} for e in s.elements if e.kind=='text'] for s in scenes],sort_keys=True))
     assert len(set(signatures))==3

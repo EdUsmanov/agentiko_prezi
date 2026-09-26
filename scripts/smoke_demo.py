@@ -26,6 +26,8 @@ def main():
     if args.report and (Path(args.report).name != args.report or not args.report.endswith('.json')):
         parser.error('--report must be a .json filename without directories')
     report=[]
+    target=ROOT/'test-results';target.mkdir(exist_ok=True)
+    name=args.report or ('three-templates.json' if args.slides==10 and not args.limit else f'slides-{args.slides}.json')
     with httpx.Client(base_url='http://127.0.0.1:8765',timeout=60,trust_env=False) as client:
         health=client.get('/api/health').json()
         refs=client.get('/api/references').json()
@@ -43,8 +45,11 @@ def main():
             item={'template':ref['name'],'preparation_id':prep['id'],'run_id':job['id'],'state':job['state'],
                 'seconds':job.get('elapsed_seconds'),'errors':job.get('errors'),'variants':job.get('variants',[]),
                 'model_mode':health['model_mode'],'model_id':health.get('model_id'),
+                'engine':job.get('engine'),'error':job.get('error'),
+                'composition_diversity':job.get('composition_diversity'),
                 'warnings':job.get('warnings',[]),'contextual_audit':job.get('contextual_audit')}
             report.append(item)
+            (target/name).write_text(json.dumps(report,ensure_ascii=False,indent=2))
             print(json.dumps(item,ensure_ascii=False),flush=True)
             if job['state'] not in ('completed','needs_review'):
                 raise RuntimeError(job)

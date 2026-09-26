@@ -1,34 +1,111 @@
 from .models import Box, Element, SlideScene
-from .fonts import wrap_text
+from .fonts import wrap_text, role_font, element_font, table_cell_fits, text_width
 from .content import numeric_column
 from .template import contrast
+from .contracts import body_and_title_sources, candidates as semantic_candidates
+from .field_style import field_style, styled_profile
 
-def text_element(text, box, profile, role="body", size=None, color=None, source_ids=None):
+def text_element(text, box, profile, role="body", size=None, color=None, source_ids=None, field_style=None):
+    from .field_style import styled_profile
+    profile, resolved_style = styled_profile(profile, field_style, role)
     size = size or profile.body_size
+    family, font_file = role_font(profile, role)
     candidates = [s for s in profile.font_sizes if 10 <= s <= size]
+    if role=='title':candidates.extend(range(18,int(size)+1,2))
     candidates = sorted(set(candidates + [size]), reverse=True)
     for candidate in candidates:
-        if len(wrap_text(text, profile.font_file, candidate, box.w)) * candidate * 1.25 <= box.h:
-            return Element(kind="text", box=box, text=text, font=profile.font, size=candidate,
-                color=color or profile.foreground, bold=role == "title", role=role, source_ids=source_ids or [])
+        if role=='title' and any(text_width(word,font_file,candidate)>box.w*.94 for word in text.split()):
+            continue
+        if len(wrap_text(text, font_file, candidate, box.w*(.94 if role=="title" else 1))) * candidate * 1.25 <= box.h:
+            return Element(kind="text", box=box, text=text, font=family, size=candidate,
+                color=color or profile.foreground, bold=resolved_style.get("bold") if resolved_style.get("bold") is not None else role == "title",
+                field_style=resolved_style, role=role, source_ids=source_ids or [])
     # Preserve the text; audit will surface overflow rather than silently truncate.
-    return Element(kind="text", box=box, text=text, font=profile.font, size=min(candidates),
-        color=color or profile.foreground, role=role, source_ids=source_ids or [])
+    return Element(kind="text", box=box, text=text, font=family, size=min(candidates),
+        color=color or profile.foreground, bold=resolved_style.get("bold") if resolved_style.get("bold") is not None else role == "title",
+                field_style=resolved_style, role=role, source_ids=source_ids or [])
+
+def fact_elements(facts,box,profile,color,heading_zone=None,field_style=None):
+    """Keep evidence as separate, editable paragraphs instead of one text wall."""
+    from .field_style import styled_profile
+    profile, resolved_style = styled_profile(profile, field_style, "body")
+    if not facts:
+        return []
+    out=[]
+    if (heading_zone and len(facts)>1 and len(facts[0].text)<70 and
+        len(wrap_text(facts[0].text,role_font(profile,"title")[1],profile.body_size,heading_zone.w*.94))*profile.body_size*1.25<=heading_zone.h):
+        heading=text_element(facts[0].text,heading_zone,profile,"subheading",
+            size=profile.body_size,color=color,source_ids=[facts[0].id])
+        heading.bold=True;out.append(heading);facts=facts[1:]
+    # Sentences split by the parser retain their source line. Keep a source
+    # paragraph together rather than turning every sentence into a new bullet.
+    grouped=[]
+    for fact in facts:
+        if (grouped and fact.line > 0 and fact.line == grouped[-1][0].line
+                and fact.section == grouped[-1][0].section and not fact.list_item):
+            grouped[-1].append(fact)
+        else:
+            grouped.append([fact])
+    originals=grouped
+    facts=[group[0].model_copy(update={'text':' '.join(f.text for f in group)}) for group in grouped]
+    sizes=sorted({profile.body_size, min(12,profile.body_size), *[s for s in profile.font_sizes if 12<=s<=profile.body_size]},reverse=True)
+    def layout(size):
+        gap=size*.5
+        heights=[len(wrap_text(f.text,profile.font_file,size,(box.w-size*1.4)*(.94 if f.emphasis else 1)))*size*1.25 for f in facts]
+        return gap,heights
+    for size in sizes:
+        gap,heights=layout(size)
+        if sum(heights)+gap*(len(facts)-1)<=box.h:
+            break
+    y=box.y
+    for fact,height,group in zip(facts,heights,originals):
+        # A list is still useful for legacy packages whose Markdown markers were lost.
+        bullet=fact.list_item or len(facts)>1 and not fact.text.startswith(('Источник:','Source:')) and not fact.text.endswith(':')
+        b=Box(x=box.x,y=y,w=box.w,h=height)
+        e=Element(kind="text",box=b,text=fact.text,font=profile.font,size=size,color=color,
+            role="body",source_ids=[f.id for f in group],bullet=bullet,bold_prefix=fact.emphasis,
+            field_style=resolved_style,bold=bool(resolved_style.get("bold")))
+        out.append(e);y+=height+gap
+    # Do not let the last fact extend the authored container unnoticed.
+    if out and y-gap>box.y+box.h:
+        out[-1].box.h=max(1,box.y+box.h-out[-1].box.y)
+    return out
 
 def compose(slide, package, index, variant):
-    native = compose_native(slide,package,index,variant)
+    if slide.layout=="divider":
+        p=package.template
+        candidates=semantic_candidates(package, slide, index)
+        if slide.pattern_id:
+            candidates=[x for x in candidates if x.id==slide.pattern_id]
+        if not candidates:
+            raise ValueError("Макет разделителя отсутствует в шаблоне")
+        options=[(pattern,text_element(slide.title,pattern.title_zone,p,"title",pattern.title_size or p.title_size,
+            color=pattern.title_foreground or p.foreground,field_style=field_style(pattern,"title"))) for pattern in candidates]
+        pattern,title=max(options,key=lambda pair:pair[1].size)
+        title.background_hint=pattern.title_background
+        elements=[title]
+        if pattern.background_image:
+            elements.insert(0,Element(kind="image",box=Box(x=0,y=0,w=p.width,h=p.height),
+                image_path=pattern.background_image,role="template_background"))
+        return SlideScene(title=slide.title,background=pattern.background or p.background,elements=elements,
+            source_ids=[],layout="divider",purpose="divider",pattern_id=pattern.id,strategy="native_template")
+    table_ids={t.id for t in package.content.tables}
+    sources={f.source for f in package.content.facts if f.id in slide.fact_ids and f.source in table_ids}
+    if sources and sources!={slide.table_id}:
+        raise ValueError("Факты таблицы должны быть представлены соответствующей таблицей или графиком")
+    native = None if slide.pattern_id=="token:auto" else compose_native(slide,package,index,variant)
     if native is not None:
         return native
     p = package.template
     w, h, m = p.width, p.height, p.margin
     facts = {f.id: f for f in package.content.facts}
-    relevant = [facts[i] for i in slide.fact_ids]
+    relevant, title_ids = body_and_title_sources(slide, package.content)
     tables = {t.id: t for t in package.content.tables}
     elements = []
     top_assets = [a for a in p.assets if a.box.y < h*.15]
     title_y = max([m] + [a.box.y + a.box.h + 12 for a in top_assets])
-    title_h = min(h*.23, max(p.title_size*1.3, len(wrap_text(slide.title, p.font_file, p.title_size, w-2*m))*p.title_size*1.25))
-    elements.append(text_element(slide.title, Box(x=m,y=title_y,w=w-2*m,h=title_h), p, "title", p.title_size))
+    title_h = min(h*.23, max(p.title_size*1.3, len(wrap_text(slide.title, role_font(p,"title")[1], p.title_size, w-2*m))*p.title_size*1.25))
+    elements.append(text_element(slide.title, Box(x=m,y=title_y,w=w-2*m,h=title_h), p, "title", p.title_size, source_ids=title_ids))
     y = title_y + title_h + h*.055
     bottom = min([h-m] + [a.box.y-12 for a in p.assets if a.box.y > h*.8])
     content_h = bottom-y
@@ -55,6 +132,7 @@ def compose(slide, package, index, variant):
         if slide.layout == "chart" and numeric:
             column, values, unit = numeric
             elements.append(Element(kind="chart", box=box, labels=[r[0] for r in table.rows], values=values,
+                value_labels=[r[column] for r in table.rows],
                 unit=table.headers[column] + (f" ({unit})" if unit else ""), font=p.font, size=p.body_size,
                 color=p.foreground, fill=p.accent, source_ids=[f.id for f in relevant if f.source==table.id]))
             # Charts must not hide other columns from the source table.
@@ -68,19 +146,19 @@ def compose(slide, package, index, variant):
                 source_ids=[f.id for f in relevant if f.source==table.id]))
         if body:
             x=m+visual_w+gap
-            elements.append(text_element("\n\n".join(f.text for f in body), Box(x=x,y=y,w=w-m-x,h=content_h), p, source_ids=[f.id for f in body]))
+            elements.extend(fact_elements(body,Box(x=x,y=y,w=w-m-x,h=content_h),p,p.foreground))
     elif slide.layout == "columns" and len(body)>1:
         columns = min(len(body), 3)
         col_w = (w-2*m-gap*(columns-1))/columns
         for c in range(columns):
             group = body[c*len(body)//columns:(c+1)*len(body)//columns]
             elements.append(Element(kind="line",box=Box(x=m+c*(col_w+gap), y=y,w=col_w,h=1),color=p.accent))
-            elements.append(text_element("\n\n".join(f.text for f in group),Box(x=m+c*(col_w+gap),y=y+14,w=col_w,h=content_h-14),p,source_ids=[f.id for f in group]))
+            elements.extend(fact_elements(group,Box(x=m+c*(col_w+gap),y=y+14,w=col_w,h=content_h-14),p,p.foreground))
     elif slide.layout == "split" and len(body)>1:
         left_w=(w-2*m-gap)*.48
         elements.append(text_element(body[0].text,Box(x=m,y=y,w=left_w,h=content_h),p,
             size=min(p.font_sizes,key=lambda s:abs(s-p.body_size*1.3)),source_ids=[body[0].id]))
-        elements.append(text_element("\n\n".join(f.text for f in body[1:]),Box(x=m+left_w+gap,y=y,w=w-2*m-left_w-gap,h=content_h),p,source_ids=[f.id for f in body[1:]]))
+        elements.extend(fact_elements(body[1:],Box(x=m+left_w+gap,y=y,w=w-2*m-left_w-gap,h=content_h),p,p.foreground))
     elif slide.layout == "evidence":
         # Flat rows: evidence references on the left, complete source text on the right.
         row_h=content_h/max(len(body),1)
@@ -102,7 +180,10 @@ def compose(slide, package, index, variant):
         elif slide.layout=="split":
             # Single-fact variant: different composition without duplicated evidence.
             text_w*=.72
-        elements.append(text_element(text,Box(x=m,y=y,w=text_w,h=content_h),p,size=size,source_ids=[f.id for f in body]))
+        if len(body)>1:
+            elements.extend(fact_elements(body,Box(x=m,y=y,w=text_w,h=content_h),p,p.foreground))
+        else:
+            elements.append(text_element(text,Box(x=m,y=y,w=text_w,h=content_h),p,size=size,source_ids=[f.id for f in body]))
     footer_size=min(p.font_sizes,key=lambda s:abs(s-10))
     elements.append(text_element(f"{index+1:02d}",Box(x=w-m-35,y=h-max(m*.6,footer_size*1.5+4),w=35,h=footer_size*1.5),p,"footer",footer_size))
     for asset in p.assets:
@@ -112,7 +193,7 @@ def compose(slide, package, index, variant):
     body_elements=[e for e in elements if e.kind=="text" and e.role=="body"]
     pattern_id=None
     if slide.layout in ("split","columns") and len(body_elements) in (2,3):
-        for pattern in p.patterns:
+        for pattern in semantic_candidates(package, slide, index):
             zones=[b for b in pattern.text_zones if b.y>=y and b.y+b.h<=bottom+1 and b.x>=m*.8 and b.x+b.w<=w-m*.8 and b.w>=w*.2 and b.h>=h*.2]
             if len(zones)!=len(body_elements):
                 continue
@@ -125,84 +206,279 @@ def compose(slide, package, index, variant):
                     e.box=b
                 pattern_id=pattern.id
                 break
-    return SlideScene(title=slide.title,background=p.background,elements=elements,source_ids=slide.fact_ids,layout=slide.layout,
+    return SlideScene(title=slide.title,background=p.background,elements=elements,source_ids=slide.fact_ids,layout=slide.layout,purpose=slide.purpose,
         pattern_id=pattern_id,strategy="exemplar_zones" if pattern_id else "token_composition",
         notes="\n".join(f"[{f.id}] {f.source}, строка {f.line}: {f.text}" for f in relevant))
 
+def compose_slide(variant, package, index, image_groups=None):
+    """Same complete postprocessing as a deck, for one slide at its original index."""
+    from .uploads import assign_images
+    from .image_composer import compose_images
+    image_groups=assign_images(package,variant) if image_groups is None else image_groups
+    slide=variant.slides[index]
+    scene=(compose_images(slide,package,index,variant.key,image_groups[index]) if image_groups[index]
+           else compose(slide,package,index,variant.key))
+    if slide.table_id:
+        from .contracts import normalized
+        table=next(t for t in package.content.tables if t.id==slide.table_id)
+        cells={normalized(c) for row in [table.headers]+table.rows for c in row}
+        aliases=[f.id for f in package.content.facts if f.id in slide.fact_ids and normalized(f.text) in cells]
+        for element in scene.elements:
+            if element.kind in ('table','chart') or element.role.startswith('metric_'):
+                element.source_ids=list(dict.fromkeys(element.source_ids+aliases))
+    if slide.layout == 'chart' and slide.table_id:
+        from .charts import make_chart
+        table = next(t for t in package.content.tables if t.id == slide.table_id)
+        for i, element in enumerate(scene.elements):
+            if element.kind in ('table','chart') and element.source_ids:
+                scene.elements[i] = make_chart(table,slide,element.box,package.template,element.color,element.source_ids)
+                scene.elements[i].background_hint=element.background_hint
+                scene.elements[i].field_style=element.field_style
+    _, title_ids = body_and_title_sources(slide, package.content)
+    for element in scene.elements:
+        if element.role == 'title':
+            element.source_ids = title_ids
+    for element in scene.elements:
+        if element.kind == 'chart':
+            table = next(t for t in package.content.tables if t.id == slide.table_id)
+            element.chart_type = slide.chart_type if slide.chart_type != 'auto' else 'bar'
+            element.category_title = table.headers[0]
+    for element in scene.elements:
+        if element.kind in ("text", "table", "chart"):
+            element.font = element_font(package.template, element)[0]
+        if element.kind in ("table", "chart"):
+            from .table_style import apply_table_style
+            pattern=next((p for p in package.template.patterns if p.id==scene.pattern_id),None)
+            # Keep chart bar colors; style any later chart-to-table fallback in repair_scenes.
+            if element.kind=="table":
+                apply_table_style(element,pattern)
+    import re
+    original=package.original_content or package.content
+    urls=list(dict.fromkeys(url.rstrip('.,;]') for fact in original.facts for url in re.findall(r'https?://[^\s)<>]+',fact.text)))
+    if urls:scene.notes+='\nИсточники:\n'+'\n'.join(urls)
+    return scene
+
+
 def compose_variant(variant, package):
-    return [compose(s,package,i,variant.key) for i,s in enumerate(variant.slides)]
+    from .uploads import assign_images
+    images=assign_images(package,variant)
+    return [compose_slide(variant,package,i,images) for i in range(len(variant.slides))]
+
+
+class CompositionSession:
+    """Job-scoped candidates for a frozen package; returned scenes are independent copies.
+
+    Create a new session when content/template changes. Layout edits only change
+    plans, which are part of each key. Nothing is cached across jobs or persisted.
+    """
+    def __init__(self,package):
+        self.package=package
+        self.scenes={}
+        self.image_assignments={}
+        self.hits=0
+        self.misses=0
+
+    def slide(self,variant,index):
+        from .uploads import assign_images
+        variant_key=variant.model_dump_json()
+        if variant_key not in self.image_assignments:
+            self.image_assignments[variant_key]=assign_images(self.package,variant)
+        groups=self.image_assignments[variant_key]
+        key=(variant.key,index,variant.slides[index].model_dump_json(),
+             tuple(a.model_dump_json() for a in groups[index]))
+        if key not in self.scenes:
+            self.scenes[key]=compose_slide(variant,self.package,index,groups)
+            self.misses+=1
+        else:self.hits+=1
+        return self.scenes[key].model_copy(deep=True)
+
+    def variant(self,variant):
+        return [self.slide(variant,i) for i in range(len(variant.slides))]
 
 def compose_native(slide, package, index, variant):
     """Fit editable content into source zones; never substitute a generic full-slide design."""
     p=package.template
-    patterns=[pattern for pattern in p.patterns if pattern.title_zone and pattern.body_zones]
+    patterns=semantic_candidates(package, slide, index)
+    if slide.pattern_id is not None:
+        patterns=[pattern for pattern in patterns if pattern.id==slide.pattern_id]
+        if not patterns:
+            raise ValueError("Выбранная композиция отсутствует в шаблоне")
+    if not patterns and slide.purpose == 'cover':
+        raise ValueError('В шаблоне нет допустимого титульного макета')
     if not patterns:
         return None
     facts={f.id:f for f in package.content.facts}; tables={t.id:t for t in package.content.tables}
-    relevant=[facts[fid] for fid in slide.fact_ids]
+    relevant, title_ids = body_and_title_sources(slide, package.content)
     body=[f for f in relevant if f.source not in tables]
     if len({f.source for f in relevant if f.source in tables})>1:
         raise ValueError("Несколько таблиц на одном слайде: увеличьте число слайдов")
-    desired=2 if len(body)>1 and slide.layout in ("split","columns") else 1
+    desired=min(len(body),3) if len(body)>1 and slide.layout in ("columns","process") else 2 if len(body)>1 and slide.layout=="split" else 1
     if slide.table_id:
         desired=2 if body else 1
 
     def zones_for(pattern):
-        zones=pattern.body_zones
-        if len(zones)==1 and desired==2 and zones[0].w>p.width*.65:
-            b=zones[0]; gap=p.width*.025
-            ratio=.6 if slide.table_id else .4 if slide.layout=="split" else .5
-            left=(b.w-gap)*ratio
-            return [Box(x=b.x,y=b.y,w=left,h=b.h),Box(x=b.x+left+gap,y=b.y,w=b.w-left-gap,h=b.h)]
-        return zones
+        return pattern.body_zones
 
     def elements_for(pattern):
         foreground=pattern.foreground or p.foreground
-        title=text_element(slide.title,pattern.title_zone,p,"title",pattern.title_size or p.title_size,color=pattern.title_foreground or foreground)
+        title=text_element(slide.title,pattern.title_zone,p,"title",pattern.title_size or p.title_size,color=pattern.title_foreground or foreground,source_ids=title_ids,field_style=field_style(pattern,"title"))
         title.background_hint=pattern.title_background
         elements=[title]; zones=zones_for(pattern)
+        from .semantic_bindings import bind_groups
+        binding = bind_groups(slide,package,pattern)
+        if len(zones)==len(pattern.body_zones) and binding['status']!='specialized':
+            for i,zone in enumerate(pattern.number_zones[:min(len(zones),len(body))]):
+                if zone:
+                    label=text_element(f"{i+1:02d}",zone,p,"label",min(p.title_size,zone.h/1.25),color=foreground)
+                    label.bold=True;elements.append(label)
         if slide.table_id:
-            table=tables[slide.table_id]; b=zones[0]
+            from .semantic_bindings import table_region
+            table=tables[slide.table_id]
+            try:
+                selected,selected_field,b=table_region(table,pattern,p,bool(body),chart=slide.layout=='chart',body_texts=[f.text for f in body])
+            except ValueError:
+                return None
+            data_profile,data_style=styled_profile(p,selected_field.get("style",{}),"table")
             numeric=numeric_column(table)
-            if slide.layout=="chart" and numeric and len(table.headers)==2:
-                col,values,unit=numeric
-                elements.append(Element(kind="chart",box=b,labels=[r[0] for r in table.rows],values=values,
-                    unit=table.headers[col]+(f" ({unit})" if unit else ""),font=p.font,size=p.body_size,
-                    color=foreground,fill=p.accent,source_ids=[f.id for f in relevant if f.source==table.id]))
+            if slide.layout != 'chart':
+                # Equal native rows sized to actual text, within the authored field.
+                rows=[table.headers]+table.rows
+                width=b.w/max(1,len(table.headers))-16
+                natural=max(len(wrap_text(str(cell),data_profile.font_file,data_profile.body_size,max(1,width*(.94 if ri==0 else 1))))
+                            for ri,row in enumerate(rows) for cell in row)*data_profile.body_size*1.25+16
+                b=b.model_copy(update={'h':min(b.h,natural*len(rows))})
+            if slide.layout=="chart":
+                from .charts import make_chart
+                elements.append(make_chart(table,slide,b,data_profile,foreground,[f.id for f in relevant if f.source==table.id]))
+                elements[-1].field_style=data_style
             else:
-                elements.append(Element(kind="table",box=b,rows=[table.headers]+table.rows,font=p.font,
-                    size=p.body_size,color=foreground,fill=p.accent,source_ids=[f.id for f in relevant if f.source==table.id]))
+                element=Element(kind="table",box=b,rows=[table.headers]+table.rows,font=p.font,
+                    size=data_profile.body_size,color=foreground,fill=p.accent,field_style=data_style,source_ids=[f.id for f in relevant if f.source==table.id])
+                if table.visualization=='metrics':
+                    from .metrics import metric_elements
+                    try:elements.extend(metric_elements(element,p))
+                    except ValueError:return None
+                else:elements.append(element)
             if body:
-                if len(zones)<2:
-                    return None
-                elements.append(text_element("\n\n".join(f.text for f in body),zones[1],p,color=foreground,source_ids=[f.id for f in body]))
+                remaining=[zone for i,zone in enumerate(pattern.body_zones) if i!=selected]
+                if remaining:
+                    text_zone=max(remaining,key=lambda zone:zone.w*zone.h)
+                else:
+                    original=pattern.body_zones[selected]
+                    top=b.y+b.h+12
+                    text_zone=Box(x=original.x,y=top,w=original.w,h=original.y+original.h-top)
+                elements.extend(fact_elements(body,text_zone,p,foreground,field_style=field_style(pattern,"body",next((i for i,z in enumerate(pattern.body_zones) if z==text_zone),0))))
         else:
-            count=min(len(zones),len(body))
+            if binding['status']=='specialized':
+                for group_index,group in enumerate(binding['groups']):
+                    bounds=group['box'].model_copy()
+                    heading=group['heading']
+                    if heading is None:
+                        # Small native cards cannot afford a separate, tiny caption.
+                        # Keep the step/date label and evidence in one readable field.
+                        from .semantic_bindings import inline_group_text
+                        text=inline_group_text(group['label'],[f.text for f in group['facts']])
+                        elements.append(text_element(text,bounds,p,'body',size=p.body_size,color=foreground,
+                            source_ids=[f.id for f in group['facts']],field_style=field_style(pattern,'body',group_index)))
+                        continue
+                    label=text_element(group['label'],heading,p,'subheading',size=p.body_size,color=foreground,field_style=field_style(pattern,'heading',group_index))
+                    label.bold=True;elements.append(label)
+                    elements.extend(fact_elements(group['facts'],bounds,p,foreground,field_style=field_style(pattern,'body',group_index)))
+                count=0
+            else:
+                count=1 if slide.purpose in ('comparison','process','timeline') and body else min(len(zones),len(body))
             for i,b in enumerate(zones[:count]):
                 if slide.layout=="split" and count==2:
                     group=body[:1] if i==0 else body[1:]
                 else:
                     group=body[i*len(body)//count:(i+1)*len(body)//count]
-                elements.append(text_element("\n\n".join(f.text for f in group),b,p,color=foreground,source_ids=[f.id for f in group]))
+                heading=pattern.heading_zones[i] if len(zones)==len(pattern.body_zones) and i<len(pattern.heading_zones) else None
+                elements.extend(fact_elements(group,b,p,foreground,heading,field_style(pattern,"body",i)))
         for e in elements[1:]:
             zone_index=next((i for i,b in enumerate(pattern.body_zones) if b.x<=e.box.x+1 and b.y<=e.box.y+1 and b.x+b.w>=e.box.x+e.box.w-1),0)
-            if pattern.zone_backgrounds:
+            if zone_index<len(pattern.zone_backgrounds):
                 e.background_hint=pattern.zone_backgrounds[zone_index]
+            if zone_index<len(pattern.zone_foregrounds) and pattern.zone_foregrounds[zone_index]:
                 e.color=pattern.zone_foregrounds[zone_index]
         return elements
 
     options=[]
+    meanings={item['pattern_id']:item for item in package.analysis.get('template_semantics',{}).get('patterns',[])}
     for pattern in patterns:
         elements=elements_for(pattern)
         if elements is None:
             continue
-        overflow=sum(max(0,len(wrap_text(e.text,p.font_file,e.size,e.box.w))*e.size*1.25-e.box.h) for e in elements if e.kind=="text")
-        small=sum(max(0,p.body_size-e.size) for e in elements if e.role=="body" and e.kind=="text")
-        count_penalty=abs(len(zones_for(pattern))-desired)*10
+        scoring_elements=[]
+        chart_penalty=0
+        for e in elements:
+            if e.kind=="chart":
+                from .render import chart_fits
+                if not chart_fits(e,p):
+                    chart_penalty+=10000
+                    table=tables[slide.table_id]
+                    e=e.model_copy(update={"kind":"table","rows":[table.headers]+table.rows})
+            scoring_elements.append(e)
+        overflow=sum(max(0,len(wrap_text(e.text,element_font(p,e)[1],e.size,
+            (e.box.w-(e.size*1.4 if e.bullet else 0))*(.94 if e.bold or e.bold_prefix else 1)))*e.size*1.25-e.box.h) for e in scoring_elements if e.kind=="text")
+        # A correctly sized text box can still have been positioned outside its
+        # authored container. Include that defect in layout selection too.
+        for e in elements:
+            if e.kind=='text' and e.role=='body':
+                if not any(e.box.x>=z.x-.5 and e.box.y>=z.y-.5 and
+                           e.box.x+e.box.w<=z.x+z.w+.5 and e.box.y+e.box.h<=z.y+z.h+.5
+                           for z in pattern.body_zones):
+                    overflow += e.box.h + 100
+        for e in scoring_elements:
+            if e.kind=="table":
+                # A small text zone is not automatically a safe table zone.
+                # Compare overflow after the same bounded font repair used later.
+                sizes=sorted({e.size,*[s for s in p.font_sizes if 10<=s<=e.size]},reverse=True)
+                for size in sizes:
+                    table_overflow=sum(max(0,len(wrap_text(cell,element_font(p,e)[1],size,e.box.w/len(row)-16))*size*1.25-(e.box.h/len(e.rows)-12)) for row in e.rows for cell in row)
+                    table_overflow+=sum(20 for ri,row in enumerate(e.rows) for cell in row if not table_cell_fits(
+                        cell,element_font(p,e)[1],size,e.box.w/len(row)-16,e.box.h/len(e.rows)-12,ri==0))
+                    if table_overflow==0:
+                        break
+                overflow+=table_overflow
+        # Native template scales below the global body median are not defects.
+        # Penalize genuinely small type, not readable 16–20pt layouts with artwork.
+        small=sum(max(0,min(p.body_size,16)-e.size) for e in elements if e.role=="body" and e.kind=="text")
+        count_penalty=abs(min(len(zones_for(pattern)),len(body) or 1)-desired)*2
+        occupied=(1+bool(body)) if slide.table_id else len(body)
+        empty_regions=max(0,len(zones_for(pattern))-occupied)
         # Prioritize readability, then matching template examples, then requested composition.
-        score=overflow*100+small*2+count_penalty+(0 if pattern.source_slide else 3)
+        meaning=meanings.get(pattern.id)
+        role_penalty=0 if not meaning or slide.role in meaning['roles'] else 4
+        title_penalty=sum(max(0,min(p.title_size,16)-e.size)*5 for e in elements if e.role=="title")
+        cover_penalty=(-20 if index==0 and len(body)<=2 else 500) if pattern.role=="cover" else 0
+        observed_masters={p.master_index for p in patterns if p.source_slide}
+        unobserved_master=40 if observed_masters and pattern.master_index not in observed_masters else 0
+        contrast_penalty=sum(contrast(e.color,e.background_hint or pattern.background or p.background)<4.5 for e in elements if e.kind=='text')*500
+        from .quality import scene_quality_findings
+        probe=SlideScene(title=slide.title,background=pattern.background or p.background,
+            elements=elements,source_ids=slide.fact_ids,layout=slide.layout,purpose=slide.purpose,pattern_id=pattern.id)
+        # Table fitting can lower the font after composition. Score the same
+        # repaired geometry that the preparation/generation audits will see,
+        # otherwise a cramped 16pt table wins and later becomes unreadable.
+        from .audit import repair_scenes
+        repaired_probe=probe.model_copy(deep=True)
+        repair_scenes([repaired_probe],package)
+        policy_findings=scene_quality_findings([repaired_probe],package)
+        policy_penalty=sum({'readability':120,'unused_template_regions':100,
+            'unsafe_text_zone':40,'local_font_unresolved':40}.get(f.code,0) for f in policy_findings)
+        score=policy_penalty+contrast_penalty+overflow*100+chart_penalty+empty_regions*40+small*2+count_penalty+(0 if pattern.source_slide else 5)+unobserved_master+role_penalty+title_penalty+cover_penalty
+        # Explicit unknown safety is weaker than checked fields, not proof of safety.
+        score += sum(row.get('status')=='unknown' for row in pattern.safe_text_zone.get('field_checks',[]))*40
+        score += sum(bool(e.field_style.get('unresolved_font')) for e in elements)*40
+        score-=min(pattern.graphic_count,6)*.5
+        # A semantically exact layout wins comparable geometry, but never a
+        # readability regression: overflow still dominates this bounded penalty.
+        if slide.purpose not in ('auto', 'content') and pattern.purpose != slide.purpose:
+            score += 60
         options.append((score,pattern,elements))
     if not options:
+        if slide.pattern_id is not None:
+            raise ValueError("Выбранная композиция несовместима с содержимым")
         return None
     options.sort(key=lambda item:item[0])
     best=options[0][0]
@@ -213,5 +489,5 @@ def compose_native(slide, package, index, variant):
         elements.insert(0,Element(kind="image",box=Box(x=0,y=0,w=p.width,h=p.height),
             image_path=pattern.background_image,role="template_background"))
     return SlideScene(title=slide.title,background=pattern.background or p.background,elements=elements,
-        source_ids=slide.fact_ids,layout=slide.layout,pattern_id=pattern.id,strategy="native_template",
+        source_ids=slide.fact_ids,layout=slide.layout,purpose=slide.purpose,pattern_id=pattern.id,strategy="native_template",
         notes="\n".join(f"[{f.id}] {f.source}, строка {f.line}: {f.text}" for f in relevant))

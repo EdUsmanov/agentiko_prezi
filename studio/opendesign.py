@@ -12,6 +12,7 @@ def provenance():
     return data
 
 def export_design(profile, directory):
+    from .fonts import role_font
     design = f"""# Extracted design system
 
 Source SHA-256: {profile.sha256}
@@ -19,9 +20,13 @@ Source SHA-256: {profile.sha256}
 ## Color
 Background: {profile.background}. Text: {profile.foreground}. Accent: {profile.accent}.
 Allowed palette: {', '.join(profile.colors)}.
+Effective opaque colors by object role: {json.dumps(profile.color_roles, ensure_ascii=False)}.
+Static OOXML evidence and unresolved properties: color-model.json. Photos and dynamic objects are not sampled; visual verification remains separate.
 
 ## Typography
 Primary family: {profile.font}. No font outside the source template is allowed.
+Title face: {role_font(profile,"title")[0]}. Body face: {role_font(profile,"body")[0]}.
+Font provenance and unresolved faces: font-model.json (when available).
 Extracted scale in points: {', '.join(map(str, profile.font_sizes))}.
 
 ## Spacing and layout

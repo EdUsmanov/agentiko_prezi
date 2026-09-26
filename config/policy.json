@@ -1,5 +1,5 @@
 {
-  "generation_deadline_seconds": 300,
+  "generation_deadline_seconds": null,
   "variant_keys": ["executive", "analytical", "story"],
   "default_slide_count": 10,
   "max_model_parameters_b": 35,

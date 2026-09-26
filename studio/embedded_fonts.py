@@ -1,6 +1,6 @@
 """Document-scoped font extraction; no installation or global registration.
 
-Supports raw TrueType and uncompressed EOT. Compressed/protected EOT fails
+Supports raw TrueType and bounded EOT/MTX decoding. Protected EOT fails
 closed. References and font names never become filesystem paths or URLs.
 """
 from io import BytesIO
@@ -13,6 +13,7 @@ from fontTools.ttLib import TTFont
 from .fonts import font_key
 from .security import digest, InputRejected
 from .text_layout import WORD_JOINERS
+from .font_identity import matches_face, binary_identity
 
 P = "{http://schemas.openxmlformats.org/presentationml/2006/main}"
 R = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
@@ -29,8 +30,8 @@ def unpack_font(raw):
     total, size, version, flags = struct.unpack_from("<4I", raw)
     if total != len(raw) or not 12 <= size <= len(raw)-82:
         raise ValueError("повреждённый контейнер EOT")
-    if flags & (4 | 0x20 | 0x10000000):
-        raise ValueError("сжатый MTX, EUDC или защищённый EOT пока не поддерживается")
+    if flags & (0x20 | 0x10000000):
+        raise ValueError("EUDC или защищённый EOT не поддерживается")
     if struct.unpack_from("<H", raw, 32)[0]:
         raise ValueError("ограничения встраивания EOT не допускают текущий набор экспортов")
     end = len(raw)-size
@@ -61,7 +62,14 @@ def unpack_font(raw):
         if checksum != 0x50475342 or any((codepage,padding,signature,eudc_flags,eudc_size)):
             raise ValueError("ограничения или расширенные данные EOT не поддерживаются")
         offset += 20
-    if offset != end or raw[end:end+4] != b"\x00\x01\x00\x00":
+    if offset != end:
+        raise ValueError("некорректная граница данных EOT")
+    if flags & 4:
+        from .font_decoder import decode_mtx
+        decoded=decode_mtx(raw)
+        inspect_font(decoded)
+        return decoded, "EOT/MTX"
+    if raw[end:end+4] != b"\x00\x01\x00\x00":
         raise ValueError("некорректная граница или неподдерживаемые контуры EOT")
     return raw[end:], "EOT"
 
@@ -117,16 +125,16 @@ def extract_embedded_font(pptx, directory, requested):
                     if z.getinfo(part).file_size > MAX_FONT_BYTES:
                         raise ValueError("встроенный шрифт превышает 16 МБ")
                     raw, fmt = unpack_font(z.read(part))
-                    aliases, _ = inspect_font(raw)
-                    if font_key(requested) not in aliases:
-                        raise ValueError("название встроенного шрифта не совпадает с его данными")
+                    inspect_font(raw)
+                    if not matches_face(raw,requested):
+                        raise ValueError("семейство или начертание встроенного шрифта не совпадает с его данными")
                     folder = directory / "embedded-fonts"
                     folder.mkdir(exist_ok=True)
                     path = folder / (digest(raw)+".ttf")
                     path.write_bytes(raw)
                     path.chmod(0o600)
                     return str(path), {"kind":"embedded","part":part,"relationship_id":rid,
-                        "sha256":digest(raw),"format":fmt}, issues
+                        "sha256":digest(raw),"format":fmt,"binary_identity":binary_identity(raw)}, issues
                 except Exception as exc:
                     reason = str(exc) if type(exc) is ValueError else type(exc).__name__
                     issues.append(f"Встроенный шрифт {requested} не использован: {reason}")
@@ -134,9 +142,9 @@ def extract_embedded_font(pptx, directory, requested):
 
 
 def check_glyphs(path, text):
-    with TTFont(path, lazy=True) as font:
-        supported = set((font.getBestCmap() or {}).keys())
-    missing = sorted({ord(c) for c in text if not c.isspace() and c not in WORD_JOINERS}-supported)
+    from .fonts import coverage, font_runs
+    missing = sorted({ord(c) for value, face in font_runs(text, path) for c in value
+                      if not c.isspace() and c not in WORD_JOINERS and ord(c) not in coverage(face)})
     if missing:
         examples = ", ".join(f"U+{c:04X}" for c in missing[:8])
         raise InputRejected("В шрифте нет символов нового текста ("+examples+"). Возможно, в PPTX встроена только часть символов. Сохраните шаблон с встраиванием всех символов или предоставьте полный TTF.")

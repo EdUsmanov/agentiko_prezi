@@ -14,7 +14,7 @@ def executable():
         str(Path.home()/".cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override/soffice")]
     return next((p for p in candidates if p and Path(p).is_file()), None)
 
-def to_pdf(pptx, directory, timeout=45, font_file=None):
+def to_pdf(pptx, directory, timeout=45, font_file=None, font_files=None):
     binary = executable()
     if not binary:
         return False
@@ -23,11 +23,13 @@ def to_pdf(pptx, directory, timeout=45, font_file=None):
         # Each conversion gets a separate profile (also safe for three parallel variants).
         profile = Path(temporary)/"profile"
         env={k:v for k,v in os.environ.items() if k in ("PATH","HOME","TMPDIR","LANG","LC_ALL","FONTCONFIG_FILE","FONTCONFIG_PATH")}
-        if font_file:
+        paths = font_files or ([font_file] if font_file else [])
+        if paths:
             # Document-scoped font directory; no global font installation or cache mutation.
             config=Path(temporary)/"fonts.conf"
-            config.write_text('<?xml version="1.0"?><fontconfig><dir>'+escape(str(Path(font_file).resolve().parent))+
-                '</dir><cachedir>'+escape(str(Path(temporary)/"font-cache"))+'</cachedir></fontconfig>')
+            directories = sorted({str(Path(p).resolve().parent) for p in paths})
+            config.write_text('<?xml version="1.0"?><fontconfig>'+''.join('<dir>'+escape(p)+'</dir>' for p in directories)+
+                '<cachedir>'+escape(str(Path(temporary)/"font-cache"))+'</cachedir></fontconfig>')
             env["FONTCONFIG_FILE"]=str(config)
             env["FONTCONFIG_PATH"]=temporary
         result = subprocess.run([binary, "-env:UserInstallation="+profile.as_uri(), "--headless",

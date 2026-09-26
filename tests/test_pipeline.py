@@ -14,8 +14,10 @@ def test_three_variants_exports_and_coverage(prepared):
     job=store.create("generation",{"package_id":package.id,"deadline_at":time.time()+300})
     asyncio.run(generate(store,job["id"],settings))
     result=store.get(job["id"])
-    assert result["state"]=="completed",result
+    assert result["state"]=="needs_review",result
+    assert result["quality_report"]["errors"]==0
     assert result["elapsed_seconds"]<300
+    assert result["analysis_seconds"] == package.manifest["analysis_seconds"]
     assert len(result["variants"])==3
     root=store.directory(job["id"])
     plans=json.loads((root/"plans.json").read_text())

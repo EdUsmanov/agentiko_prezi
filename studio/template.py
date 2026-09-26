@@ -5,7 +5,8 @@ from zipfile import ZipFile
 import colorsys
 import re
 from PIL import Image
-from pptx import Presentation
+from .powerpoint import open_presentation
+from .pictures import is_picture, embedded_picture_blob
 from defusedxml import ElementTree as SafeET
 from .models import TemplateProfile, Pattern, Asset, Box
 from .fonts import resolve_font
@@ -42,9 +43,11 @@ def walk_shapes(shapes, sx=1., sy=1., ox=0., oy=0.):
                 yield from walk_shapes(shape.shapes, sx * nsx, sy * nsy,
                     ox + sx * (shape.left - xf.chOff.x * nsx), oy + sy * (shape.top - xf.chOff.y * nsy))
 
-def analyze_template(path: Path, artifact_dir: Path) -> TemplateProfile:
+def analyze_template(path: Path, artifact_dir: Path, allow_download=False, font_progress=None) -> TemplateProfile:
     warnings = validate_pptx(path)
-    prs = Presentation(path)
+    from .colors import extract_colors
+    color_roles, color_analysis = extract_colors(path, artifact_dir)
+    prs = open_presentation(path)
     width, height = prs.slide_width / EMU, prs.slide_height / EMU
     if not (100 <= width <= 2500 and 100 <= height <= 2500):
         raise InputRejected("Неподдерживаемые размеры слайда")
@@ -84,7 +87,7 @@ def analyze_template(path: Path, artifact_dir: Path) -> TemplateProfile:
             if shape.has_text_frame:
                 _, suspicious = scan_text(shape.text, "template")
                 if suspicious:
-                    warnings.append("Инструкции внутри шаблона проигнорированы; текст шаблона не передаётся модели")
+                    warnings.append("Подозрительные инструкции внутри шаблона изолированы и исключены из модельного анализа")
                 if shape.text.strip() and box.w > 20 and box.h > 8 and 0 <= box.x < width and 0 <= box.y < height:
                     zones.append(box)
                     if .02 * width < box.x < .15 * width:
@@ -103,8 +106,11 @@ def analyze_template(path: Path, artifact_dir: Path) -> TemplateProfile:
                             colors[c] += max(1, len(r.text) / 5)
                             if idx < len(prs.slides):
                                 text_colors[c] += max(1,len(r.text))
-            if idx < len(prs.slides) and hasattr(shape, "image"):
-                raw = shape.image.blob
+            if idx < len(prs.slides) and is_picture(shape):
+                raw = embedded_picture_blob(shape)
+                if raw is None:
+                    warnings.append("Изображение без доступного встроенного содержимого пропущено; внешние ссылки не загружались")
+                    continue
                 key = digest(raw)
                 # Small repeated assets at the canvas edge are candidate brand marks.
                 if box.w * box.h < width * height * .04 and (box.y < height * .15 or box.y + box.h > height * .85):
@@ -117,23 +123,28 @@ def analyze_template(path: Path, artifact_dir: Path) -> TemplateProfile:
     allowed_fonts = list(dict.fromkeys([f for f, _ in fonts.most_common()] + theme_fonts))
     if not allowed_fonts:
         raise InputRejected("В шаблоне не найден шрифт")
-    font = allowed_fonts[0]
-    font_file, font_origin, font_issues = extract_embedded_font(path, artifact_dir, font)
-    warnings.extend(font_issues)
-    if not font_file:
-        font_file = resolve_font(font)
-        if font_file:
-            font_origin = {"kind":"local", "sha256":digest(Path(font_file).read_bytes()),
-                           "template_embedding":font_origin["kind"]}
-            warnings.append(f"Шрифт {font}: использовано точное локальное начертание; подходящий встроенный шрифт в PPTX отсутствует или недоступен.")
-    if not font_file:
-        raise InputRejected(f"Шрифт {font} указан в шаблоне, но его доступных данных нет ни в PPTX, ни в локальном каталоге. Сохраните PPTX с встраиванием всех символов шрифта либо добавьте его TTF в fonts/ и повторите анализ. " + " ".join(font_issues))
+    from .font_manifest import build_font_manifest
+    font_model = build_font_manifest(prs, path, artifact_dir, allow_download, font_progress)
+    warnings.extend(font_model["warnings"])
+    assets_by_id = {a["id"]: a for a in font_model["assets"]}
+    primary = assets_by_id.get(font_model["roles"].get("body")) or next(iter(assets_by_id.values()), None)
+    font = primary["requested"] if primary else allowed_fonts[0]
+    font_file = primary["path"] if primary else ""
+    font_origin = primary["origin"] if primary else {"kind": "missing"}
+    allowed_fonts = list(dict.fromkeys(allowed_fonts + [a["requested"] for a in font_model["assets"]]))
     palette = list(dict.fromkeys([c for c, _ in colors.most_common(64)] + theme_colors))
+    palette = list(dict.fromkeys(palette + [c for values in color_roles.values() for c in values]))
+    palette = list(dict.fromkeys(palette + [paint["color"] for style in color_analysis.get("table_styles",{}).values() for paint in style.values()]))
     if not palette:
         raise InputRejected("В шаблоне не найдена палитра")
     primary_text=text_colors.most_common(1)[0][0] if text_colors else min(palette,key=luminance)
     background = max(palette, key=lambda c: contrast(c,primary_text))
+    if color_roles.get("background"):
+        background = color_roles["background"][0]
     foreground = max(palette, key=lambda c: contrast(c, background))
+    role_text = color_roles.get("text.body") or color_roles.get("text.other") or []
+    if role_text and contrast(role_text[0], background) >= 4.5:
+        foreground = role_text[0]
     saturated = [c for c in palette if colorsys.rgb_to_hsv(*[int(c[i:i+2], 16)/255 for i in (1,3,5)])[1] > .15]
     accent = saturated[0] if saturated else foreground
     scale = sorted(s for s in sizes if 8 <= s <= 80)
@@ -172,14 +183,21 @@ def analyze_template(path: Path, artifact_dir: Path) -> TemplateProfile:
     layout_index = min(range(len(layouts)), key=lambda i: len(layouts[i].shapes)) if layouts else 0
     ratio = counts["placeholders"] / max(counts["objects"], 1)
     from .native_template import native_patterns
-    native = native_patterns(prs)
+    from .native_style import native_styles
+    native = native_patterns(prs, native_styles(path))
+    palette=list(dict.fromkeys(palette+[c for p in native for c in [p.title_foreground,*p.zone_foregrounds] if c]))
+    for pattern in native:
+        pattern.table_style = color_analysis.get("table_styles", {}).get(str(pattern.source_slide), {})
     if not native:
         warnings.append("Не найден безопасный макет с заголовком и текстовыми зонами: используется композиция по токенам, сходство с шаблоном требует проверки.")
     return TemplateProfile(sha256=digest(path.read_bytes()), name=path.name, width=width, height=height,
         slide_count=len(prs.slides), master_count=len(prs.slide_masters),
         layout_count=sum(len(m.slide_layouts) for m in prs.slide_masters),
         object_count=counts["objects"], placeholder_count=counts["placeholders"],
-        fonts=allowed_fonts, font=font, font_file=font_file, font_origin=font_origin, font_sizes=scale, title_size=title_size, body_size=body_size,
+        fonts=allowed_fonts, font=font, font_file=font_file, font_origin=font_origin,
+        font_roles=font_model["roles"], font_assets=font_model["assets"], missing_fonts=font_model["unresolved"],
+        font_sizes=scale, title_size=title_size, body_size=body_size,
         colors=palette, background=background, foreground=foreground, accent=accent, margin=margin,
+        color_roles=color_roles, color_analysis=color_analysis,
         patterns=native or patterns, assets=assets, warnings=sorted(set(warnings)),
-        source_kind="layout_rich" if ratio > .25 else "example_deck", layout_index=layout_index, analysis_version=2)
+        source_kind="layout_rich" if ratio > .25 else "example_deck", layout_index=layout_index, analysis_version=9)

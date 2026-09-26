@@ -25,6 +25,20 @@ def template(tmp_path):
 def content():
     return "# Проект\n"+"\n".join(f"## Этап {i}\nПодразделение {i} обрабатывает заявки через единый интерфейс." for i in range(1,13))
 
+
+@pytest.fixture
+def potx(tmp_path,template):
+    from zipfile import ZipFile
+    from studio.security import PPTX_MAIN,POTX_MAIN
+    target=tmp_path/'template.potx'
+    with ZipFile(template) as source,ZipFile(target,'w') as output:
+        for entry in source.infolist():
+            data=source.read(entry)
+            if entry.filename=='[Content_Types].xml':
+                data=data.replace(PPTX_MAIN.encode(),POTX_MAIN.encode())
+            output.writestr(entry,data)
+    return target
+
 @pytest.fixture
 def prepared(tmp_path,template,content):
     import shutil

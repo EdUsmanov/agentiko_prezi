@@ -3,7 +3,7 @@ from pathlib import Path
 import json
 import os
 from .config import Settings
-from .pipeline import index_examples
+from .examples import index_examples
 
 def main():
     parser=argparse.ArgumentParser(description="Template-aware presentation service")

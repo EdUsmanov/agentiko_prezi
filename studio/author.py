@@ -1,4 +1,4 @@
-"""Optional brief expansion during the TIMED generation phase."""
+"""Optional brief expansion in preparation (legacy packages: during generation)."""
 import re
 from pydantic import Field
 from .models import StrictModel,Fact
@@ -22,8 +22,13 @@ async def expand_brief(package,gateway,timeout):
             if not (30<=len(p)<=400) or INJECTION.search(p) or re.search(r"\d",p):
                 raise ValueError("Проектный тезис содержит неподтверждённое число или инструкцию")
         result=package.model_copy(deep=True)
-        for i,p in enumerate(proposals,1):
-            result.content.facts.append(Fact(id=f"draft{i}",text="Проектный тезис — требует проверки: "+p,
+        existing={f.id for f in result.content.facts}
+        next_id=1
+        for p in proposals:
+            while f"draft{next_id}" in existing:
+                next_id+=1
+            fact_id=f"draft{next_id}";existing.add(fact_id)
+            result.content.facts.append(Fact(id=fact_id,text="Проектный тезис — требует проверки: "+p,
                 section="Предлагаемый подход",source="model_proposal",line=0))
         result.content.warnings.append(f"Модель добавила {missing} проектных тезисов для короткого brief. Они помечены в слайдах и не являются подтверждёнными фактами.")
         return result,None
