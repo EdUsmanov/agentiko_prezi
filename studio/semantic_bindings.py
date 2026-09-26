@@ -185,10 +185,11 @@ def table_capacity(table, box, profile, minimum_size=10):
     if not rows or not table.headers or box.w<=32*len(table.headers) or box.h<=18*len(rows):
         return sum(len(row) for row in rows) or 1
     font=role_font(profile,'table')[1]
-    width=box.w/len(table.headers)-16
+    from .table_style import column_widths
+    widths=column_widths(rows,box.w,font,minimum_size)
     height=box.h/len(rows)-12
-    return sum(not table_cell_fits(value,font,minimum_size,width,height,ri==0)
-               for ri,row in enumerate(rows) for value in row)
+    return sum(not table_cell_fits(value,font,minimum_size,widths[ci]-16,height,ri==0)
+               for ri,row in enumerate(rows) for ci,value in enumerate(row))
 
 
 def table_region(table, pattern, profile, has_body, *, chart=False, body_texts=None):
@@ -205,13 +206,9 @@ def table_region(table, pattern, profile, has_body, *, chart=False, body_texts=N
         box=original.model_copy()
         minimum=0
         if chart:
-            from .charts import chart_projection
-            from .fonts import role_font,wrap_text
-            _,supplement=chart_projection(table)
-            minimum=160
-            if supplement:
-                minimum+=24+sum(len(wrap_text(line,role_font(profile,'body')[1],16,box.w*.96))*20
-                                for line in supplement)
+            from .charts import chart_caption_layout
+            text,height=chart_caption_layout([table.headers]+table.rows,box.w,profile)
+            minimum=160+height+(12 if text else 0)
         if has_body and len(regions)==1:
             # A fixed 60/40 split previously made every chart too short in
             # Workspace. Reserve the chart's real minimum before body fitting.

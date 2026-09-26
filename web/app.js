@@ -100,6 +100,9 @@ const phaseLabels = {
   'Проверка покрытия и упаковка':'Проверяем готовые презентации перед выдачей',
 };
 function humanPhase(label) {
+  // Raw retry/provider diagnostics stay in the job journal.
+  if (/повторяем незавершённый|проблемн|ошибк|error|exception|traceback|inputrejected|не удалось/i.test(label))
+    return 'Уточняем результат проверки';
   const prefix = 'Анализ примера организаторов: ';
   if (label.startsWith(prefix)) return 'Изучаем пример оформления: '+label.slice(prefix.length);
   return phaseLabels[label] || label;

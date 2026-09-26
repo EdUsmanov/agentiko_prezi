@@ -4,6 +4,7 @@ from .content import numeric_column
 from .template import contrast
 from .contracts import body_and_title_sources, candidates as semantic_candidates
 from .field_style import field_style, styled_profile
+from .table_style import column_widths
 
 def text_element(text, box, profile, role="body", size=None, color=None, source_ids=None, field_style=None):
     from .field_style import styled_profile
@@ -210,7 +211,7 @@ def compose(slide, package, index, variant):
         pattern_id=pattern_id,strategy="exemplar_zones" if pattern_id else "token_composition",
         notes="\n".join(f"[{f.id}] {f.source}, строка {f.line}: {f.text}" for f in relevant))
 
-def compose_slide(variant, package, index, image_groups=None):
+def _compose_slide(variant, package, index, image_groups=None):
     """Same complete postprocessing as a deck, for one slide at its original index."""
     from .uploads import assign_images
     from .image_composer import compose_images
@@ -256,6 +257,32 @@ def compose_slide(variant, package, index, image_groups=None):
     original=package.original_content or package.content
     urls=list(dict.fromkeys(url.rstrip('.,;]') for fact in original.facts for url in re.findall(r'https?://[^\s)<>]+',fact.text)))
     if urls:scene.notes+='\nИсточники:\n'+'\n'.join(urls)
+    return scene
+
+
+def compose_slide(variant, package, index, image_groups=None):
+    """Prefer native geometry; retry data layout before rewriting source prose."""
+    scene=_compose_slide(variant,package,index,image_groups)
+    slide=variant.slides[index]
+    if not slide.table_id or slide.pattern_id is not None or not scene.pattern_id:
+        return scene
+    from .audit import audit_scenes,repair_scenes
+    geometry={'container_overflow','out_of_bounds','text_overflow','table_overflow',
+              'chart_overflow','overlap','readability'}
+    def defects(candidate):
+        repair_scenes([candidate],package)
+        return [f for f in audit_scenes([candidate],package) if f.code in geometry]
+    if not defects(scene.model_copy(deep=True)):
+        return scene
+    alternate=variant.model_copy(deep=True)
+    alternate.slides[index].pattern_id='token:auto'
+    try:
+        candidate=_compose_slide(alternate,package,index,image_groups)
+        if not defects(candidate):
+            candidate.notes+='\nLayout adapted from template fonts and palette: authored data fields were too small.'
+            return candidate
+    except ValueError:
+        pass
     return scene
 
 
@@ -343,9 +370,9 @@ def compose_native(slide, package, index, variant):
             if slide.layout != 'chart':
                 # Equal native rows sized to actual text, within the authored field.
                 rows=[table.headers]+table.rows
-                width=b.w/max(1,len(table.headers))-16
-                natural=max(len(wrap_text(str(cell),data_profile.font_file,data_profile.body_size,max(1,width*(.94 if ri==0 else 1))))
-                            for ri,row in enumerate(rows) for cell in row)*data_profile.body_size*1.25+16
+                widths=column_widths(rows,b.w,data_profile.font_file,data_profile.body_size)
+                natural=max(len(wrap_text(str(cell),data_profile.font_file,data_profile.body_size,max(1,(widths[ci]-16)*(.94 if ri==0 else 1))))
+                            for ri,row in enumerate(rows) for ci,cell in enumerate(row))*data_profile.body_size*1.25+16
                 b=b.model_copy(update={'h':min(b.h,natural*len(rows))})
             if slide.layout=="chart":
                 from .charts import make_chart
@@ -434,9 +461,10 @@ def compose_native(slide, package, index, variant):
                 # Compare overflow after the same bounded font repair used later.
                 sizes=sorted({e.size,*[s for s in p.font_sizes if 10<=s<=e.size]},reverse=True)
                 for size in sizes:
-                    table_overflow=sum(max(0,len(wrap_text(cell,element_font(p,e)[1],size,e.box.w/len(row)-16))*size*1.25-(e.box.h/len(e.rows)-12)) for row in e.rows for cell in row)
-                    table_overflow+=sum(20 for ri,row in enumerate(e.rows) for cell in row if not table_cell_fits(
-                        cell,element_font(p,e)[1],size,e.box.w/len(row)-16,e.box.h/len(e.rows)-12,ri==0))
+                    widths=column_widths(e.rows,e.box.w,element_font(p,e)[1],size)
+                    table_overflow=sum(max(0,len(wrap_text(cell,element_font(p,e)[1],size,widths[ci]-16))*size*1.25-(e.box.h/len(e.rows)-12)) for row in e.rows for ci,cell in enumerate(row))
+                    table_overflow+=sum(20 for ri,row in enumerate(e.rows) for ci,cell in enumerate(row) if not table_cell_fits(
+                        cell,element_font(p,e)[1],size,widths[ci]-16,e.box.h/len(e.rows)-12,ri==0))
                     if table_overflow==0:
                         break
                 overflow+=table_overflow

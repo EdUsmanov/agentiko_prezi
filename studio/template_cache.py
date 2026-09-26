@@ -13,7 +13,7 @@ from .config import ROOT
 
 TEMPLATE_REPORT_KEYS={'version','model_mode','model_id','technical','template_semantics','visual_model_review',
     'native_render','warnings','template_graphics','text_zone_review','template_text_adaptations',
-    'template_timeline_adaptations','template_data_regions','template_roomy_regions'}
+    'template_timeline_adaptations','template_data_regions','template_roomy_regions','template_cover_adaptations'}
 
 
 def digest_file(path):return hashlib.sha256(Path(path).read_bytes()).hexdigest()

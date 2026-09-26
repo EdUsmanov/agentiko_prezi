@@ -318,7 +318,10 @@ def inspect_content(prs, variant, package):
                 if not any([list(s.values) for s in chart.series]==expected and
                            [' '.join(str(c.label).split()) for c in chart.plots[0].categories]==[' '.join(row[0].split()) for row in projected.rows] for chart in charts):
                     add('chart_values','Числа или категории нативной диаграммы не совпадают с исходной таблицей.',index)
-                if any(not contains_text(text,caption) for caption in supplement):
+                _,compact=chart_projection(table,compact_captions=True)
+                # Both layouts must retain the entire category/value mapping.
+                if not any(all(contains_text(text,caption) for caption in captions)
+                           for captions in (supplement,compact)):
                     add('chart_supplement','Итоги или значения с другой единицей измерения потеряны при построении диаграммы.',index)
     for asset in package.images:
         if asset.sha256 not in images:

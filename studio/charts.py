@@ -41,7 +41,7 @@ def make_chart(table, slide, box, profile, color, source_ids):
         color=color,fill=profile.accent,source_ids=source_ids)
 
 
-def chart_projection(table):
+def chart_projection(table, *, compact_captions=False):
     """Comparable series only; totals and other units stay visible as captions."""
     from .content import plain_inline
     headers=[plain_inline(c) for c in table.headers]
@@ -56,11 +56,26 @@ def chart_projection(table):
     for row in rows:
         total=bool(re.match(r'^(?:всего|итого|total)\b',row[0],re.I))
         columns=list(range(1,len(headers))) if total else omitted
-        if columns:
+        if columns and (not compact_captions or total):
             supplement.append(f'{headers[0]} {row[0]}: '+ '; '.join(f'{headers[i]}: {row[i]}' for i in columns))
         if not total:
             plotted.append([row[0]]+[row[i] for i in selected])
+    if compact_captions:
+        regular=[row for row in rows if not re.match(r'^(?:всего|итого|total)\b',row[0],re.I)]
+        supplement=[f'{headers[i]} ({headers[0]}): '+ '; '.join(f'{row[0]} — {row[i]}' for row in regular)
+                    for i in omitted if regular]+supplement
     return table.model_copy(update={'headers':[headers[0]]+[headers[i] for i in selected],'rows':plotted}),supplement
+
+
+def chart_caption_layout(rows,width,profile):
+    """One measured caption contract for selection, audit and native export."""
+    from .models import TableData
+    from .fonts import role_font,wrap_text
+    if not rows:return '',0
+    _,lines=chart_projection(TableData(id='chart',headers=rows[0],rows=rows[1:]),compact_captions=True)
+    if not lines:return '',0
+    height=sum(len(wrap_text(line,role_font(profile,'body')[1],16,width*.96))*20 for line in lines)+12
+    return '\n'.join(lines),height
 
 
 def render_chart(slide,e,profile):
@@ -83,15 +98,11 @@ def render_chart(slide,e,profile):
            'column_stacked':XL_CHART_TYPE.COLUMN_STACKED,
            'line':XL_CHART_TYPE.LINE_MARKERS,'pie':XL_CHART_TYPE.PIE}
     b=e.box.model_copy()
-    # Never plot a total as another time period or percentages on a count axis.
-    from .models import TableData
-    _,supplement=chart_projection(TableData(id='chart',headers=e.rows[0],rows=e.rows[1:])) if e.rows else (None,[])
-    if supplement:
-        from .fonts import role_font,wrap_text
+    # Use the exact same caption height as selection and pre-export audit.
+    text,height=chart_caption_layout(e.rows,b.w,profile)
+    if text:
         from .render import set_text
         from .models import Box
-        text='\n'.join(supplement)
-        height=sum(len(wrap_text(line,role_font(profile,'body')[1],16,b.w*.96))*20 for line in supplement)+12
         if b.h-height-12<160:
             raise ValueError('Диаграмма и пояснения единиц не помещаются в поле; требуется более вместительный макет')
         caption=Element(kind='text',text=text,box=Box(x=b.x,y=b.y+b.h-height,w=b.w,h=height),

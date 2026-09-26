@@ -1,4 +1,5 @@
 """All exports consume the same scene; PPTX remains native and editable."""
+from .table_style import column_widths
 import base64
 from copy import deepcopy
 from html import escape
@@ -50,7 +51,10 @@ def chart_fits(element,profile):
     if element.series_values:
         # Native charts own axis layout. This is only a minimum-size guard;
         # actual label clipping is checked on the rendered PPTX by vision.
-        return (element.box.w>=260 and element.box.h>=160 and
+        from .charts import chart_caption_layout
+        text,height=chart_caption_layout(element.rows,element.box.w,profile)
+        available=element.box.h-height-(12 if text else 0)
+        return (element.box.w>=260 and available>=160 and
                 len(element.labels)<=30 and all(len(v)==len(element.labels) for v in element.series_values))
     for item in primitives(element,profile):
         b=item.box;outer=element.box
@@ -176,6 +180,8 @@ def render_pptx(scenes,profile,source,path,verify_text=True):
                     rows,cols=len(e.rows),len(e.rows[0])
                     table=slide.shapes.add_table(rows,cols,Pt(b.x),Pt(b.y),Pt(b.w),Pt(b.h)).table
                     table.first_row=False;table.horz_banding=False
+                    widths=column_widths(e.rows,b.w,element_font(profile,e)[1],e.size)
+                    for ci,width in enumerate(widths):table.columns[ci].width=Pt(width)
                     for ri,row in enumerate(e.rows):
                         table.rows[ri].height=Pt(b.h/rows)
                         for ci,value in enumerate(row):
@@ -191,7 +197,7 @@ def render_pptx(scenes,profile,source,path,verify_text=True):
                                 cell.fill.background()
                             cell.margin_left=cell.margin_right=Pt(8);cell.margin_top=cell.margin_bottom=Pt(6)
                             te=e.model_copy(update={"color":color,"bold":ri==0})
-                            set_text(cell.text_frame,value,te,profile,b.w/cols-16)
+                            set_text(cell.text_frame,value,te,profile,widths[ci]-16)
                             # tcPr already owns cell padding. Repeating it in
                             # bodyPr makes LibreOffice apply the inset twice.
                             from .table_style import cell_borders
@@ -234,16 +240,17 @@ def render_pdf(scenes,profile,path):
                 elif e.kind=="image":
                     c.drawImage(e.image_path,b.x,profile.height-b.y-b.h,b.w,b.h,mask="auto")
                 elif e.kind=="table":
-                    rw=b.h/len(e.rows);cw=b.w/len(e.rows[0])
+                    rw=b.h/len(e.rows);widths=column_widths(e.rows,b.w,element_font(profile,e)[1],e.size)
                     for ri,row in enumerate(e.rows):
                         for ci,value in enumerate(row):
+                            cw=widths[ci];left=b.x+sum(widths[:ci])
                             from .table_style import cell_paint
                             fill,opacity,color=cell_paint(e,ri,scene,profile)
                             if opacity:
                                 c.saveState();c.setFillAlpha(opacity)
-                                c.setFillColor(HexColor(fill));c.rect(b.x+ci*cw,profile.height-b.y-(ri+1)*rw,cw,rw,stroke=0,fill=1)
+                                c.setFillColor(HexColor(fill));c.rect(left,profile.height-b.y-(ri+1)*rw,cw,rw,stroke=0,fill=1)
                                 c.restoreState()
-                            draw_text(value,b.x+ci*cw+8,b.y+ri*rw+6,cw-16,e.size,color)
+                            draw_text(value,left+8,b.y+ri*rw+6,cw-16,e.size,color)
         c.showPage()
     c.save()
 
@@ -289,14 +296,15 @@ def render_html(scenes,profile,path):
                     alt=escape(e.text or ('Загруженная иллюстрация' if e.image_id else 'Элемент шаблона'),quote=True)
                     out.append(f'<img class="el" alt="{alt}" style="{style}" src="data:image/png;base64,{data}">')
                 elif e.kind=="table":
-                    out.append(f'<div class="el" style="{style}"><table>')
+                    widths=column_widths(e.rows,b.w,file,e.size)
+                    out.append(f'<div class="el" style="{style}"><table><colgroup>'+''.join(f'<col style="width:{width}px">' for width in widths)+'</colgroup>')
                     for ri,row in enumerate(e.rows):
                         from .table_style import cell_paint
                         fill,opacity,color=cell_paint(e,ri,scene,profile)
                         paint='transparent' if not opacity else f'rgba({int(fill[1:3],16)},{int(fill[3:5],16)},{int(fill[5:7],16)},{opacity})'
                         out.append(f'<tr style="height:{b.h/len(e.rows)}px;background:{paint};color:{color}">')
-                        for cell in row:
-                            wrapped="\n".join(wrap_text(cell,file,e.size,b.w/len(row)-16))
+                        for ci,cell in enumerate(row):
+                            wrapped="\n".join(wrap_text(cell,file,e.size,widths[ci]-16))
                             out.append('<td>'+escape(wrapped)+'</td>')
                         out.append('</tr>')
                     out.append('</table></div>')

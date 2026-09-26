@@ -8,6 +8,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check frontend phase labels
+        run: node scripts/ui_phase_labels_test.cjs
       - name: Install native presentation renderer
         run: |
           sudo apt-get update

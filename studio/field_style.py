@@ -24,5 +24,6 @@ def styled_profile(profile, style, role):
     updated.font, updated.font_file = asset['requested'], asset['path']
     updated.font_roles = {**profile.font_roles, role: asset['id']}
     if role in ('body', 'table', 'chart') and style.get('size'):
-        updated.body_size = style['size']
+        # The authored size is a preference, not a cap below our readable floor.
+        updated.body_size = max(16, style['size'])
     return updated, style

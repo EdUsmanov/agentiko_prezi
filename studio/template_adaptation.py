@@ -236,3 +236,52 @@ def derive_roomy_text_patterns(profile):
             derived.text_zones=[derived.title_zone]+derived.body_zones
             profile.patterns.append(derived);added.append({'id':derived.id,'source_pattern':pattern.id,'expanded_fields':changes})
     return added
+
+
+def derive_safe_cover_patterns(profile):
+    """Relocate an unusable cover into its measured clear region, retaining art.
+
+    Only the cover can use a new title/subtitle arrangement: multi-field content
+    layouts retain their authored binding. The region comes from the existing
+    background/obstacle analysis, never from a template name or guessed boxes.
+    """
+    added=[]
+    for pattern in list(profile.patterns):
+        if (not pattern.reusable or pattern.purpose!='cover' or
+                pattern.id.startswith('safe-cover-') or not pattern.title_zone):continue
+        if (pattern.title_zone.h>=18*1.25 and pattern.body_zones and
+                all(z.h>=16*1.25 for z in pattern.body_zones) and
+                not any(r.get('status')=='unknown' for r in pattern.safe_text_zone.get('field_checks',[]))):continue
+        report=pattern.safe_text_zone;rect=report.get('box');space=report.get('coordinate_space',{})
+        if (not rect or len(rect)!=4 or (report.get('minimum_contrast') or 0)<4.5 or
+                not space.get('width') or not space.get('height')):continue
+        left,top,right,bottom=rect
+        box=Box(x=left*profile.width/space['width'],y=top*profile.height/space['height'],
+                w=(right-left)*profile.width/space['width'],h=(bottom-top)*profile.height/space['height'])
+        if box.w<120 or box.h<100 or box.x<0 or box.y<0 or box.x+box.w>profile.width or box.y+box.h>profile.height:continue
+        color={'white':'#FFFFFF','black':'#000000'}.get(report.get('text_color'))
+        if color not in profile.colors:continue
+        derived=pattern.model_copy(deep=True);derived.id='safe-cover-'+pattern.id
+        if any(p.id==derived.id for p in profile.patterns):continue
+        gap=16;title_h=(box.h-gap)*.55
+        title=Box(x=box.x,y=box.y,w=box.w,h=title_h)
+        body=Box(x=box.x,y=box.y+title_h+gap,w=box.w,h=box.h-title_h-gap)
+        derived.title_zone=title;derived.body_zones=[body];derived.text_zones=[title,body]
+        derived.title_size=max(18,profile.title_size)
+        derived.title_foreground=color;derived.foreground=color;derived.zone_foregrounds=[color]
+        # Contrast was measured over this region; old field samples no longer apply.
+        background='#000000' if color=='#FFFFFF' else '#FFFFFF'
+        derived.title_background=background;derived.zone_backgrounds=[background]
+        derived.heading_zones=[];derived.number_zones=[]
+        for field in derived.fields:
+            role=field['role']
+            if role=='title' or role=='body' and field['index']==0:
+                field['box']=(title if role=='title' else body).model_dump()
+                field.setdefault('style',{}).update(size=derived.title_size if role=='title' else max(16,profile.body_size),color=color)
+            elif role in ('body','heading','number'):field['role']='unused'
+        derived.safe_text_zone={**report,'application':'measured_safe_cover_reflow',
+            'field_checks':[{'role':role,'index':0,'status':'safe','after':zone.model_dump(),
+                'reason':'measured_clear_background_region'} for role,zone in [('title',title),('body',body)]]}
+        profile.patterns.append(derived)
+        added.append({'id':derived.id,'source_pattern':pattern.id,'region':box.model_dump()})
+    return added

@@ -295,7 +295,8 @@ async def prepare_template_analysis(package, path, gateway, progress):
             p.reusable and p.title_zone and p.body_zones and p.purpose not in ('cover', 'divider', 'service', 'reference')
             for p in package.template.patterns)):
         raise ValueError(semantics.get('message') or 'Не удалось проверить достаточно макетов для генерации. Успешные блоки анализа сохранены; повторите анализ. Генерация по непроверенному каталогу отключена.')
-    from .template_adaptation import derive_data_patterns, adapt_native_text_fields, derive_numbered_timelines, derive_roomy_text_patterns
+    from .template_adaptation import derive_data_patterns, adapt_native_text_fields, derive_numbered_timelines, derive_roomy_text_patterns, derive_safe_cover_patterns
+    package.analysis['template_cover_adaptations']=derive_safe_cover_patterns(package.template)
     package.analysis['template_text_adaptations']=adapt_native_text_fields(package.template)
     package.analysis['template_timeline_adaptations']=derive_numbered_timelines(package.template,path)
     package.analysis['template_data_regions']=derive_data_patterns(package.template)

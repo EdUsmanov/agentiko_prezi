@@ -54,7 +54,29 @@ def compact_table(element, profile):
         return
     from .fonts import element_font, wrap_text
     path=element_font(profile,element)[1]
-    width=element.box.w/max(1,len(element.rows[0]))-16
-    row_height=max(len(wrap_text(str(cell),path,element.size,max(1,width*(.94 if ri==0 else 1))))
-                   for ri,row in enumerate(element.rows) for cell in row)*element.size*1.25+16
+    widths=column_widths(element.rows,element.box.w,path,element.size)
+    row_height=max(len(wrap_text(str(cell),path,element.size,max(1,(widths[ci]-16)*(.94 if ri==0 else 1))))
+                   for ri,row in enumerate(element.rows) for ci,cell in enumerate(row))*element.size*1.25+16
     element.box.h=min(element.box.h,row_height*len(element.rows))
+
+
+def column_widths(rows, width, font_file, size):
+    """Share width according to measured cell text, keeping all columns/cells."""
+    from .fonts import text_width
+    count=max(map(len,rows),default=0)
+    if not count:return []
+    desired=[max(48,max(text_width(str(row[i]),font_file,size)*1.07+16
+                       for row in rows if i<len(row))) for i in range(count)]
+    from .fonts import _bold_measurement_face
+    from pathlib import Path
+    stat=Path(font_file).stat()
+    bold=_bold_measurement_face(str(font_file),stat.st_mtime_ns,stat.st_size)
+    floors=[max(32,max((text_width(word,bold if ri==0 else font_file,size)/(.94 if ri==0 else 1)+16
+                        for ri,row in enumerate(rows) if i<len(row) for word in str(row[i]).split()),default=32))
+            for i in range(count)]
+    if sum(floors)>width:
+        return [width*value/sum(floors) for value in floors]
+    spare=width-sum(floors)
+    weights=[max(1,value-floor) for value,floor in zip(desired,floors)]
+    total=sum(weights)
+    return [floor+spare*weight/total for floor,weight in zip(floors,weights)]
