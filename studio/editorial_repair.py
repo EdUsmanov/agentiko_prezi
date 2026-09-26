@@ -2,7 +2,7 @@
 from copy import deepcopy
 import re
 import json
-from pydantic import Field
+from pydantic import Field, model_validator
 from .models import StrictModel
 from .editorial import (EditorialSlide,EditorialPlan,EditorialReview,validate_plan,
     review_payload,validate_review,apply_plan)
@@ -17,6 +17,13 @@ class Replacement(StrictModel):
 
 class EditorialPatch(StrictModel):
     replacements: list[Replacement] = Field(min_length=1,max_length=30)
+
+    @model_validator(mode='before')
+    @classmethod
+    def normalize_envelope(cls, value):
+        # A bare replacement list has an unambiguous envelope. Keep all item,
+        # scope, evidence and semantic validation; never infer missing slides.
+        return {'replacements': value} if isinstance(value,list) else value
 
 
 def apply_replacements(previous,raw,allowed):

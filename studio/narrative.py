@@ -3,7 +3,7 @@ import re
 from collections import Counter
 from typing import Literal
 from pydantic import Field
-from .models import StrictModel, Fact, TableData, SlidePlan
+from .models import StrictModel, Fact, TableData, SlidePlan, VariantPlan
 from .content import SLIDE_RANGES, numeric_column
 
 
@@ -117,12 +117,17 @@ def narrative_storyboard(package):
             layout='chart' if chart else 'table' if tid else 'process' if purpose in ('process','timeline') else 'columns',
             chart_type=visualization if chart else 'auto'))
     if package.analysis.get('editorial'):
-        from .composer import compose
+        from .composer import compose_slide
+        from .uploads import assign_images
         from .audit import audit_scenes,repair_scenes
+        # Probe the same final scene that generation will export. Raw compose()
+        # can still contain a provisional table before native chart conversion.
+        variant=VariantPlan(key='executive',title='Readability preview',slides=outline)
+        image_groups=assign_images(package,variant)
         bad=[];fit_issues=[]
         for index,slide in enumerate(outline):
             try:
-                scene=compose(slide,package,index,'executive');repair_scenes([scene],package)
+                scene=compose_slide(variant,package,index,image_groups);repair_scenes([scene],package)
                 defects=[f for f in audit_scenes([scene],package) if f.code in
                     ('container_overflow','out_of_bounds','text_overflow','table_overflow','chart_overflow','overlap','readability')]
                 if defects:
