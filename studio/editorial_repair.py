@@ -199,7 +199,7 @@ async def prepare_with_targeted_repairs(package,gateway,progress=None,*,starting
         patch_schema['properties']['replacements'].update(minItems=len(allowed),maxItems=len(allowed))
         previous=deepcopy(raw)
         from .editorial_patch_validation import (shortening_contracts, validate_contracts,
-            constrain_patch_schema, validate_repaired_plan)
+            constrain_patch_schema, validate_repaired_plan, numeric_evidence_hints)
         contracts=shortening_contracts(previous,allowed,feedback,payload['characters_per_slide'])
         patch_schema=constrain_patch_schema(patch_schema,contracts,allowed)
         context_plan=deepcopy(previous)
@@ -207,7 +207,8 @@ async def prepare_with_targeted_repairs(package,gateway,progress=None,*,starting
             for bullet in slide['bullets']:
                 bullet['evidence']=[{'fact_id':e['fact_id']} for e in bullet['evidence']]
         repair_payload={**payload,'allowed_slide_indices':allowed,'previous_plan':context_plan,
-            'revision_feedback':feedback,'repair_contracts':contracts,'instruction':'Return replacements ONLY for the allowed slides. Keep total count and order. Preserve every previously corrected qualification. Use fact_id citations only. Do not edit neighbours.'}
+            'revision_feedback':feedback,'repair_contracts':contracts,
+            'numeric_evidence_hints':numeric_evidence_hints(previous,allowed,content),'instruction':'Return replacements ONLY for the allowed slides. Keep total count and order. Preserve every previously corrected qualification. Use fact_id citations only. Do not edit neighbours.'}
         def validate_patch(value):
             changed=apply_replacements(previous,value,allowed)
             if plan_signature(changed,content) in seen_plans:

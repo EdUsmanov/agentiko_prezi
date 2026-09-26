@@ -72,3 +72,32 @@ def validate_repaired_plan(changed, content, bounds, budget, require_cover, allo
                 relevant.append(message)
         if relevant:
             raise ValueError('; '.join(relevant)) from error
+
+
+def numeric_evidence_hints(previous, allowed, content):
+    """Locate numeric evidence for repairs without accepting or rewriting claims.
+
+    Matching digits are candidates only: the model must verify attribution and
+    units, and the independent semantic review still evaluates the final claim.
+    """
+    from .editorial import nums
+    facts={fact.id:fact.text for fact in content.facts}
+    fact_numbers={fid:set(nums(text)) for fid,text in facts.items()}
+    hints=[]
+    for index in allowed:
+        slide=previous['slides'][index-1]
+        for claim_index,claim in enumerate(slide['bullets'],1):
+            cited=[e['fact_id'] for e in claim['evidence']]
+            supported=set().union(*(fact_numbers.get(fid,set()) for fid in cited))
+            missing=set(nums(claim['text']+' '+claim['group']))-supported
+            if not missing:continue
+            candidates=[{'fact_id':fid,'text':text,'matching_numbers':sorted(missing & fact_numbers[fid])}
+                        for fid,text in facts.items() if missing & fact_numbers[fid]]
+            hints.append({'claim_id':f's{index}b{claim_index}','text':claim['text'],
+                'unsupported_numbers':sorted(missing),'current_fact_ids':cited,
+                'candidate_count':len(candidates),
+                'candidate_evidence':[{**row,'text':row['text'][:800]} for row in candidates[:12]],
+                'action':'Add a fact_id only if it supports the SAME subject, quantity and unit. '
+                         'Otherwise remove or reword the unsupported numeric claim using the original source wording. '
+                         'Do not return unchanged text with unchanged evidence; matching digits alone are not proof.'})
+    return hints

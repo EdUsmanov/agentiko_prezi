@@ -89,3 +89,24 @@ def test_array_normalization_cannot_bypass_patch_contract(case):
     elif case=='missing_content':del row['content']
     else:row['unexpected']='ignored?'
     with pytest.raises(ValueError):apply_replacements(previous,raw,[1])
+
+
+def test_numeric_repair_hints_find_sources_without_silencing_validation():
+    from studio.editorial_patch_validation import numeric_evidence_hints
+    source=parse_content('The pilot lasted 11 weeks.\nThe team had 7 people.\nSeven unrelated devices lasted 7 days.')
+    plan=EditorialPlan.model_validate({'slides':[{'title':'Pilot','bullets':[
+        {'text':'7 people worked for 11 weeks.','evidence':[{'fact_id':'f1'}]}]}]}).model_dump()
+    hint=numeric_evidence_hints(plan,[1],source)[0]
+    assert hint['unsupported_numbers']==['7'] and hint['current_fact_ids']==['f1']
+    assert {row['fact_id'] for row in hint['candidate_evidence']}=={'f2','f3'}
+    with pytest.raises(ValueError,match='Unsupported number'):
+        validate_plan(plan,source,(1,1))
+    # The hint itself never adds citations or treats a digit match as semantic proof.
+    assert plan['slides'][0]['bullets'][0]['evidence']==[{'fact_id':'f1','quote':None}]
+    plan['slides'][0]['bullets'][0]['evidence'].append({'fact_id':'f2'})
+    assert numeric_evidence_hints(plan,[1],source)==[]
+    validate_plan(plan,source,(1,1))
+    plan['slides'][0]['bullets'][0]['text']='999 people.'
+    assert numeric_evidence_hints(plan,[1],source)[0]['candidate_evidence']==[]
+    with pytest.raises(ValueError,match='Unsupported number'):
+        validate_plan(plan,source,(1,1))
