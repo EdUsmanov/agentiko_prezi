@@ -246,9 +246,17 @@ def create_app(settings=None):
                 with path.open("rb") as source:
                     source.seek(max(0,path.stat().st_size-64000))
                     attachments[name]=redact(source.read(64000).decode("utf-8","replace"))
+        # Keep checks available in the journal and its download, including old jobs.
+        checks={key:job[key] for key in ("diagnostics","warnings","quality_report",
+            "contextual_audit","visual_audit","refinement","composition_diversity",
+            "font_substitutions","missing_fonts","auto_error") if key in job}
+        checks["variants"]=[{key:variant[key] for key in
+            ("key","title","findings","repairs","audit_scope") if key in variant}
+            for variant in job.get("variants",[])]
+        checks=json.loads(redact(json.dumps(checks,ensure_ascii=False)))
         result={"job_id":jid,"state":job["state"],"phase":job.get("phase"),
                 "error":redact(job.get("error","")),"events":store.events(jid,max(0,after),10000 if download else 500,latest=after<0 and not download),
-                "attachments":attachments,"retention":"Последние 10 000 событий; файлы — последние 64 КБ. Ключи скрыты, запросы и ответы модели целиком не записываются."}
+                "checks":checks,"attachments":attachments,"retention":"Последние 10 000 событий; файлы — последние 64 КБ. Ключи скрыты, запросы и ответы модели целиком не записываются."}
         return JSONResponse(result,headers={"Content-Disposition":f'attachment; filename="diagnostics-{jid}.json"'} if download else {})
 
     @app.get("/api/health")

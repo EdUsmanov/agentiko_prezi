@@ -77,10 +77,15 @@ function dirty() {
     $('#prep-state').textContent = 'Нужен новый анализ'; $('#prep-state').className = 'pill neutral'; $('#profile').classList.add('stale');
   }
 }
-function diagnosticsList(items) {
-  const node = el('div','diagnostics');
-  items.forEach(item => node.append(el('p','notice '+item.severity,item.message)));
-  return node;
+function journalButton(id) {
+  const button = el('button','text-button','Открыть журнал');
+  button.type = 'button'; button.onclick = () => openDiagnostics(id);
+  return button;
+}
+function displayFontChanges(target, records = []) {
+  for (const record of records.filter(item => item.scope === 'font')) {
+    target.append(el('p','profile-detail',`Шрифт «${record.template_font}» заменён на «${record.fallback_font}» для поддержки текста. Оформление может отличаться от шаблона.`));
+  }
 }
 const phaseLabels = {
   'Разбор PPTX и дизайн-системы':'Изучаем цвета, шрифты и расположение элементов в вашем шаблоне',
@@ -111,12 +116,18 @@ function stopLoaders() {
 function clearGenerationError() {
   $('#generation-error')?.remove();
 }
+function preparationStopped(error) {
+  console.error('Preparation stopped:', error);
+  $('#prep-state').textContent = 'Анализ не завершён'; $('#prep-state').className = 'pill neutral';
+  toast('Анализ не завершён. Подробности — в журнале задания.','info');
+}
 function generationError(message) {
+  console.error('Generation stopped:', message);
   clearGenerationError();
-  const notice = el('div','operation-error',message);
-  notice.id = 'generation-error'; notice.setAttribute('role','alert');
+  const notice = el('div','profile-detail','Генерация не завершена.');
+  notice.id = 'generation-error'; notice.setAttribute('role','status');
+  if (diagnosticJob) notice.append(journalButton(diagnosticJob));
   $('.generation').append(notice);
-  toast(message);
 }
 function beginPreparation(label) {
   stopLoaders(); clearGenerationError();
@@ -244,14 +255,14 @@ function displayProfile(job) {
     const slides=Number(number.value); const instructions=wishes.value.trim() || 'Выделить главное, сократить текст и пересобрать план под выбранное количество слайдов.';
     stopAutoWatch(); setBusy(true); submit.disabled=true; beginPreparation('Заново выделяем главное из исходного текста');
     try { if (cancellation) await cancellation; await finishPreparation(await jsonPost(`/api/packages/${job.id}/revise`,{slides,instructions})); }
-    catch (error) { toast(error.message); }
+    catch (error) { preparationStopped(error); }
     finally { stopLoaders(); setBusy(false); submit.disabled=false; }
   };
   $('#profile').append(change);
-  const notices = job.diagnostics || (job.warnings || []).map(message => ({message,severity:'warning'}));
-  if (notices.length) $('#profile').append(diagnosticsList(notices));
-  const degraded = notices.some(n => n.severity !== 'info') || analysis?.planning_status === 'degraded';
-  $('#prep-state').textContent = degraded ? 'Есть замечания' : 'Подготовлено'; $('#prep-state').className = 'pill '+(degraded ? 'caution' : 'good');
+  displayFontChanges($('#profile'),analysis?.font_substitutions || t.font_substitutions);
+  $('#profile').append(journalButton(job.id));
+  $('#prep-state').textContent = slideBudget?.status === 'needs_input' ? 'Нужно уточнить план' : 'Подготовлено';
+  $('#prep-state').className = 'pill '+(slideBudget?.status === 'needs_input' ? 'neutral' : 'good');
   $('#step-2').classList.add('active'); $('#generate-button').disabled = busy || slideBudget?.status === 'needs_input';
 }
 async function watchJob(id,onProgress) {
@@ -274,21 +285,21 @@ async function finishPreparation(job,autoGenerate = false) {
   displayProfile(done);
 }
 function displayMissingFonts(job) {
-  packageId = null; slideBudget = null;
+  packageId = null; slideBudget = null; diagnosticJob = job.id;
   $('#profile-empty').hidden = true; $('#prep-loader').hidden = true; $('#profile').hidden = false;
   $('#profile').classList.remove('stale'); $('#profile').replaceChildren();
-  $('#profile').append(el('h3','','Не хватает шрифтов'),el('p','profile-detail',job.error || 'Добавьте точные TTF и повторите проверку.'));
-  for (const font of job.missing_fonts || []) $('#profile').append(el('p','notice warning',`${font.requested}: ${font.reason}`));
+  $('#profile').append(el('h3','','Добавьте шрифты'),el('p','profile-detail','Добавьте TTF и повторите проверку.'));
+  for (const font of job.missing_fonts || []) $('#profile').append(el('p','profile-detail',font.requested));
   const report = el('a','text-button','Отчёт о шрифтах ↗'); report.href = fileUrl(job.id,'font-model.json'); report.target = '_blank'; report.rel = 'noopener';
   const retry = el('button','secondary','Проверить шрифты повторно');
   retry.onclick = async () => {
     if (busy) return;
     setBusy(true); retry.disabled = true;
     try { await finishPreparation(await api(`/api/packages/${job.id}/retry-fonts`,{method:'POST'})); }
-    catch (error) { toast(error.message); }
+    catch (error) { preparationStopped(error); }
     finally { setBusy(false); retry.disabled = false; }
   };
-  $('#profile').append(report,retry);
+  $('#profile').append(report,retry,journalButton(job.id));
   $('#prep-state').textContent = 'Нужны шрифты'; $('#prep-state').className = 'pill caution';
   $('#generate-button').disabled = true;
 }
@@ -305,7 +316,7 @@ $('#prepare-form').addEventListener('submit',async event => {
   $('#prep-state').textContent = 'Анализируем'; $('#prep-state').className = 'pill neutral';
   try { await finishPreparation(await api('/api/prepare',{method:'POST',body:data})); }
   catch (error) {
-    $('#prep-state').textContent = 'Анализ не завершён'; $('#prep-state').className = 'pill error'; toast(error.message);
+    preparationStopped(error);
   } finally { stopLoaders(); setBusy(false); }
 });
 async function startGeneration(nested = false) {
@@ -345,7 +356,7 @@ async function showTimings(job) {
 }
 function showResults(job) {
   // History results and the current editor have separate package identities.
-  resultPackageId = job.package_id;
+  resultPackageId = job.package_id; diagnosticJob = job.id;
   clearTimeout(toastTimeout); $('#toast').hidden = true;
   $('#results').hidden = false; $('#step-3').classList.add('active');
   stopLoaders(); clearGenerationError(); showTimings(job);
@@ -370,35 +381,9 @@ function showResults(job) {
       const link = el('a','',format.toUpperCase()+' ↗'); link.href = fileUrl(job.id,`${variant.key}/deck.${format}`); link.target = '_blank'; link.rel = 'noopener'; links.append(link);
     }
     card.append(links); $('#result-grid').append(card);
-    if (!variant.findings.length) $('#audit-list').append(el('div','audit-line '+(variant.audit_scope ? 'info' : 'good'),
-      variant.audit_scope ? `${variant.title}: проверка текста и метрик объектов PPTX не выявила замечаний. Результат VL-проверки указан отдельно.`
-        : `${variant.title}: ошибок геометрии и покрытия нет`));
-    for (const f of [...variant.findings,...(variant.repairs || [])]) $('#audit-list').append(el('div','audit-line '+f.severity,`${variant.title}${f.slide ? ' · слайд '+f.slide : ''}: ${f.message}`));
   }
-  if (job.warnings?.length) $('#audit-list').append(diagnosticsList(job.warnings.map(message => ({message,severity:'warning'}))));
-  if (job.quality_report) {
-    $('#audit-list').replaceChildren(el('div','audit-line info',
-      `Экспорт выполнен. Проверки: ${job.quality_report.errors} ошибок, ${job.quality_report.warnings} замечаний. Ручная приёмка не проводилась.`));
-    for (const f of job.quality_report.findings) $('#audit-list').append(el('div','audit-line '+f.severity,
-      `${f.variant ? f.variant+' · ' : ''}${f.slide ? 'слайд '+f.slide+': ' : ''}${f.message}`));
-  }
-  const review = job.contextual_audit || {status:'not_run',findings:[]};
-  $('#audit-list').append(el('div','audit-line '+(review.status === 'completed' ? 'info' : 'warning'),review.status === 'completed' ? 'Контекстуальная проверка текста моделью выполнена.' : 'Контекстуальная проверка текста моделью не выполнена.'));
-  for (const f of (job.quality_report ? [] : review.findings || [])) $('#audit-list').append(el('div','audit-line '+f.severity,`${f.variant ? f.variant+' · ' : ''}${f.slide ? 'Слайд '+f.slide+': ' : ''}${f.message}`));
-  const visual=job.visual_audit;
-  $('#audit-list').append(el('div','audit-line '+(visual?.status==='completed' ? 'info' : 'warning'),
-    visual?.status==='completed'
-      ? `VL-модель проверила изображения слайдов: ${visual.checked} из ${visual.total}. Это визуальная оценка, а не гарантия отсутствия дефектов.`
-      : `Визуальная проверка не завершена: ${visual?.checked || 0} из ${visual?.total || job.variants.reduce((n,v)=>n+v.slides,0)} слайдов. ${visual?.reason || 'Для этого запуска проверка изображений не выполнялась.'}`));
-  for (const f of (job.quality_report ? [] : visual?.findings || [])) $('#audit-list').append(el('div','audit-line '+f.severity,
-    `${f.variant} · слайд ${f.slide}: ${f.message}`));
-  const repairAccepted = job.refinement?.accepted || job.refinement?.status === 'accepted';
-  if (job.refinement?.attempts) $('#audit-list').append(el('div','audit-line '+(repairAccepted ? 'info' : 'warning'),
-    repairAccepted ? `Автоматические исправления приняты после повторной проверки: ${job.refinement.edits?.length || job.refinement.accepted_variants?.length || 0}.`
-      : 'Попытка автоматического исправления не подтвердила улучшение. Сохранена предыдущая версия с замечаниями.'));
-  $('#audit-list').append(el('div','audit-line '+(job.native_pptx_render ? 'info' : 'warning'),job.native_pptx_render ? 'Предпросмотр и PDF отрисованы из PPTX через LibreOffice. Это не визуальная оценка качества моделью.' : 'Предпросмотр построен из модели сцены. Соответствие PPTX требует проверки.'));
-  if (job.composition_diversity) $('#audit-list').append(el('div','audit-line '+(job.composition_diversity.verified ? 'good' : 'warning'),
-    `${job.composition_diversity.method === 'selected_template_patterns' ? 'Различные последовательности макетов' : 'Различия геометрии композиций'}: ${job.composition_diversity.distinct} из 3.`));
+  $('#audit-list').append(el('p','profile-detail','Результаты проверок сохранены в журнале задания и отчёте JSON.'),journalButton(job.id));
+  displayFontChanges($('#audit-list'),job.font_substitutions);
   $('#results').scrollIntoView({behavior:'smooth',block:'start'});
 }
 function updatePreview() {
@@ -423,7 +408,7 @@ $('#revise-form').addEventListener('submit',async event => {
     packageId = null;
     $('#prep-state').textContent = 'Новая версия'; $('#prep-state').className = 'pill neutral';
     $('#workspace').scrollIntoView({behavior:'smooth'}); await finishPreparation(job,true);
-  } catch (error) { $('#prep-state').textContent = 'Не завершено'; toast(error.message); }
+  } catch (error) { preparationStopped(error); }
   finally { stopLoaders(); setBusy(false); }
 });
 async function resumeJob(job) {
@@ -437,7 +422,7 @@ async function resumeJob(job) {
       });
       if (['completed','needs_review'].includes(done.state)) showResults(done); else generationError(done.error || states[done.state]);
     }
-  } catch (error) { if (job.kind === 'generation') generationError(error.message); else toast(error.message); }
+  } catch (error) { if (job.kind === 'generation') generationError(error.message); else preparationStopped(error); }
   finally { stopLoaders(); setBusy(false); }
 }
 $('#nav-history').onclick = async () => {
@@ -516,7 +501,7 @@ function armAutoGeneration(job) {
         status.textContent = 'Проверьте структуру и количество слайдов. Подтвердите план кнопкой генерации или измените его.';
         return;
       } else if (['cancelled','blocked'].includes(current.auto_generation)) {
-        status.textContent = current.auto_generation === 'cancelled' ? 'Автозапуск отменён. Можно запустить вручную.' : 'Автозапуск не выполнен: '+(current.auto_error || 'смотрите журнал');
+        status.textContent = current.auto_generation === 'cancelled' ? 'Автозапуск отменён. Можно запустить вручную.' : 'Автозапуск не выполнен. Подробности — в журнале задания.';
         return;
       } else if (!current.auto_generation) {
         status.textContent = 'Сохранённый пакет. Для генерации нажмите кнопку запуска.';

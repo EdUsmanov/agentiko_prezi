@@ -99,10 +99,21 @@ def test_redaction_nested_and_pipe_boundaries(tmp_path):
 def test_job_journal_is_available_for_failed_job(tmp_path):
     application=create_app(Settings(data_dir=tmp_path))
     job=application.state.store.create("preparation")
-    application.state.store.update(job["id"],"failed",error="<script>bad()</script>")
+    configure("journal-secret-test-key")
+    application.state.store.update(job["id"],"failed",error="<script>bad()</script>",
+        diagnostics=[{"severity":"error","message":"Detailed diagnostic"}],
+        warnings=["Warning journal-secret-test-key"],
+        quality_report={"errors":1,"findings":[{"message":"Geometry issue"}]},
+        variants=[{"key":"a","findings":[{"message":"Variant issue"}]}])
     with TestClient(application) as client:
         report=client.get("/api/jobs/"+job["id"]+"/diagnostics")
         assert report.status_code==200 and report.json()["events"][-1]["level"]=="error"
+        checks=report.json()["checks"]
+        assert checks["diagnostics"][0]["message"]=="Detailed diagnostic"
+        assert checks["quality_report"]["findings"][0]["message"]=="Geometry issue"
+        assert checks["variants"][0]["findings"][0]["message"]=="Variant issue"
+        assert checks["warnings"]==["Warning [REDACTED]"]
+        assert client.get("/api/jobs/"+job["id"]+"/diagnostics?download=true").json()["checks"]==checks
         assert client.get("/api/jobs/"+job["id"]+"/diagnostics?download=true").headers["content-disposition"].startswith("attachment")
         assert client.get("/api/jobs/not-a-job/diagnostics").status_code==404
 
