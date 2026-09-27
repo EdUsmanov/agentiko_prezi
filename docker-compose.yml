@@ -1,0 +1,24 @@
+services:
+  studio:
+    build: .
+    image: agentiko-prezi-studio
+    init: true
+    ports:
+      - "8765:8765"
+    # .env не обязателен: без него сервис работает в автономном extractive-режиме.
+    # Скопируйте .env.example или .env.team в .env для API-режима модели.
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      STUDIO_DATA_DIR: /app/data
+      STUDIO_PORT: "8765"
+      # При запуске на сервере укажите его публичный хост/IP, иначе приложение
+      # отклонит запросы с чужим Host-заголовком (400): STUDIO_ALLOWED_HOSTS=demo.example.com
+      # Значение берётся из .env или переменных окружения; пусто — только localhost.
+      STUDIO_ALLOWED_HOSTS: ${STUDIO_ALLOWED_HOSTS:-}
+    volumes:
+      # Готовые презентации и история заданий остаются на хосте.
+      # На Linux может понадобиться: sudo chown -R 1000:1000 ./data
+      - ./data:/app/data
+    restart: unless-stopped

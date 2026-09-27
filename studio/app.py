@@ -134,9 +134,7 @@ def create_app(settings=None):
     app = FastAPI(title="VK Forma Presentation Studio", version="0.1.0", lifespan=lifespan)
     app.state.store = store
     app.state.settings = settings
-    app.add_middleware(
-        TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "::1", "testserver"]
-    )
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.allowed_hosts)
     app.add_middleware(
         UploadLimitMiddleware, max_bytes=settings.max_upload_bytes + MAX_TOTAL_BYTES + 512 * 1024
     )

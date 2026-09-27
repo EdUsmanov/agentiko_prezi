@@ -52,6 +52,7 @@ class Settings:
     engine: str = "native"
     visual_review: bool = False
     download_open_fonts: bool = False
+    allowed_hosts: tuple[str, ...] = ("127.0.0.1", "localhost", "::1", "testserver")
 
     def worker_environment(self):
         # Freeze the server-owned configuration. A child must not re-read a
@@ -67,7 +68,7 @@ class Settings:
             return cls.from_env()  # Direct CLI worker invocation.
         values = json.loads(raw)
         values["data_dir"] = Path(values["data_dir"])
-        for name in ("vk_hosts", "openrouter_providers"):
+        for name in ("vk_hosts", "openrouter_providers", "allowed_hosts"):
             values[name] = tuple(values[name])
         return cls(**values)
 
@@ -115,4 +116,10 @@ class Settings:
             ),
             visual_review=os.getenv("STUDIO_VLM_ENABLED", "false").lower() == "true",
             download_open_fonts=os.getenv("STUDIO_DOWNLOAD_OPEN_FONTS", "true").lower() == "true",
+            allowed_hosts=(
+                tuple(
+                    x.strip() for x in os.getenv("STUDIO_ALLOWED_HOSTS", "").split(",") if x.strip()
+                )
+                or ("127.0.0.1", "localhost", "::1", "testserver")
+            ),
         )
