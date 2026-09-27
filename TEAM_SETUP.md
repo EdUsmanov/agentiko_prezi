@@ -95,10 +95,20 @@ python -m studio.cli serve --port 8765
 ## 6. Тесты и обновление
 
 ```bash
+python -m pip install -r requirements-dev.txt -r requirements-e2e.txt
+python -m playwright install chromium
+# На Linux для установки системных библиотек браузера:
+# python -m playwright install --with-deps chromium
+ruff format --check studio tests scripts test_support e2e
+ruff check studio tests scripts test_support e2e
+node scripts/ui_phase_labels_test.cjs
 python -m pytest -q
+python -m pytest -q e2e
 ```
 
-Тесты используют фикстуры и имитации модели; это не заменяет ручной прогон через интерфейс с реальным провайдером. Для обновления остановите приложение, сохраните изменения в своей ветке, затем:
+Браузерные тесты сами запускают отдельный сервер и локальный replay провайдера; предварительно запускать приложение, копировать `.env.team` или оплачивать модельные запросы не нужно. Playwright нужен только для тестов. Шаблоны и ответы синтетические; эта проверка не заменяет ручной прогон с реальной моделью. Подробности и разбор сбоев — [TESTING.md](TESTING.md).
+
+Для обновления остановите приложение и сохраните согласованные изменения в `main`, затем:
 
 ```bash
 git switch main
@@ -107,4 +117,4 @@ python -m pip install -r requirements.lock
 python -m studio.cli serve --port 8765
 ```
 
-После обновления пайплайна повторно проанализируйте материалы. Сохранённые результаты остаются в `data/`. Правила веток и Pull Request — в [CONTRIBUTING.md](CONTRIBUTING.md).
+После обновления пайплайна повторно проанализируйте материалы. Сохранённые результаты остаются в `data/`. Правила совместной работы в `main` — в [CONTRIBUTING.md](CONTRIBUTING.md).
