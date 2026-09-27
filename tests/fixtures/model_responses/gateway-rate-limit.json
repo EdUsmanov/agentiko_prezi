@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "provenance": "Hand-authored synthetic transport and validation cases; no real provider or user material.",
+  "image_matching": "pixels",
+  "exchanges": [
+    {
+      "request": {
+        "parameters": {
+          "model": "fixture-27b",
+          "temperature": 0.25,
+          "max_tokens": 10000,
+          "response_format": {
+            "type": "json_object"
+          }
+        },
+        "messages": [
+          {
+            "role": "system",
+            "content": {
+              "sha256": "5b3d498d19d245ad58e5f3e5200c4d93dcf2ad2d82dacc2d9809dd8a9f058c47"
+            }
+          },
+          {
+            "role": "user",
+            "content": "{\"untrusted_input\": {\"text\": \"Пилот: 12 недель; контроль: 40 заявок.\"}}"
+          }
+        ]
+      },
+      "status": 429,
+      "response": {
+        "error": {
+          "code": "rate_limited"
+        }
+      },
+      "headers": {
+        "Retry-After": "0"
+      }
+    },
+    {
+      "request": {
+        "parameters": {
+          "model": "fixture-27b",
+          "temperature": 0.25,
+          "max_tokens": 10000,
+          "response_format": {
+            "type": "json_object"
+          }
+        },
+        "messages": [
+          {
+            "role": "system",
+            "content": {
+              "sha256": "5b3d498d19d245ad58e5f3e5200c4d93dcf2ad2d82dacc2d9809dd8a9f058c47"
+            }
+          },
+          {
+            "role": "user",
+            "content": "{\"untrusted_input\": {\"text\": \"Пилот: 12 недель; контроль: 40 заявок.\"}}"
+          }
+        ]
+      },
+      "status": 200,
+      "response": {
+        "choices": [
+          {
+            "message": {
+              "role": "assistant",
+              "content": "{\"ok\": true}"
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 100,
+          "completion_tokens": 50,
+          "total_tokens": 150
+        }
+      },
+      "headers": {}
+    }
+  ]
+}

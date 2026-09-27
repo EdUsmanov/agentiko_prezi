@@ -4,12 +4,24 @@ from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
 
 ROOT = Path(__file__).resolve().parent.parent
-DIRECTORIES = {"studio", "web", "prompts", "config", "fonts", "scripts", "tests", "vendor"}
+DIRECTORIES = {
+    "studio",
+    "web",
+    "prompts",
+    "config",
+    "fonts",
+    "scripts",
+    "tests",
+    "vendor",
+    "test_support",
+    "e2e",
+}
 ROOT_FILES = {
     "LICENSE",
     "pyproject.toml",
     "requirements.lock",
     "requirements-dev.txt",
+    "requirements-e2e.txt",
     ".env.example",
     ".gitignore",
 }

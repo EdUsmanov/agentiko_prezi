@@ -9,8 +9,8 @@ jobs:
         with:
           python-version: '3.11'
       - run: python -m pip install -r requirements-dev.txt
-      - run: ruff format --check studio tests scripts
-      - run: ruff check studio tests scripts
+      - run: ruff format --check studio tests scripts test_support e2e
+      - run: ruff check studio tests scripts test_support e2e
   test:
     runs-on: ubuntu-latest
     steps:
@@ -29,3 +29,26 @@ jobs:
           sudo apt-get install -y libreoffice-impress
       - run: python -m pip install -r requirements.lock
       - run: python -m pytest -q
+
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install native presentation renderer
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libreoffice-impress
+      - run: python -m pip install -r requirements.lock -r requirements-e2e.txt
+      - run: python -m playwright install --with-deps chromium
+      - name: Browser flows with isolated data and synthetic model responses
+        run: python -m pytest -q e2e --junitxml=test-results/browser.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-evidence
+          path: test-results/
+          retention-days: 7

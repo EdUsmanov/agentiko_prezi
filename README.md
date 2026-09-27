@@ -107,10 +107,12 @@ OCR: добавлен отдельный транспортный адаптер
 
 ## Проверки
 
+Воспроизводимые модельные ответы, браузерные сценарии и матрица синтетических входов: [TESTING.md](TESTING.md).
+
 ```bash
 python -m pip install -r requirements-dev.txt
-ruff format --check studio tests scripts
-ruff check studio tests scripts
+ruff format --check studio tests scripts test_support e2e
+ruff check studio tests scripts test_support e2e
 node scripts/ui_phase_labels_test.cjs
 python -m pytest -q
 # Для работающего localhost-сервиса с проиндексированными примерами:

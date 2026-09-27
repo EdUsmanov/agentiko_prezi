@@ -17,6 +17,10 @@ def test_source_archive_is_isolated_and_excludes_runtime(tmp_path, monkeypatch):
         "data/private.txt",
         "README.md",
         "requirements-dev.txt",
+        "requirements-e2e.txt",
+        "e2e/test_browser_flows.py",
+        "test_support/replay.py",
+        "tests/fixtures/model_responses/example.json",
     ):
         path = root / name
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -32,5 +36,9 @@ def test_source_archive_is_isolated_and_excludes_runtime(tmp_path, monkeypatch):
             "isolated-experiment/.env.example",
             "isolated-experiment/README.md",
             "isolated-experiment/requirements-dev.txt",
+            "isolated-experiment/requirements-e2e.txt",
+            "isolated-experiment/e2e/test_browser_flows.py",
+            "isolated-experiment/test_support/replay.py",
+            "isolated-experiment/tests/fixtures/model_responses/example.json",
         }
     assert not (tmp_path / "presentation-studio-source.zip").exists()
