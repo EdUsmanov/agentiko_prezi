@@ -90,6 +90,10 @@ def test_upstream_design_loop_completes_without_changing_facts(prepared, tmp_pat
 
         async def json_request(self, prompt_name, payload, timeout, schema):
             assert prompt_name == "deeppresenter" and 0 < timeout <= 10
+            if self.calls == 0:
+                history = json.dumps(payload["history"])
+                assert "color_schemes" in history
+                assert '"colors"' in history or '\\"colors\\"' in history
             self.calls += 1
             return {
                 "name": ["compose_slides", "inspect_variants", "finalize"][self.calls - 1],
@@ -205,3 +209,42 @@ def test_model_request_uses_stage_budget_not_35_second_cutoff(prepared):
     bridge = GatewayBridge(Gateway(), time.monotonic() + 90, env)
     result = asyncio.run(bridge.run([]))
     assert result.choices[0].message.tool_calls[0].function.name == "compose_slides"
+
+
+def test_single_action_array_from_provider_is_accepted(prepared):
+    import time
+
+    env = environment(prepared)
+
+    class Gateway:
+        settings = SimpleNamespace(model_id="test")
+
+        async def json_request(self, prompt, payload, timeout, schema):
+            return [
+                {"name": "compose_slides", "assignments": env.baseline_assignments, "outcome": None}
+            ]
+
+    bridge = GatewayBridge(Gateway(), time.monotonic() + 10, env)
+    result = asyncio.run(bridge.run([]))
+    assert result.choices[0].message.tool_calls[0].function.name == "compose_slides"
+
+
+def test_multiple_actions_from_provider_are_rejected(prepared):
+    import time
+
+    env = environment(prepared)
+
+    class Gateway:
+        settings = SimpleNamespace(model_id="test")
+
+        async def json_request(self, prompt, payload, timeout, schema):
+            action = {
+                "name": "compose_slides",
+                "assignments": env.baseline_assignments,
+                "outcome": None,
+            }
+            return [action, action]
+
+    bridge = GatewayBridge(Gateway(), time.monotonic() + 10, env)
+    with pytest.raises(ValueError):
+        asyncio.run(bridge.run([]))

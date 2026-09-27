@@ -7,7 +7,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import Annotated
 from PIL import Image
-from pydantic import Field, StringConstraints
+from pydantic import Field, StringConstraints, ValidationError
 from .models import StrictModel, Box
 from ._vendor.portable_text_zone_finder.textzone.vl import _grid_image, PROMPTS
 from ._vendor.portable_text_zone_finder.textzone import analyze_image
@@ -48,14 +48,22 @@ async def recognize_cells(image, gateway, directory):
             except (ValueError, OSError):
                 pass
         if record is None:
-            raw = await gateway.json_request(
-                "text_zone",
-                {"variant": variant, "task": instruction},
-                timeout=90,
-                schema=GridCells.model_json_schema(),
-                images=[data],
-            )
-            record = GridCells.model_validate(raw)
+            for attempt in range(2):
+                raw = await gateway.json_request(
+                    "text_zone",
+                    {"variant": variant, "task": instruction},
+                    timeout=90,
+                    schema=GridCells.model_json_schema(),
+                    images=[data],
+                )
+                if isinstance(raw, list) and len(raw) == 1 and isinstance(raw[0], dict):
+                    raw = raw[0]
+                try:
+                    record = GridCells.model_validate(raw)
+                    break
+                except ValidationError:
+                    if attempt:
+                        raise
             atomic_json(target, record.model_dump())
         cells.update(record.cells)
     return cells
@@ -188,13 +196,30 @@ async def review_text_zones(profile, directory, gateway, progress=None):
                     unavailable = True  # No cascade across the remaining complex slides.
         inspect_text_zone(image, pattern, profile, model, vl_cells=cells)
         checks = check_fields(pattern, profile, image, metadata, cells)
+        if (
+            status == "pixels_sufficient"
+            and live
+            and not unavailable
+            and any(check["status"] == "unknown" for check in checks)
+        ):
+            if progress:
+                progress("Проверяем спорное текстовое поле визуальной моделью: " + pattern.id)
+            try:
+                cells = await recognize_cells(image, gateway, directory)
+                status = "completed"
+                inspect_text_zone(image, pattern, profile, model, vl_cells=cells)
+                checks = check_fields(pattern, profile, image, metadata, cells)
+            except Exception as exc:
+                status = "failed"
+                report["error_type"] = type(exc).__name__
+                unavailable = True
         pattern.safe_text_zone["application"] = (
             "per-field constraints; unknown requires review; authored fields retained"
         )
         report["patterns"].append(
             {"pattern_id": pattern.id, "vl_status": status, "field_checks": checks}
         )
-        if any(c["status"] == "unknown" for c in checks):
+        if status in ("failed", "not_run") or any(c["status"] == "unknown" for c in checks):
             report["status"] = "needs_review"
     atomic_json(Path(directory) / "text-zone-review.json", report)
     atomic_json(

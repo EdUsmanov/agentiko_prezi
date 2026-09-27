@@ -1,6 +1,7 @@
 """Reuse proven empty source composition regions for editable data visuals."""
 
 from pathlib import Path
+from collections import Counter
 from PIL import Image, ImageChops
 from .models import Box
 
@@ -120,7 +121,7 @@ def derive_data_patterns(profile):
 
 def adapt_native_text_fields(profile):
     """Keep source artwork while repairing type on authored solid-colour plates."""
-    from .template_geometry import contrast
+    from .template_geometry import contrast, minimum_text_contrast
 
     changes = []
     for pattern in profile.patterns:
@@ -159,12 +160,13 @@ def adapt_native_text_fields(profile):
             )
             if not background or not foreground:
                 continue
-            color = foreground
-            if contrast(color, background) < 4.5:
-                color = max(profile.colors, key=lambda c: contrast(c, background))
-                if contrast(color, background) < 4.5:
-                    continue
             size = field.get("font_size", 0)
+            required = minimum_text_contrast(size, field.get("style", {}).get("bold", False))
+            color = foreground
+            if contrast(color, background) < required:
+                color = max(profile.colors, key=lambda c: contrast(c, background))
+                if contrast(color, background) < required:
+                    continue
             readable = max(size, 16) if role == "body" and safe.h >= 20 else size
             if role == "title":
                 pattern.title_zone = safe
@@ -449,6 +451,8 @@ def derive_safe_cover_patterns(profile):
     layouts retain their authored binding. The region comes from the existing
     background/obstacle analysis, never from a template name or guessed boxes.
     """
+    from .template_geometry import contrast, minimum_text_contrast
+
     added = []
     for pattern in list(profile.patterns):
         if (
@@ -494,8 +498,8 @@ def derive_safe_cover_patterns(profile):
             or box.y + box.h > profile.height
         ):
             continue
-        color = {"white": "#FFFFFF", "black": "#000000"}.get(report.get("text_color"))
-        if color not in profile.colors:
+        report_color = {"white": "#FFFFFF", "black": "#000000"}.get(report.get("text_color"))
+        if report_color not in profile.colors:
             continue
         derived = pattern.model_copy(deep=True)
         derived.id = "safe-cover-" + pattern.id
@@ -505,17 +509,69 @@ def derive_safe_cover_patterns(profile):
         title_h = (box.h - gap) * 0.55
         title = Box(x=box.x, y=box.y, w=box.w, h=title_h)
         body = Box(x=box.x, y=box.y + title_h + gap, w=box.w, h=box.h - title_h - gap)
+
+        def colors_in(zone):
+            if not pattern.background_image or not Path(pattern.background_image).is_file():
+                return []
+            with Image.open(pattern.background_image) as image:
+                rgb = image.convert("RGB")
+                return [
+                    "#%02X%02X%02X"
+                    % rgb.getpixel(
+                        (
+                            min(
+                                rgb.width - 1,
+                                int((zone.x + zone.w * x) / profile.width * rgb.width),
+                            ),
+                            min(
+                                rgb.height - 1,
+                                int((zone.y + zone.h * y) / profile.height * rgb.height),
+                            ),
+                        )
+                    )
+                    for x in (0.2, 0.5, 0.8)
+                    for y in (0.2, 0.5, 0.8)
+                ]
+
+        title_samples, body_samples = colors_in(title), colors_in(body)
+        authored = pattern.title_foreground
+        title_size = max(18, profile.title_size)
+        body_size = max(16, profile.body_size)
+
+        def keep_authored(samples, size, bold):
+            return bool(
+                authored
+                and samples
+                and all(
+                    contrast(authored, background) >= minimum_text_contrast(size, bold)
+                    for background in samples
+                )
+            )
+
+        title_color = authored if keep_authored(title_samples, title_size, True) else report_color
+        body_color = authored if keep_authored(body_samples, body_size, False) else report_color
         derived.title_zone = title
         derived.body_zones = [body]
         derived.text_zones = [title, body]
-        derived.title_size = max(18, profile.title_size)
-        derived.title_foreground = color
-        derived.foreground = color
-        derived.zone_foregrounds = [color]
+        derived.title_size = title_size
+        derived.title_foreground = title_color
+        derived.foreground = body_color
+        derived.zone_foregrounds = [body_color]
         # Contrast was measured over this region; old field samples no longer apply.
-        background = "#000000" if color == "#FFFFFF" else "#FFFFFF"
-        derived.title_background = background
-        derived.zone_backgrounds = [background]
+        derived.title_background = (
+            Counter(title_samples).most_common(1)[0][0]
+            if title_samples
+            else "#000000"
+            if title_color == "#FFFFFF"
+            else "#FFFFFF"
+        )
+        derived.zone_backgrounds = [
+            Counter(body_samples).most_common(1)[0][0]
+            if body_samples
+            else "#000000"
+            if body_color == "#FFFFFF"
+            else "#FFFFFF"
+        ]
         derived.heading_zones = []
         derived.number_zones = []
         for field in derived.fields:
@@ -524,7 +580,7 @@ def derive_safe_cover_patterns(profile):
                 field["box"] = (title if role == "title" else body).model_dump()
                 field.setdefault("style", {}).update(
                     size=derived.title_size if role == "title" else max(16, profile.body_size),
-                    color=color,
+                    color=title_color if role == "title" else body_color,
                 )
             elif role in ("body", "heading", "number"):
                 field["role"] = "unused"

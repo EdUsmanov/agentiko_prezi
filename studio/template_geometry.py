@@ -16,6 +16,11 @@ def contrast(a, b):
     return (light + 0.05) / (dark + 0.05)
 
 
+def minimum_text_contrast(size, bold=False):
+    """WCAG contrast threshold for text measured in typographic points."""
+    return 3.0 if size >= 18 or bold and size >= 14 else 4.5
+
+
 def color_value(color):
     try:
         return "#" + str(color.rgb) if color.type and color.rgb else None

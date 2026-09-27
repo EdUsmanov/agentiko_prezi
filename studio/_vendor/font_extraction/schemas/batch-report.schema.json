@@ -1,0 +1,180 @@
+{
+  "$defs": {
+    "BatchCounts": {
+      "additionalProperties": false,
+      "properties": {
+        "templates": {
+          "minimum": 0,
+          "title": "Templates",
+          "type": "integer"
+        },
+        "succeeded": {
+          "minimum": 0,
+          "title": "Succeeded",
+          "type": "integer"
+        },
+        "failed": {
+          "minimum": 0,
+          "title": "Failed",
+          "type": "integer"
+        },
+        "slides": {
+          "minimum": 0,
+          "title": "Slides",
+          "type": "integer"
+        },
+        "resolvedVariants": {
+          "minimum": 0,
+          "title": "Resolvedvariants",
+          "type": "integer"
+        },
+        "unresolvedVariants": {
+          "minimum": 0,
+          "title": "Unresolvedvariants",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "templates",
+        "succeeded",
+        "failed",
+        "slides",
+        "resolvedVariants",
+        "unresolvedVariants"
+      ],
+      "title": "BatchCounts",
+      "type": "object"
+    },
+    "FontFileResult": {
+      "additionalProperties": false,
+      "properties": {
+        "presentation": {
+          "title": "Presentation",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "ok",
+            "error"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "slides": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Slides",
+          "type": "integer"
+        },
+        "resolvedVariants": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Resolvedvariants",
+          "type": "integer"
+        },
+        "unresolvedVariants": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Unresolvedvariants",
+          "type": "integer"
+        },
+        "warningCount": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Warningcount",
+          "type": "integer"
+        },
+        "modelPath": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Modelpath"
+        },
+        "unresolved": {
+          "items": {
+            "$ref": "#/$defs/MissingFont"
+          },
+          "title": "Unresolved",
+          "type": "array"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error"
+        }
+      },
+      "required": [
+        "presentation",
+        "status"
+      ],
+      "title": "FontFileResult",
+      "type": "object"
+    },
+    "MissingFont": {
+      "additionalProperties": false,
+      "properties": {
+        "family": {
+          "title": "Family",
+          "type": "string"
+        },
+        "weight": {
+          "title": "Weight",
+          "type": "integer"
+        },
+        "style": {
+          "enum": [
+            "normal",
+            "italic"
+          ],
+          "title": "Style",
+          "type": "string"
+        }
+      },
+      "required": [
+        "family",
+        "weight",
+        "style"
+      ],
+      "title": "MissingFont",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": 1,
+      "default": 1,
+      "title": "Schemaversion",
+      "type": "integer"
+    },
+    "counts": {
+      "$ref": "#/$defs/BatchCounts"
+    },
+    "presentations": {
+      "items": {
+        "$ref": "#/$defs/FontFileResult"
+      },
+      "title": "Presentations",
+      "type": "array"
+    }
+  },
+  "required": [
+    "counts",
+    "presentations"
+  ],
+  "title": "BatchFontReport",
+  "type": "object"
+}

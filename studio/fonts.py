@@ -5,6 +5,8 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from .config import ROOT
 from .text_layout import layout_words
+from .text_layout import WORD_JOINERS
+from .security import InputRejected
 import hashlib
 import threading
 import os
@@ -32,6 +34,23 @@ def _coverage(path, stamp, size):
 def coverage(path):
     stat = Path(path).stat()
     return _coverage(str(path), stat.st_mtime_ns, stat.st_size)
+
+
+def check_glyphs(path, text):
+    missing = sorted(
+        {
+            ord(char)
+            for value, face in font_runs(text, path)
+            for char in value
+            if not char.isspace() and char not in WORD_JOINERS and ord(char) not in coverage(face)
+        }
+    )
+    if missing:
+        examples = ", ".join(f"U+{code:04X}" for code in missing[:8])
+        raise InputRejected(
+            f"В выбранном шрифте нет символов нового текста ({examples}). "
+            "Предоставьте полное начертание TTF/OTF с этими символами."
+        )
 
 
 def font_runs(text, path):

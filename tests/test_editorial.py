@@ -1,4 +1,5 @@
 import asyncio
+from copy import deepcopy
 from types import SimpleNamespace
 import pytest
 from studio.content import parse_content
@@ -293,6 +294,7 @@ def test_repeated_evidenced_date_is_allowed_but_new_dates_and_labels_are_reporte
         "slides": [
             {
                 "title": "1938 год",
+                "purpose": "timeline",
                 "bullets": [
                     {
                         "text": "1938: погромы в 1938 году.",
@@ -329,6 +331,52 @@ def test_numbers_from_uncited_facts_do_not_support_a_claim():
     }
     with pytest.raises(ValueError, match="1914"):
         validate_plan(raw, c, (1, 1))
+
+
+def test_timeline_requires_grounded_time_labels_and_numbers():
+    from studio.editorial_patch_validation import numeric_evidence_hints
+
+    c = parse_content("Волк сдул дом. Волк сломал шалаш. Поросята спрятались в норе.")
+    raw = {
+        "slides": [
+            {
+                "title": "Атака на дома",
+                "purpose": "timeline",
+                "bullets": [
+                    {
+                        "group": f"Этап {i}",
+                        "text": fact.text,
+                        "evidence": [{"fact_id": fact.id}],
+                    }
+                    for i, fact in enumerate(c.facts, 1)
+                ],
+            }
+        ]
+    }
+    with pytest.raises(ValueError) as error:
+        validate_plan(raw, c, (1, 1))
+    assert "timeline labels need dates or time" in str(error.value)
+    assert "Unsupported number" in str(error.value)
+    assert {row["unsupported_numbers"][0] for row in numeric_evidence_hints(raw, [1], c)} == {
+        "1",
+        "2",
+        "3",
+    }
+
+    unnumbered = deepcopy(raw)
+    for claim, group in zip(unnumbered["slides"][0]["bullets"], ["Дом", "Шалаш", "Нора"]):
+        claim["group"] = group
+    with pytest.raises(ValueError, match="timeline labels need dates or time"):
+        validate_plan(unnumbered, c, (1, 1))
+
+    corrected = deepcopy(unnumbered)
+    corrected["slides"][0]["purpose"] = "content"
+    validate_plan(corrected, c, (1, 1))
+
+    numbered_claim = deepcopy(corrected)
+    numbered_claim["slides"][0]["bullets"][0]["text"] += " За 10 секунд."
+    with pytest.raises(ValueError, match="10"):
+        validate_plan(numbered_claim, c, (1, 1))
 
 
 def test_citation_id_is_resolved_to_literal_source_without_weakening_grounding():

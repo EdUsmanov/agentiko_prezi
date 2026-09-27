@@ -181,11 +181,11 @@ class ModelGateway:
             body["max_tokens"] = 6000
         if prompt_name == "editorial_review":
             body["max_tokens"] = min(24000, max(10000, 160 * len(payload.get("claims", [])) + 512))
-        if prompt_name == "text_zone":
+        if prompt_name in ("text_zone", "background_raster"):
             body["max_tokens"] = 1400
             body.setdefault("chat_template_kwargs", {})["enable_thinking"] = False
         budget = 0
-        if self.settings.thinking:
+        if self.settings.thinking and prompt_name not in ("text_zone", "background_raster"):
             stage_budgets = json.loads((ROOT / "config/reasoning.json").read_text())
             budget = min(
                 self.settings.thinking_token_budget,
@@ -212,7 +212,7 @@ class ModelGateway:
             record.update(
                 model=self.settings.model_id,
                 thinking=False
-                if prompt_name == "text_zone"
+                if prompt_name in ("text_zone", "background_raster")
                 else budget > 0
                 if self.settings.thinking
                 else self.settings.thinking,

@@ -36,6 +36,19 @@ def test_legacy_family_preserves_light_and_display_faces(tmp_path):
     assert ooxml_face(path) == ("Test Light", False, False)
 
 
+def test_empty_legacy_family_uses_full_face_name(tmp_path):
+    path = tmp_path / "embedded.ttf"
+    with TTFont(ROOT / "fonts/Montserrat-Bold.ttf") as font:
+        names = font["name"]
+        names.names = [record for record in names.names if record.nameID not in (16, 17)]
+        platforms = {(n.platformID, n.platEncID, n.langID) for n in names.names}
+        for platform, encoding, language in platforms:
+            names.setName("", 1, platform, encoding, language)
+            names.setName("Calibri Bold", 4, platform, encoding, language)
+        font.save(path)
+    assert ooxml_face(path) == ("Calibri", True, False)
+
+
 def test_full_face_request_exports_canonical_runs_and_uses_same_audit_metrics():
     path = str(ROOT / "fonts/Montserrat-Bold.ttf")
     profile = SimpleNamespace(

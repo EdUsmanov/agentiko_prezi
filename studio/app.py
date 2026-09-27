@@ -414,7 +414,7 @@ def create_app(settings=None):
                 "deterministic_compositions": True,
                 "organizer_preanalysis": False,
                 "font_roles": True,
-                "download_open_fonts": settings.download_open_fonts,
+                "download_fonts": settings.download_fonts,
                 "image_uploads": True,
             },
         }
@@ -667,11 +667,15 @@ def create_app(settings=None):
         }
         allowed |= {
             "font-model.json",
+            "layout-font-model.json",
             "color-model.json",
             "background-model.json",
             "text-zones.json",
         }
-        if job["state"] == "waiting_fonts" and filename != "font-model.json":
+        if job["state"] == "waiting_fonts" and filename not in {
+            "font-model.json",
+            "layout-font-model.json",
+        }:
             raise HTTPException(409, "Доступен только отчёт о шрифтах")
         allowed |= {
             f"{v}/{f}"

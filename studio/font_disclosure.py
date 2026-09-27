@@ -56,12 +56,12 @@ def preparation_substitutions(package):
     }
     return unique(
         [
-            *package.template.font_substitutions,
-            *[
+            *package.template.font_replacements,
+            *(
                 record
                 for role, text in texts.items()
                 for record in substitutions(text, *role_font(package.template, role))
-            ],
+            ),
         ]
     )
 
@@ -71,7 +71,6 @@ def exported_substitutions(prs, profile):
     from .template_geometry import walk_shapes
 
     records = []
-    used_faces = set()
     for slide in prs.slides:
         for shape, _ in walk_shapes(slide.shapes):
             frames = (
@@ -83,19 +82,6 @@ def exported_substitutions(prs, profile):
             )
             for frame in frames:
                 for paragraph in frame.paragraphs:
-                    used_faces.update(
-                        (
-                            font_key(r.font.name or paragraph.font.name or ""),
-                            bool(r.font.bold if r.font.bold is not None else paragraph.font.bold),
-                            bool(
-                                r.font.italic
-                                if r.font.italic is not None
-                                else paragraph.font.italic
-                            ),
-                        )
-                        for r in paragraph.runs
-                        if r.text.strip()
-                    )
                     primary = paragraph.font.name or next(
                         (
                             r.font.name
@@ -127,19 +113,28 @@ def exported_substitutions(prs, profile):
                             used += bullet.get("char", "")
                     if used:
                         records.extend(substitutions(used, primary, path))
-    from .font_identity import ooxml_face
-
-    for record in profile.font_substitutions:
-        asset = next(
-            (a for a in profile.font_assets if a["requested"] == record["fallback_font"]), None
+    used_fonts = {
+        font_key(run.font.name or paragraph.font.name or "")
+        for slide in prs.slides
+        for shape, _ in walk_shapes(slide.shapes)
+        for frame in (
+            [shape.text_frame]
+            if shape.has_text_frame
+            else [cell.text_frame for row in shape.table.rows for cell in row.cells]
+            if shape.has_table
+            else []
         )
-        if asset:
-            family, bold, italic = ooxml_face(asset["path"])
-            # A regular selected face can acquire synthetic emphasis in a field.
-            if (font_key(family), bold, italic) in used_faces or (
-                not bold and not italic and any(face[0] == font_key(family) for face in used_faces)
-            ):
-                records.append(record)
+        for paragraph in frame.paragraphs
+        for run in paragraph.runs
+        if any(char not in SYMBOLS and not char.isspace() for char in run.text)
+    }
+    for replacement in profile.font_replacements:
+        asset = next(
+            (a for a in profile.font_assets if a["requested"] == replacement["fallback_font"]),
+            None,
+        )
+        if asset and font_key(asset["family"]) in used_fonts:
+            records.append(replacement)
     return unique(records)
 
 
@@ -150,8 +145,8 @@ def warnings(records, planned=False):
         if r.get("scope") == "font":
             detail = " Начертание также изменено." if r.get("style_changed") else ""
             result.append(
-                f"Вместо шрифта «{r['template_font']}» автоматически {verb} «{r['fallback_font']}»: "
-                "в исходном файле шрифта нет символов нового текста. "
+                f"Вместо шрифта «{r['template_font']}» автоматически {verb} "
+                f"«{r['fallback_font']}»: в исходном файле нет символов нового текста. "
                 "Оформление и переносы строк могут отличаться от шаблона." + detail
             )
         else:

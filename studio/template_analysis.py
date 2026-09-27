@@ -47,6 +47,8 @@ def normalize_meanings(raw):
 
 def template_inventory(path, profile):
     """All slide objects are inventoried; only bounded, sanitized samples go to LLM."""
+    from .colors import pattern_color_context
+
     prs = open_presentation(path)
     slides = []
     for index, slide in enumerate(prs.slides, 1):
@@ -105,6 +107,7 @@ def template_inventory(path, profile):
             "title_zone": p.title_zone.model_dump() if p.title_zone else None,
             "body_zones": [b.model_dump() for b in p.body_zones],
             "technical_role": p.role,
+            "colors": pattern_color_context(p),
             "graphic_candidates": graphic_candidates(p),
             "body_fields": [
                 {"shape_id": f["shape_id"], "index": f["index"], "box": f["box"]}
@@ -436,6 +439,13 @@ async def prepare_template_analysis(package, path, gateway, progress):
         },
         "warnings": [],
     }
+    background_report = path.parent / "background-model.json"
+    if background_report.is_file():
+        import json
+
+        package.analysis["raster_review"] = json.loads(background_report.read_text()).get(
+            "rasterReview", {"status": "not_run"}
+        )
     package.analysis["template_graphics"] = {
         "reused_patterns": [p.id for p in graphic_patterns],
         "method": "editable_vectors_without_sample_text",

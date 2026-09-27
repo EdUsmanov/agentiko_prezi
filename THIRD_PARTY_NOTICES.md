@@ -1,6 +1,6 @@
 # Third-party notices
 
-- `studio/_vendor/mtx_decompressor`: decoder from the colleague's user-supplied `font-extraction 3` bundle (2026-09-24), MPL-2.0. Original checksum, supplied license and local allocation-limit modifications are recorded in `PROVENANCE.md` and `LICENSE`. No user presentation/font binaries are bundled. The Google Fonts CSS resolver approach was adapted from the same user-authorized kit into `studio/open_fonts.py`; its full pyapi runtime was not imported.
+- `studio/_vendor/font_extraction`: complete pipeline from the user-supplied `font-extraction-kit (1).zip` (SHA-256 `846fad2abffcabdc5adf3ed1f4781b5c37d917ee88a196066f9642c85b898315`). The EOT/MTX decoder includes an MPL-2.0 component and its supplied `LICENSE`. Studio adds bounded decoder execution; details are in `PROVENANCE.md`. No user presentation or font binaries are bundled with this kit.
 
 - `studio/_vendor/color_extraction`: colleague's user-supplied color-extraction-kit. No redistribution license was included. Local integration authorized by the user; obtain the author's explicit open-source license before public distribution. Adaptations are listed in its `PROVENANCE.md`.
 

@@ -175,8 +175,17 @@ def audit_scenes(scenes, package):
                         si,
                         ei,
                     )
-                if contrast(e.color, e.background_hint or s.background) < 4.5:
-                    add("contrast", "Контраст текста меньше 4.5:1", si, ei, severity="warning")
+                from .template_geometry import minimum_text_contrast
+
+                required = minimum_text_contrast(e.size, e.bold)
+                if contrast(e.color, e.background_hint or s.background) < required:
+                    add(
+                        "contrast",
+                        f"Контраст текста меньше {required:g}:1",
+                        si,
+                        ei,
+                        severity="warning",
+                    )
                 if re.search(r"\b(?:lorem ipsum|TODO|XXX)\b|вставьте текст", e.text, re.I):
                     add(
                         "placeholder",

@@ -175,26 +175,6 @@ def test_office_does_not_receive_api_credentials(tmp_path, monkeypatch):
     assert "LLM_API_KEY" not in seen
 
 
-def test_native_pdf_uses_selected_font(prepared, tmp_path):
-    from studio.office import executable, to_pdf
-    from pypdf import PdfReader
-
-    if not executable():
-        pytest.skip("LibreOffice unavailable")
-    _, store, package = prepared
-    scenes = compose_variant(extractive_plans(package).variants[0], package)
-    source = store.directory(package.id) / "input.pptx"
-    render_pptx(scenes, package.template, source, tmp_path / "font.pptx")
-    assert to_pdf(tmp_path / "font.pptx", tmp_path, font_file=package.template.font_file)
-    pdf = PdfReader(tmp_path / "font.pdf")
-    names = {
-        str(v.get_object().get("/BaseFont"))
-        for page in pdf.pages
-        for v in page["/Resources"].get("/Font", {}).values()
-    }
-    assert names and all("Play" in name for name in names), names
-
-
 def test_deadline_kills_dedicated_worker_group(monkeypatch):
     from studio import app
 

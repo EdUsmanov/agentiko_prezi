@@ -533,6 +533,8 @@ def compile_backgrounds(profile, source, directory):
             constrain_body_zones(pattern, rgb)
             backgrounds = []
             foregrounds = []
+            schemes = {scheme["id"]: scheme for scheme in profile.color_schemes}
+            paired = schemes.get(pattern.color_scheme_id, {}).get("foreground", "")
             source_colors = [pattern.title_foreground] + pattern.zone_foregrounds
             for zi, zone in enumerate([pattern.title_zone] + pattern.body_zones):
                 samples = [
@@ -549,7 +551,12 @@ def compile_backgrounds(profile, source, directory):
                 bg = "#%02X%02X%02X" % color
                 # Contrast is a diagnostic, not permission to repaint the brand.
                 original = source_colors[zi] if zi < len(source_colors) else ""
-                foregrounds.append(original or max(profile.colors, key=lambda c: contrast(c, bg)))
+                candidate = original or paired
+                foregrounds.append(
+                    candidate
+                    if candidate and contrast(candidate, bg) >= 3
+                    else max(profile.colors, key=lambda c: contrast(c, bg))
+                )
                 backgrounds.append(bg)
             pattern.title_background = backgrounds[0]
             pattern.title_foreground = foregrounds[0]
@@ -565,3 +572,6 @@ def compile_backgrounds(profile, source, directory):
     (Path(directory) / "text-zones.json").write_text(
         json.dumps(zone_report, ensure_ascii=False, indent=2)
     )
+    from .colors import resolve_rendered_schemes
+
+    resolve_rendered_schemes(profile)

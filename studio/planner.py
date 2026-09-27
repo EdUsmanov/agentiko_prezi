@@ -261,11 +261,14 @@ async def plan(package, gateway, timeout):
         return result, None
     if gateway.settings.mode == "api":
         started = time.monotonic()
+        from .colors import agent_color_context
+
         payload = {
             "content": package.content.model_dump(),
             "constraints": package.constraints.model_dump(),
             "font": package.template.font,
             "palette": package.template.colors,
+            "color_context": agent_color_context(package.template),
             "target_slides": planned_slide_count(package),
             "slide_budget_adjustment": package.analysis.get("slide_budget"),
             "required_outline": explicit_outline(package),

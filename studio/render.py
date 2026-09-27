@@ -17,9 +17,18 @@ from pptx.oxml.xmlchemy import OxmlElement
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.lib.colors import HexColor
 from .models import Element, Box
-from .fonts import pdf_font, wrap_text, element_font, profile_font_files, font_runs, symbol_font
-from .embedded_fonts import check_glyphs, P, R
+from .fonts import (
+    pdf_font,
+    wrap_text,
+    element_font,
+    profile_font_files,
+    font_runs,
+    symbol_font,
+    check_glyphs,
+)
 from .native_surface import scrub_surface, source_slide
+
+P = "{http://schemas.openxmlformats.org/presentationml/2006/main}"
 
 _pdfium_lock = threading.Lock()
 
@@ -125,26 +134,13 @@ def clean_base(source, profile):
     prs._studio_background_clean = bool(profile.background_source)
     prs._studio_sources = list(prs.slides)
     prs._studio_brand_hashes = {a.id for a in profile.assets}
-    # Keep only the validated font part actually selected for this package.
-    selected = {
-        a["origin"].get("relationship_id")
-        for a in profile.font_assets
-        if a["origin"].get("kind") == "embedded" and a.get("redistributable", True)
-    }
-    if not profile.font_assets and profile.font_origin.get("kind") == "embedded":
-        selected.add(profile.font_origin.get("relationship_id"))
+    # The extractor writes validated TTF/OTF files. Original EOT parts are not
+    # reused, since their relationships are not part of its public model.
     font_list = prs.part._element.find(P + "embeddedFontLst")
     if font_list is not None:
-        for item in list(font_list):
-            for node in list(item):
-                if node.tag != P + "font" and node.get(R + "id") not in selected:
-                    item.remove(node)
-            if not any(node.get(R + "id") in selected for node in item if node.tag != P + "font"):
-                font_list.remove(item)
-        if not len(font_list):
-            prs.part._element.remove(font_list)
+        prs.part._element.remove(font_list)
     for rel in list(prs.part.rels.values()):
-        if rel.reltype.endswith("/font") and rel.rId not in selected:
+        if rel.reltype.endswith("/font"):
             prs.part.drop_rel(rel.rId)
     for entry in list(prs.slides._sldIdLst):
         prs.part.drop_rel(entry.rId)

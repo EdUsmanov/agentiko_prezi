@@ -74,6 +74,37 @@ def test_cover_cannot_invent_a_safe_region(template, tmp_path, fault):
     assert derive_safe_cover_patterns(p) == []
 
 
+def test_cover_preserves_authored_white_on_red_when_large_text_is_readable(template, tmp_path):
+    from PIL import Image
+
+    profile = analyze_template(template, tmp_path / "profile")
+    profile.width, profile.height = 720, 405
+    profile.title_size, profile.body_size = 36, 22
+    profile.colors = list(dict.fromkeys(profile.colors + ["#FFFFFF", "#000000"]))
+    pattern = profile.patterns[0]
+    profile.patterns = [pattern]
+    pattern.purpose = "cover"
+    pattern.reusable = True
+    pattern.title_zone = Box(x=40, y=150, w=620, h=15)
+    pattern.body_zones = []
+    pattern.title_foreground = "#FFFFFF"
+    background = tmp_path / "red.png"
+    Image.new("RGB", (720, 405), "#EF3124").save(background)
+    pattern.background_image = str(background)
+    pattern.safe_text_zone = {
+        "box": [40, 120, 680, 380],
+        "minimum_contrast": 5.13,
+        "text_color": "black",
+        "coordinate_space": {"width": 720, "height": 405},
+    }
+    assert len(derive_safe_cover_patterns(profile)) == 1
+    cover = profile.patterns[-1]
+    assert cover.title_foreground == "#FFFFFF"
+    assert cover.zone_foregrounds == ["#FFFFFF"]
+    assert cover.title_background == "#EF3124"
+    assert cover.zone_backgrounds == ["#EF3124"]
+
+
 def test_table_columns_share_geometry_across_audit_and_exports(template, tmp_path):
     p = analyze_template(template, tmp_path / "profile")
     rows = [

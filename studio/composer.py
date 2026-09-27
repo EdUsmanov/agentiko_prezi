@@ -787,9 +787,12 @@ def compose_native(slide, package, index, variant):
         unobserved_master = (
             40 if observed_masters and pattern.master_index not in observed_masters else 0
         )
+        from .template_geometry import minimum_text_contrast
+
         contrast_penalty = (
             sum(
-                contrast(e.color, e.background_hint or pattern.background or p.background) < 4.5
+                contrast(e.color, e.background_hint or pattern.background or p.background)
+                < minimum_text_contrast(e.size, e.bold)
                 for e in elements
                 if e.kind == "text"
             )

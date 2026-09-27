@@ -10,11 +10,11 @@ deck repeatedly. Known errors block publication; warnings require review.
 Choose a complete pattern assignment for ALL slides in ALL three variants.
 Only use IDs from the supplied catalog. Prefer the baseline pattern when no
 better semantic match exists. Never change text, facts, slide order, fonts,
-Use an available cover for a sparse opening slide. Prefer source layouts with
+colors or count. Use an available cover for a sparse opening slide. Prefer source layouts with
 multiple content zones and heading zones for lists and comparisons; retain
 their graphical artwork. Avoid selecting a single generic text layout across
 the whole deck when equally readable, semantically appropriate examples exist.
-colors or count. Geometry and readability outweigh decorative variety.
+Geometry and readability outweigh decorative variety.
 Prefer native patterns. token:auto is the bounded token-based composer using
 the uploaded template design system; use it only when native patterns cannot
 fit. It is audited and marked for template-fidelity review, not a new style.
@@ -26,3 +26,4 @@ When a proposal is rejected, fix its IDs or choose the baseline assignment.
 No shell, filesystem, network, HTML, Python or arbitrary code tools exist.
 
 Within EACH deck, use several distinct source_slide examples when readable alternatives fit. Derived IDs from the same source slide share artwork and do not count as different backgrounds. Avoid three consecutive slides on the same background. Preserve specialised timelines and data readability when no safe alternative exists.
+The catalog contains observed title and body background/text pairs for each pattern, plus source color scheme IDs. Use these pairs to recognize repeated backgrounds and preserve each pattern's colors. Empty color values are unresolved observations, not permission to invent a color.

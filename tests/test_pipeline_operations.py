@@ -318,3 +318,31 @@ def test_peer_background_does_not_modify_input_and_fields(template, tmp_path):
             else prs.slide_masters[pattern.master_index].slide_layouts[pattern.layout_index]
         )
         assert {f["shape_id"] for f in pattern.fields} <= {s.shape_id for s in surface.shapes}
+
+
+def test_blank_svg_card_is_distinguished_from_source_illustration(tmp_path):
+    from zipfile import ZipFile
+    from studio.portable_templates import _solid_svg_panel
+
+    path = tmp_path / "panels.zip"
+    with ZipFile(path, "w") as archive:
+        archive.writestr(
+            "white.svg",
+            '<svg xmlns="http://www.w3.org/2000/svg" width="858" height="338">'
+            '<rect width="858" height="338" rx="40" fill="white"/></svg>',
+        )
+        archive.writestr(
+            "illustration.svg",
+            '<svg xmlns="http://www.w3.org/2000/svg" width="858" height="338">'
+            '<rect width="858" height="338" fill="white"/>'
+            '<path d="M0 0L10 10"/></svg>',
+        )
+        archive.writestr(
+            "script.svg",
+            '<svg xmlns="http://www.w3.org/2000/svg" width="858" height="338" onload="alert(1)">'
+            '<rect width="858" height="338" fill="white"/></svg>',
+        )
+    with ZipFile(path) as archive:
+        assert _solid_svg_panel(archive, "white.svg")
+        assert not _solid_svg_panel(archive, "illustration.svg")
+        assert not _solid_svg_panel(archive, "script.svg")

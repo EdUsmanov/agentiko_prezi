@@ -1,23 +1,3 @@
-// Local hardening: bound every explicit byte-buffer allocation, including MTX expansion.
-// V8 heap is separately capped by the subprocess adapter. Count cumulative allocation
-// rather than live bytes: malformed streams cannot grow/reallocate indefinitely.
-let allocatedBytes = 0;
-const MAX_BUFFER_BYTES = 16 * 1024 * 1024;
-const MAX_ALLOCATED_BYTES = 96 * 1024 * 1024;
-function reserveBytes(size) {
-  if (!Number.isSafeInteger(size) || size < 0 || size > MAX_BUFFER_BYTES ||
-      allocatedBytes + size > MAX_ALLOCATED_BYTES) throw Error('MTX allocation limit');
-  allocatedBytes += size;
-}
-function boundedBytes(size) {
-  reserveBytes(size);
-  return new Uint8Array(size);
-}
-function boundedWords(size) {
-  reserveBytes(size * 2);
-  return new Int16Array(size);
-}
-
 // src/errors.ts
 var EOT_WARN = 1e3;
 var EotErrorCode = /* @__PURE__ */ ((EotErrorCode2) => {
@@ -70,7 +50,7 @@ var Stream = class _Stream {
       this.size = size;
       this.reserved = buf.length;
     } else {
-      this.buf = boundedBytes(0);
+      this.buf = new Uint8Array(0);
       this.size = 0;
       this.reserved = 0;
     }
@@ -88,7 +68,7 @@ var Stream = class _Stream {
     if (this.reserved >= n) {
       return;
     }
-    const newBuf = boundedBytes(n);
+    const newBuf = new Uint8Array(n);
     newBuf.set(this.buf.subarray(0, this.size));
     this.buf = newBuf;
     this.reserved = n;
@@ -706,13 +686,13 @@ function decodeSimpleGlyph(numContours, streams, out, calcBBox, minX, minY, maxX
     totalPoints += pointsInContour;
     out.writeU16(totalPoints - 1);
   }
-  const flagBytes = boundedBytes(totalPoints);
+  const flagBytes = new Uint8Array(totalPoints);
   for (let i = 0; i < totalPoints; i++) {
     flagBytes[i] = sGlyph.readU8();
   }
-  const xDeltas = boundedWords(totalPoints);
-  const yDeltas = boundedWords(totalPoints);
-  const onCurve = boundedBytes(totalPoints);
+  const xDeltas = new Int16Array(totalPoints);
+  const yDeltas = new Int16Array(totalPoints);
+  const onCurve = new Uint8Array(totalPoints);
   let cumulativeX = 0;
   let cumulativeY = 0;
   for (let i = 0; i < totalPoints; i++) {
@@ -963,7 +943,7 @@ function parseCTF(streams, options) {
       tag,
       offset,
       bufSize: size,
-      buf: boundedBytes(0),
+      buf: new Uint8Array(0),
       checksum: 0
     };
     const idx = tables.length;
@@ -990,7 +970,7 @@ function parseCTF(streams, options) {
       continue;
     }
     s0.seekAbsolute(table.offset);
-    const buf = boundedBytes(table.bufSize);
+    const buf = new Uint8Array(table.bufSize);
     for (let b = 0; b < table.bufSize; b++) {
       buf[b] = s0.readU8();
     }
@@ -1025,7 +1005,7 @@ function parseCTF(streams, options) {
         tag: "loca",
         offset: 0,
         bufSize: 0,
-        buf: boundedBytes(0),
+        buf: new Uint8Array(0),
         checksum: 0
       };
       locaIdx = tables.length;
@@ -1384,11 +1364,11 @@ function lzcompDecompress(data, size, version) {
   const { DUP2, DUP4, DUP6, NUM_SYMS } = setDistRange(outLen);
   const symEcoder = new AHuff(bio, NUM_SYMS);
   const windowSize = PRELOAD_SIZE + outLen;
-  const win = boundedBytes(windowSize);
+  const win = new Uint8Array(windowSize);
   initializeModel(win);
   const base = PRELOAD_SIZE;
   let outBufSize = outLen;
-  let outBuf = boundedBytes(outBufSize);
+  let outBuf = new Uint8Array(outBufSize);
   let outIdx = 0;
   let rleState = RLE_INITIAL;
   let rleEscape = 0;
@@ -1400,7 +1380,7 @@ function lzcompDecompress(data, size, version) {
         if (outBufSize > MAX_OUT) {
           throw new Error("LZCOMP output exceeds maximum size budget");
         }
-        const tmp = boundedBytes(outBufSize);
+        const tmp = new Uint8Array(outBufSize);
         tmp.set(outBuf);
         outBuf = tmp;
       }
@@ -1421,7 +1401,7 @@ function lzcompDecompress(data, size, version) {
             if (outBufSize > MAX_OUT) {
               throw new Error("LZCOMP output exceeds maximum size budget");
             }
-            const tmp = boundedBytes(outBufSize);
+            const tmp = new Uint8Array(outBufSize);
             tmp.set(outBuf);
             outBuf = tmp;
           }
@@ -1436,7 +1416,7 @@ function lzcompDecompress(data, size, version) {
             if (outBufSize > MAX_OUT) {
               throw new Error("LZCOMP output exceeds maximum size budget");
             }
-            const tmp = boundedBytes(outBufSize);
+            const tmp = new Uint8Array(outBufSize);
             tmp.set(outBuf);
             outBuf = tmp;
           }
@@ -1452,7 +1432,7 @@ function lzcompDecompress(data, size, version) {
           if (outBufSize > MAX_OUT) {
             throw new Error("LZCOMP output exceeds maximum size budget");
           }
-          const tmp = boundedBytes(outBufSize);
+          const tmp = new Uint8Array(outBufSize);
           tmp.set(outBuf);
           outBuf = tmp;
         }
@@ -1577,7 +1557,7 @@ function getRequiredSize(ctr) {
 }
 function dumpContainer(ctr) {
   const requiredSize = getRequiredSize(ctr);
-  const out = new Stream(boundedBytes(requiredSize), 0);
+  const out = new Stream(new Uint8Array(requiredSize), 0);
   writeOffsetTable(ctr, out);
   const dirOffset = out.pos;
   const dirSize = getTableDirectorySize(ctr);
@@ -1658,7 +1638,7 @@ function decompressMtx(fontData, options) {
   const compressed = options?.compressed ?? true;
   let data;
   if (encrypted) {
-    data = boundedBytes(fontData.length);
+    data = new Uint8Array(fontData.length);
     for (let i = 0; i < fontData.length; i++) {
       data[i] = fontData[i] ^ ENCRYPTION_KEY;
     }
@@ -1764,7 +1744,7 @@ var Scanner = class {
     const size = readU32LE(this.bytes, this.pos);
     this.pos += 4;
     if (size === 0) {
-      return boundedBytes(0);
+      return new Uint8Array(0);
     }
     return this.take(size);
   }

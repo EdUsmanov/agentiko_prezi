@@ -51,7 +51,7 @@ def main():
         profile = analyze_template(
             args.template,
             folder,
-            allow_download=settings.download_open_fonts,
+            allow_download=settings.download_fonts,
             font_progress=progress,
         )
         missing = [f for f in profile.missing_fonts if f.get("required_for_generation", True)]

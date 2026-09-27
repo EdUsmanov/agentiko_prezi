@@ -84,6 +84,10 @@ def _ooxml_face(path, stamp, size):
     with TTFont(path, lazy=True) as font:
         names = font["name"]
         family = names.getDebugName(1) or names.getBestFamilyName()
+        if not family and (full_name := names.getDebugName(4)):
+            # Some embedded Office faces have an empty legacy family but keep
+            # an unambiguous full name such as "Calibri Bold Italic".
+            family = requested_face(full_name)[0]
         if not family:
             raise ValueError("В шрифте отсутствует название семейства Office")
         flags = font["head"].macStyle

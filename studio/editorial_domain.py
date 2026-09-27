@@ -67,6 +67,69 @@ def nums(text):
     )
 
 
+_TIME_WORD_STEMS = (
+    "январ",
+    "феврал",
+    "март",
+    "апрел",
+    "мая",
+    "май",
+    "июн",
+    "июл",
+    "август",
+    "сентябр",
+    "октябр",
+    "ноябр",
+    "декабр",
+    "зим",
+    "весн",
+    "лето",
+    "летом",
+    "осен",
+    "утр",
+    "вечер",
+    "ноч",
+    "недел",
+    "месяц",
+    "квартал",
+    "januar",
+    "februar",
+    "march",
+    "april",
+    "may",
+    "june",
+    "july",
+    "august",
+    "september",
+    "october",
+    "november",
+    "december",
+    "winter",
+    "spring",
+    "summer",
+    "autumn",
+    "morning",
+    "evening",
+    "week",
+    "month",
+    "quarter",
+)
+
+
+def grounded_time_label(label, evidence):
+    """Require a visible time marker that occurs in the cited source facts."""
+    label = label.casefold()
+    evidence = evidence.casefold()
+    years = re.findall(r"(?<!\d)(?:1\d{3}|20\d{2}|21\d{2})(?!\d)", label)
+    dates = re.findall(r"(?<!\d)\d{1,2}[./-]\d{1,2}(?:[./-]\d{2,4})?(?!\d)", label)
+    if any(value in evidence for value in years + dates):
+        return True
+    return any(
+        re.search(r"\b" + stem, label) and re.search(r"\b" + stem, evidence)
+        for stem in _TIME_WORD_STEMS
+    )
+
+
 def validate_plan(raw, content, bounds, character_budget=600, require_cover=False):
     plan = EditorialPlan.model_validate(raw)
     if not bounds[0] <= len(plan.slides) <= bounds[1]:
@@ -203,6 +266,22 @@ def validate_plan(raw, content, bounds, character_budget=600, require_cover=Fals
                         )
                     slide_sources.add(cite.fact_id)
                     evidence.append(facts[cite.fact_id].text)
+                if slide.purpose == "timeline" and not grounded_time_label(
+                    claim.group, " ".join(evidence)
+                ):
+                    issues.append(
+                        RepairIssue(
+                            code="timeline_without_time",
+                            message=(
+                                f"s{slide_index}b{claim_index}: timeline labels need dates or time "
+                                "markers present in cited source facts. Use process for explicit "
+                                "steps, or content for narrated events; replace the current label."
+                            ),
+                            slide=slide_index,
+                            claim=claim_index,
+                            action="revise_content",
+                        )
+                    )
                 # Repeating an evidenced value is valid; ownership/context are checked
                 # independently by the semantic reviewer. Include visible labels.
                 missing = set(nums(claim.text + " " + claim.group)) - set(nums(" ".join(evidence)))

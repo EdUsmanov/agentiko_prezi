@@ -9,14 +9,13 @@ from io import BytesIO
 from pathlib import Path
 from zipfile import ZipFile
 import colorsys
+import json
 import re
 from PIL import Image
 from .powerpoint import open_presentation
 from .pictures import is_picture, embedded_picture_blob
 from defusedxml import ElementTree as SafeET
 from .models import TemplateProfile, Pattern, Asset
-from .fonts import resolve_font as resolve_font
-from .embedded_fonts import extract_embedded_font as extract_embedded_font
 from .security import validate_pptx, scan_text, digest, InputRejected
 
 EMU = 12700
@@ -27,7 +26,7 @@ def analyze_template(
     path: Path, artifact_dir: Path, allow_download=False, font_progress=None
 ) -> TemplateProfile:
     warnings = validate_pptx(path)
-    from .colors import extract_colors
+    from .colors import color_schemes, extract_colors
 
     color_roles, color_analysis = extract_colors(path, artifact_dir)
     prs = open_presentation(path)
@@ -130,14 +129,13 @@ def analyze_template(
     allowed_fonts = list(dict.fromkeys([f for f, _ in fonts.most_common()] + theme_fonts))
     if not allowed_fonts:
         raise InputRejected("В шаблоне не найден шрифт")
-    from .font_manifest import build_font_manifest
+    from .font_extraction import extract_template_fonts
 
-    font_model = build_font_manifest(prs, path, artifact_dir, allow_download, font_progress)
-    warnings.extend(font_model["warnings"])
-    assets_by_id = {a["id"]: a for a in font_model["assets"]}
-    primary = assets_by_id.get(font_model["roles"].get("body")) or next(
-        iter(assets_by_id.values()), None
+    font_model = extract_template_fonts(
+        path, artifact_dir, allow_download, font_progress, allowed_fonts[0]
     )
+    warnings.extend(font_model["warnings"])
+    primary = font_model["primary"]
     font = primary["requested"] if primary else allowed_fonts[0]
     font_file = primary["path"] if primary else ""
     font_origin = primary["origin"] if primary else {"kind": "missing"}
@@ -158,14 +156,23 @@ def analyze_template(
     )
     if not palette:
         raise InputRejected("В шаблоне не найдена палитра")
-    primary_text = text_colors.most_common(1)[0][0] if text_colors else min(palette, key=luminance)
-    background = max(palette, key=lambda c: contrast(c, primary_text))
-    if color_roles.get("background"):
-        background = color_roles["background"][0]
-    foreground = max(palette, key=lambda c: contrast(c, background))
-    role_text = color_roles.get("text.body") or color_roles.get("text.other") or []
-    if role_text and contrast(role_text[0], background) >= 4.5:
-        foreground = role_text[0]
+    paired = [
+        scheme
+        for scheme in color_analysis["schemes"]
+        if scheme["background"] and scheme["foreground"]
+    ]
+    if paired:
+        dominant = max(paired, key=lambda scheme: len(scheme["slides"]))
+        background = dominant["background"]
+        foreground = dominant["foreground"]
+    else:
+        primary_text = (
+            text_colors.most_common(1)[0][0] if text_colors else min(palette, key=luminance)
+        )
+        background = max(palette, key=lambda c: contrast(c, primary_text))
+        if color_roles.get("background"):
+            background = color_roles["background"][0]
+        foreground = max(palette, key=lambda c: contrast(c, background))
     saturated = [
         c
         for c in palette
@@ -219,6 +226,27 @@ def analyze_template(
     from .native_style import native_styles
 
     native = native_patterns(prs, native_styles(path))
+    if native:
+        title_inks = {
+            pattern.source_slide: pattern.title_foreground
+            for pattern in native
+            if pattern.source_slide and pattern.title_foreground
+        }
+        report = json.loads((artifact_dir / "color-model.json").read_text())
+        color_analysis["schemes"], color_analysis["slide_schemes"] = color_schemes(
+            report, title_inks
+        )
+        paired = [
+            scheme
+            for scheme in color_analysis["schemes"]
+            if scheme["background"] and scheme["foreground"]
+        ]
+        if paired:
+            dominant = max(paired, key=lambda scheme: len(scheme["slides"]))
+            background, foreground = dominant["background"], dominant["foreground"]
+    slide_schemes = color_analysis["slide_schemes"]
+    for pattern in native or patterns:
+        pattern.color_scheme_id = slide_schemes.get(str(pattern.source_slide), "")
     palette = list(
         dict.fromkeys(
             palette + [c for p in native for c in [p.title_foreground, *p.zone_foregrounds] if c]
@@ -258,11 +286,12 @@ def analyze_template(
         accent=accent,
         margin=margin,
         color_roles=color_roles,
+        color_schemes=color_analysis["schemes"],
         color_analysis=color_analysis,
         patterns=native or patterns,
         assets=assets,
         warnings=sorted(set(warnings)),
         source_kind="layout_rich" if ratio > 0.25 else "example_deck",
         layout_index=layout_index,
-        analysis_version=9,
+        analysis_version=10,
     )

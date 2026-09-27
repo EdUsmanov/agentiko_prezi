@@ -6,8 +6,7 @@ from pptx import Presentation
 from pypdf import PdfReader
 from reportlab.pdfbase import pdfmetrics
 from studio.config import ROOT, Settings
-from studio.embedded_fonts import check_glyphs
-from studio.fonts import wrap_text, pdf_font
+from studio.fonts import check_glyphs, wrap_text, pdf_font
 from studio.text_layout import layout_words, without_word_joiners
 from studio.content import parse_content
 from studio.pipeline import prepare, load_package, generate

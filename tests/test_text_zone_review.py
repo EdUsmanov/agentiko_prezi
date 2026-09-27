@@ -41,6 +41,34 @@ def test_malformed_grid_is_not_cached_as_clear(tmp_path):
     assert not list(tmp_path.rglob("*.json"))
 
 
+def test_malformed_grid_is_retried_once(tmp_path):
+    calls = []
+
+    async def request(*args, **kwargs):
+        calls.append(1)
+        return {"cells": ["A0"] if len(calls) == 1 else ["A1"]}
+
+    gateway = SimpleNamespace(
+        settings=SimpleNamespace(model_id="test", base_url="https://example.test"),
+        json_request=request,
+    )
+    cells = asyncio.run(recognize_cells(Image.new("RGB", (1280, 720), "white"), gateway, tmp_path))
+    assert cells == {"A1"}
+    assert len(calls) == 3
+
+
+def test_single_object_wrapper_from_provider_is_validated(tmp_path):
+    async def request(*args, **kwargs):
+        return [{"cells": ["H8"]}]
+
+    gateway = SimpleNamespace(
+        settings=SimpleNamespace(model_id="test", base_url="https://example.test"),
+        json_request=request,
+    )
+    cells = asyncio.run(recognize_cells(Image.new("RGB", (1280, 720), "white"), gateway, tmp_path))
+    assert cells == {"H8"}
+
+
 def test_field_geometry_keeps_cards_separate_and_reports_unknown():
     image = Image.new("RGB", (1280, 720), "white")
     zones = [Box(x=50, y=200, w=400, h=300), Box(x=650, y=200, w=400, h=300)]
@@ -67,7 +95,53 @@ def test_field_geometry_keeps_cards_separate_and_reports_unknown():
     assert next(c for c in checks if c["role"] == "body" and c["index"] == 1)["status"] == "unknown"
 
 
-def test_vl_failure_is_explicit_and_stops_request_cascade(tmp_path):
+def test_unknown_authored_field_triggers_vl_even_on_simple_canvas(tmp_path, monkeypatch):
+    import json
+    from studio.text_zone_review import review_text_zones
+
+    path = tmp_path / "simple.png"
+    Image.new("RGB", (1280, 720), "white").save(path)
+    pattern = Pattern(
+        id="p1",
+        source_slide=1,
+        source_layout="simple",
+        role="statement",
+        title_zone=Box(x=100, y=100, w=700, h=200),
+        text_zones=[],
+        background_image=str(path),
+    )
+    profile = SimpleNamespace(patterns=[pattern], width=1280, height=720)
+    (tmp_path / "background-model.json").write_text(json.dumps({"slides": [{}]}))
+    monkeypatch.setattr(
+        "studio.text_zone_review.analyze_image",
+        lambda *args: {"recognition_mode": "flat_pixel_mask"},
+    )
+    monkeypatch.setattr("studio.portable_templates.zone_metadata", lambda *args: {})
+    monkeypatch.setattr("studio.portable_templates.inspect_text_zone", lambda *args, **kwargs: {})
+    monkeypatch.setattr(
+        "studio.text_zone_review.check_fields",
+        lambda *args: [{"role": "title", "index": 0, "status": "safe" if args[-1] else "unknown"}],
+    )
+    calls = []
+
+    async def request(*args, **kwargs):
+        calls.append(1)
+        return {"cells": ["A1"]}
+
+    gateway = SimpleNamespace(
+        settings=SimpleNamespace(
+            mode="api", visual_review=True, model_id="test", base_url="https://example.test"
+        ),
+        json_request=request,
+    )
+    report = asyncio.run(review_text_zones(profile, tmp_path, gateway))
+    assert report["status"] == "completed"
+    assert report["patterns"][0]["vl_status"] == "completed"
+    assert report["patterns"][0]["field_checks"][0]["status"] == "safe"
+    assert len(calls) == 2
+
+
+def test_vl_failure_is_explicit_and_stops_request_cascade(tmp_path, monkeypatch):
     import json
     import numpy as np
     from studio.text_zone_review import review_text_zones
@@ -110,3 +184,10 @@ def test_vl_failure_is_explicit_and_stops_request_cascade(tmp_path):
     assert report["status"] == "needs_review"
     assert [p["vl_status"] for p in report["patterns"]] == ["failed", "not_run"]
     assert all(c["status"] == "unknown" for p in report["patterns"] for c in p["field_checks"])
+    monkeypatch.setattr(
+        "studio.text_zone_review.check_fields",
+        lambda *args: [{"role": "title", "index": 0, "status": "safe"}],
+    )
+    report = asyncio.run(review_text_zones(profile, tmp_path, gateway))
+    assert report["status"] == "needs_review"
+    assert all(c["status"] == "safe" for p in report["patterns"] for c in p["field_checks"])

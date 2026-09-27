@@ -565,7 +565,7 @@ async function init() {
       : 'Автономный режим: материалы обрабатываются локально, без смыслового анализа LLM. Внешние ссылки не открываются.';
     if (health.model_mode==='api' && !health.features?.vlm) $('#model-disclosure').textContent += ' Проверка изображений сейчас отключена; её включение требует разрешения на передачу PNG.';
     if (health.features?.vlm) $('#model-disclosure').textContent += ' Загруженные вами картинки также будут видны провайдеру в составе слайдов, но не передаются планировщику.';
-    if (health.features?.download_open_fonts) $('#model-disclosure').textContent += ' Недостающие открытые шрифты ищем в Google Fonts: туда передаётся только название шрифта.';
+    if (health.features?.download_fonts) $('#model-disclosure').textContent += ' Недостающие начертания ищем в Google Fonts, Fontsource и официальном пакете Aptos: передаётся только название шрифта.';
     for (const reference of references) { const option = el('option','',reference.name); option.value = reference.id; $('#reference').append(option); }
     const jobs = await api("/api/jobs");
     const active = jobs.find(job => ["accepted","running"].includes(job.state));

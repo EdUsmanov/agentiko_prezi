@@ -255,7 +255,7 @@ def test_generation_uses_frozen_plan_no_repeated_planner_call(prepared, monkeypa
     assert not done["model_degraded"] and done["composition_diversity"]["verified"]
 
 
-def test_expected_font_and_link_messages_are_info(prepared):
+def test_excluded_external_link_is_info(prepared):
     from studio.pipeline import preparation_diagnostics
 
     _, _, package = prepared
@@ -263,9 +263,7 @@ def test_expected_font_and_link_messages_are_info(prepared):
         package.template,
         [
             "Внешняя ссылка исключена из генерации; сетевой запрос не выполнялся",
-            "Шрифт Play: использовано точное локальное начертание; подходящий встроенный шрифт в PPTX отсутствует или недоступен.",
             "Не найден безопасный макет",
         ],
     )
     assert [r["severity"] for r in result] == ["info", "warning"]
-    assert all("локальное начертание" not in r["message"] for r in result)

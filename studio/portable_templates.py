@@ -9,6 +9,10 @@ from copy import deepcopy
 from io import BytesIO
 import json
 from pathlib import Path
+import re
+from zipfile import ZipFile
+from defusedxml import ElementTree as SafeET
+from defusedxml.common import DefusedXmlException
 
 from ._vendor.portable_background_extractor.bgextract import (
     inspect_template_backgrounds,
@@ -20,11 +24,11 @@ from ._vendor.portable_background_extractor.bgextract.roles import (
 )
 from ._vendor.portable_text_zone_finder.textzone import analyze_image
 from .powerpoint import open_presentation
-from .security import validate_pptx
+from .security import digest, validate_pptx
 
 
-def extract_backgrounds(profile, source, directory):
-    validate_pptx(Path(source))
+def template_reference(source):
+    """Return the source with a temporary exemplar for layout-only POTX files."""
     raw = Path(source).read_bytes()
     prs = open_presentation(BytesIO(raw))
     if not len(prs.slides):
@@ -34,8 +38,26 @@ def extract_backgrounds(profile, source, directory):
         stream = BytesIO()
         prs.save(stream)
         raw = stream.getvalue()
+    return raw
+
+
+def extract_backgrounds(profile, source, directory):
+    validate_pptx(Path(source))
+    raw = template_reference(source)
+    prs = open_presentation(BytesIO(raw))
     model = inspect_template_backgrounds(raw)
-    protect_field_surfaces(model, prs, profile.patterns)
+    protect_field_surfaces(model, prs, profile.patterns, raw)
+    review_path = Path(directory) / "raster-review.json"
+    if review_path.is_file():
+        review = json.loads(review_path.read_text())
+        if review.get("source_sha256") != digest(Path(source).read_bytes()):
+            raise ValueError("VL-анализ фона не соответствует исходному шаблону")
+        model["rasterReview"] = {
+            "status": review["status"],
+            "model": review["model"],
+            "assets": review["assets"],
+        }
+        model["rasterRegions"] = review["regions"]
     cleaned = extract_background_pptx(raw, model)
     folder = Path(directory) / "template-layers"
     folder.mkdir(exist_ok=True)
@@ -93,8 +115,9 @@ def clean_editable_source(prs, patterns):
     """
     stream = BytesIO()
     prs.save(stream)
-    model = inspect_template_backgrounds(stream.getvalue())
-    protect_field_surfaces(model, prs, patterns)
+    raw = stream.getvalue()
+    model = inspect_template_backgrounds(raw)
+    protect_field_surfaces(model, prs, patterns, raw)
     protected = {}
     for pattern in patterns:
         surface = (
@@ -119,7 +142,34 @@ def clean_editable_source(prs, patterns):
     return model
 
 
-def protect_field_surfaces(model, prs, patterns):
+def _solid_svg_panel(archive, name):
+    """Accept only a blank single-color SVG rectangle, never source imagery."""
+    if not name.lower().endswith(".svg"):
+        return False
+    try:
+        root = SafeET.fromstring(archive.read(name))
+    except (KeyError, ValueError, SafeET.ParseError, DefusedXmlException):
+        return False
+    if root.tag != "{http://www.w3.org/2000/svg}svg" or len(root) != 1:
+        return False
+    if set(root.attrib) - {"width", "height", "viewBox", "fill"}:
+        return False
+    rect = root[0]
+    if rect.tag != "{http://www.w3.org/2000/svg}rect" or len(rect):
+        return False
+    if set(rect.attrib) - {"width", "height", "x", "y", "rx", "ry", "fill"}:
+        return False
+    fill = rect.get("fill", "")
+    if not re.fullmatch(r"#[0-9a-fA-F]{6}|white|black", fill, re.I):
+        return False
+    return (
+        rect.get("x", "0") == "0"
+        and rect.get("y", "0") == "0"
+        and (rect.get("width") == root.get("width") and rect.get("height") == root.get("height"))
+    )
+
+
+def protect_field_surfaces(model, prs, patterns, raw=None):
     """Clear sample wording, but retain the authored field's fill and geometry.
 
     A white text card is both a content placeholder and a reusable surface.
@@ -128,6 +178,8 @@ def protect_field_surfaces(model, prs, patterns):
     """
     protected = {}
     graphic_ids = {}
+    panel_assets = {}
+    archive = ZipFile(BytesIO(raw)) if raw is not None else None
     for pattern in patterns:
         surface = (
             prs.slides[pattern.source_slide - 1]
@@ -175,6 +227,18 @@ def protect_field_surfaces(model, prs, patterns):
                     action="clear-text", role="background", reason="authored_editable_field_surface"
                 )
                 row.pop("replacementText", None)
+            if (
+                archive is not None
+                and row["type"] == "pic"
+                and row["reason"] == "container_of_sample_text"
+            ):
+                asset = row.get("asset") or ""
+                if asset not in panel_assets:
+                    panel_assets[asset] = _solid_svg_panel(archive, asset)
+                if panel_assets[asset]:
+                    row.update(action="keep", role="background", reason="reusable_solid_svg_panel")
+    if archive is not None:
+        archive.close()
     by_id = {(part, row["id"]): row for part, rows in model["parts"].items() for row in rows}
     for slide in model["slides"]:
         slide["objects"] = [

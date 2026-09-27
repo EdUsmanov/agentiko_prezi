@@ -15,9 +15,8 @@ from .store import Store
 from .security import digest, InputRejected
 from .security_gate import PromptInjectionDetected, check_text_fields, check_template
 from .content import parse_content, parse_constraints
-from .embedded_fonts import check_glyphs
-from .fonts import role_font
-from .font_fallback import ensure_text_fonts, content_text
+from .fonts import role_font, check_glyphs
+from .font_coverage import content_text, ensure_text_coverage
 from .native_template import compile_backgrounds
 from .composer import compose_variant
 from .audit import repair_scenes
@@ -62,12 +61,6 @@ def preparation_diagnostics(template, warnings):
                     "message": "Внешние ссылки отключены политикой безопасности. Их содержимое не загружалось. Связанные внешние ресурсы, если они были, не попадут в результат.",
                 }
             )
-        elif (
-            message.startswith("Шрифт ") and "точное локальное начертание" in message
-        ) or message.startswith("Шрифты Microsoft:"):
-            # Compatibility facts remain in font-model.json. They are not
-            # actionable diagnostics for a user who supplied this template.
-            continue
         else:
             notices.append(
                 {"code": "preparation_warning", "severity": "warning", "message": message}
@@ -126,7 +119,7 @@ def prepare_template(
         else services.analyze_template(
             path,
             directory,
-            allow_download=settings.download_open_fonts,
+            allow_download=settings.download_fonts,
             font_progress=lambda phase: store.update(job_id, phase=phase, progress=30),
         )
     )
@@ -200,9 +193,7 @@ def prepare_materials(
     content = (
         content_model.model_copy(deep=True) if content_model is not None else parse_content(text)
     )
-    from .font_fallback import ensure_text_fonts, content_text
-
-    ensure_text_fonts(template, content_text(content), directory)
+    ensure_text_coverage(template, content_text(content))
     check_glyphs(role_font(template, "title")[1], content.title)
     check_glyphs(
         template.font_file,
@@ -297,7 +288,7 @@ def check_prepared_package(
     }
     # Recheck model-authored labels before any final composition measurement.
     template = package.template
-    ensure_text_fonts(template, content_text(package.content, package.prepared_plans), directory)
+    ensure_text_coverage(template, content_text(package.content, package.prepared_plans))
     package.manifest["font"] = {"name": template.font, **template.font_origin}
     # Check model-authored titles/proposals against the actual selected font too.
     check_glyphs(template.font_file, "\n".join(f.text for f in package.content.facts))
@@ -477,8 +468,27 @@ def run_preparation(
         technical = prepare_template(store, job_id, request, settings, services)
         if technical is None:
             return
-        package = prepare_materials(store, job_id, request, technical, services, started, timings)
         gateway = services.gateway_factory(settings)
+        if (
+            technical.cached_analysis is None
+            and settings.mode == "api"
+            and settings.visual_review
+            and any(pattern.title_zone for pattern in technical.profile.patterns)
+        ):
+            from .raster_review import review_template_rasters
+
+            store.update(job_id, phase="VL-проверка растровых фонов", progress=38)
+
+            async def review_backgrounds():
+                try:
+                    await review_template_rasters(
+                        store.directory(job_id) / "input.pptx", gateway, store.directory(job_id)
+                    )
+                finally:
+                    await gateway.aclose()
+
+            asyncio.run(review_backgrounds())
+        package = prepare_materials(store, job_id, request, technical, services, started, timings)
         if technical.cached_analysis is not None:
             package.analysis["_template_snapshot"] = technical.cached_analysis
 

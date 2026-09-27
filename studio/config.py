@@ -51,7 +51,7 @@ class Settings:
     max_upload_bytes: int = POLICY["max_upload_mb"] * 1024 * 1024
     engine: str = "native"
     visual_review: bool = False
-    download_open_fonts: bool = False
+    download_fonts: bool = False
     allowed_hosts: tuple[str, ...] = ("127.0.0.1", "localhost", "::1", "testserver")
 
     def worker_environment(self):
@@ -115,7 +115,7 @@ class Settings:
                 "deeppresenter" if os.getenv("STUDIO_MODEL_MODE") == "api" else "native",
             ),
             visual_review=os.getenv("STUDIO_VLM_ENABLED", "false").lower() == "true",
-            download_open_fonts=os.getenv("STUDIO_DOWNLOAD_OPEN_FONTS", "true").lower() == "true",
+            download_fonts=os.getenv("STUDIO_DOWNLOAD_FONTS", "true").lower() == "true",
             allowed_hosts=(
                 tuple(
                     x.strip() for x in os.getenv("STUDIO_ALLOWED_HOSTS", "").split(",") if x.strip()

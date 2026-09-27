@@ -119,7 +119,7 @@ def test_worker_settings_preserve_server_configuration(tmp_path, monkeypatch):
         license="Apache-2.0",
         engine="deeppresenter",
         visual_review=True,
-        download_open_fonts=False,
+        download_fonts=False,
         thinking=None,
         thinking_token_budget=1024,
         openrouter_providers=("test-provider",),
@@ -156,14 +156,14 @@ def test_child_process_receives_exact_settings_snapshot(tmp_path, monkeypatch):
         thinking_token_budget=768,
         api_key="not-a-real-test-key",
         openrouter_providers=("provider-for-test",),
-        download_open_fonts=False,
+        download_fonts=False,
     )
     monkeypatch.setenv("STUDIO_MODEL_THINKING", "true")
     child = """
 from studio.config import Settings
 s=Settings.from_worker_env()
 assert s.visual_review is True and s.thinking is None
-assert s.thinking_token_budget==768 and s.download_open_fonts is False
+assert s.thinking_token_budget==768 and s.download_fonts is False
 assert s.api_key=='not-a-real-test-key' and s.openrouter_providers==('provider-for-test',)
 print('server settings preserved')
 """

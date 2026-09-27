@@ -3,12 +3,7 @@ from types import SimpleNamespace
 
 import httpx
 import pytest
-from fontTools.ttLib import TTFont
-from pptx import Presentation
-
-from studio import font_manifest
 from studio.analysis import analyze_meaning
-from studio.config import ROOT
 
 
 def result(payload):
@@ -32,40 +27,6 @@ def inventory(count):
         "height": 540,
         "patterns": [{"id": f"p{i}", "source_slide": i + 1} for i in range(count)],
     }
-
-
-def test_installed_restricted_face_is_local_only_without_changing_font(
-    template, tmp_path, monkeypatch
-):
-    font_path = tmp_path / "system-font.ttf"
-    with TTFont(ROOT / "fonts/Play-Regular.ttf") as font:
-        font["OS/2"].fsType = 8
-        font.save(font_path)
-    before = font_path.read_bytes()
-    monkeypatch.setattr(font_manifest, "resolve_font", lambda name: str(font_path))
-    report = font_manifest.build_font_manifest(
-        Presentation(template), template, tmp_path / "report"
-    )
-    assert not report["unresolved"]
-    assert all(not a["redistributable"] and a["fs_type"] == 8 for a in report["assets"])
-    assert font_path.read_bytes() == before
-    assert report["limitations"][-1] == "Local-only font assets are not embedded into PPTX/HTML/PDF"
-
-
-def test_downloaded_restricted_face_is_still_rejected(template, tmp_path, monkeypatch):
-    from studio import open_fonts
-
-    font_path = tmp_path / "download.ttf"
-    with TTFont(ROOT / "fonts/Play-Regular.ttf") as font:
-        font["OS/2"].fsType = 8
-        font.save(font_path)
-    monkeypatch.setattr(font_manifest, "resolve_font", lambda name: "")
-    monkeypatch.setattr(open_fonts, "download_face", lambda name: (str(font_path), None))
-    report = font_manifest.build_font_manifest(
-        Presentation(template), template, tmp_path / "report", allow_download=True
-    )
-    assert report["unresolved"]
-    assert not report["assets"]
 
 
 def test_visual_batches_are_serial_and_have_one_distinct_source_image():

@@ -318,6 +318,11 @@ class GatewayBridge:
                 "assignments": [],
                 "outcome": "composition-plan" if next_action == "finalize" else None,
             }
+        # Some JSON-object providers wrap a single structured result in an
+        # array. Accept only the unambiguous one-action form; the validated
+        # workflow below still rejects extra or out-of-order actions.
+        if isinstance(raw, list) and len(raw) == 1:
+            raw = raw[0]
         action = Action.model_validate(raw)
         if action.name != next_action:
             raise ValueError("Design violated the bounded workflow")
@@ -367,6 +372,8 @@ async def design(package, plans, gateway, workspace, timeout):
                 raise KeyError(name)
             return bridge
 
+    from .colors import agent_color_context, pattern_color_context
+
     # No paths, font bytes, environment or original file bodies enter the agent.
     catalog = [
         {
@@ -378,6 +385,7 @@ async def design(package, plans, gateway, workspace, timeout):
             "source_slide": p.source_slide,
             "graphic_kind": p.graphic_kind,
             "graphic_edges": p.graphic_edges,
+            "colors": pattern_color_context(p),
         }
         for p in package.template.patterns
         if p.id in env.allowed
@@ -392,6 +400,7 @@ async def design(package, plans, gateway, workspace, timeout):
         "plans": plans.model_dump(),
         "facts": [{"id": f.id, "text": f.text} for f in package.content.facts],
         "catalog": catalog,
+        "color_schemes": agent_color_context(package.template)["source_schemes"],
         "semantics": package.analysis.get("template_semantics", {}),
         "baseline_assignment": env.baseline_assignments,
         "size": {"width": package.template.width, "height": package.template.height},

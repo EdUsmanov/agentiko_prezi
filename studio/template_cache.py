@@ -22,6 +22,7 @@ TEMPLATE_REPORT_KEYS = {
     "warnings",
     "template_graphics",
     "text_zone_review",
+    "raster_review",
     "template_text_adaptations",
     "template_timeline_adaptations",
     "template_data_regions",
@@ -88,7 +89,7 @@ class TemplateCache:
             "openrouter_providers",
             "openrouter_allow_fallbacks",
             "visual_review",
-            "download_open_fonts",
+            "download_fonts",
         )
         return {
             "sha256": sha,
@@ -154,11 +155,10 @@ class TemplateCache:
             return None
 
     def save(self, profile, directory, analysis):
-        # Substitutions depend on the current input text, unlike this shared cache.
-        if profile.font_substitutions:
-            return False
-        if self.root is None or any(
-            f.get("required_for_generation", True) for f in profile.missing_fonts
+        if (
+            self.root is None
+            or profile.font_replacements
+            or any(f.get("required_for_generation", True) for f in profile.missing_fonts)
         ):
             return False
         if analysis.get("template_semantics", {}).get("status") not in ("completed", "not_run"):
@@ -185,6 +185,7 @@ class TemplateCache:
         encoded = map_strings(profile.model_dump(), encode)
         for name in (
             "font-model.json",
+            "layout-font-model.json",
             "color-model.json",
             "background-model.json",
             "text-zones.json",

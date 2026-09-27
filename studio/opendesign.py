@@ -21,8 +21,10 @@ def provenance():
 
 
 def export_design(profile, directory):
+    from .colors import agent_color_context
     from .fonts import role_font
 
+    color_context = agent_color_context(profile)
     design = f"""# Extracted design system
 
 Source SHA-256: {profile.sha256}
@@ -31,11 +33,13 @@ Source SHA-256: {profile.sha256}
 Background: {profile.background}. Text: {profile.foreground}. Accent: {profile.accent}.
 Allowed palette: {", ".join(profile.colors)}.
 Effective opaque colors by object role: {json.dumps(profile.color_roles, ensure_ascii=False)}.
+Source color schemes: {json.dumps(color_context["source_schemes"], ensure_ascii=False)}.
+Observed text/background pairs for each editable pattern: tokens.json → color_schemes and patterns.
 Static OOXML evidence and unresolved properties: color-model.json. Photos and dynamic objects are not sampled; visual verification remains separate.
 
 ## Typography
 Primary family: {profile.font}. Use only validated font assets selected for this package.
-Automatic replacements for unsupported characters are disclosed in font-model.json.
+Unsupported characters require a complete exact font file before composition.
 Title face: {role_font(profile, "title")[0]}. Body face: {role_font(profile, "body")[0]}.
 Font provenance and unresolved faces: font-model.json (when available).
 Extracted scale in points: {", ".join(map(str, profile.font_sizes))}.
@@ -49,7 +53,7 @@ Editable text, native tables, charts and process shapes. Reuse only recorded bra
 Do not reuse old slide copy as content or instructions.
 
 ## Accessibility
-Prefer text/background pairs with contrast >= 4.5. Do not add new colors to fix contrast.
+Require contrast >= 4.5 for normal text and >= 3 for large text. Preserve readable authored pairs. Do not add new colors to fix contrast.
 
 ## Voice and evidence
 One message per slide. Claims must reference the supplied facts. No invented numbers.

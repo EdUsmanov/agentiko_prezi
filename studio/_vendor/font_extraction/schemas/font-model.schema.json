@@ -1,0 +1,429 @@
+{
+  "$defs": {
+    "FontAsset": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "family": {
+          "title": "Family",
+          "type": "string"
+        },
+        "resolvedFamily": {
+          "title": "Resolvedfamily",
+          "type": "string"
+        },
+        "weight": {
+          "title": "Weight",
+          "type": "integer"
+        },
+        "style": {
+          "enum": [
+            "normal",
+            "italic"
+          ],
+          "title": "Style",
+          "type": "string"
+        },
+        "source": {
+          "enum": [
+            "embedded",
+            "installed",
+            "downloaded"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "origin": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Origin"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "sha256": {
+          "title": "Sha256",
+          "type": "string"
+        },
+        "bytes": {
+          "title": "Bytes",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "family",
+        "resolvedFamily",
+        "weight",
+        "style",
+        "source",
+        "path",
+        "sha256",
+        "bytes"
+      ],
+      "title": "FontAsset",
+      "type": "object"
+    },
+    "FontRoleSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "family": {
+          "title": "Family",
+          "type": "string"
+        },
+        "script": {
+          "enum": [
+            "latin",
+            "ea",
+            "cs",
+            "sym"
+          ],
+          "title": "Script",
+          "type": "string"
+        },
+        "weight": {
+          "title": "Weight",
+          "type": "integer"
+        },
+        "style": {
+          "enum": [
+            "normal",
+            "italic"
+          ],
+          "title": "Style",
+          "type": "string"
+        },
+        "sizesPt": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sizespt"
+        },
+        "slideNumbers": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Slidenumbers",
+          "type": "array"
+        },
+        "sources": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Sources",
+          "type": "array"
+        },
+        "evidence": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "assetId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Assetid"
+        },
+        "status": {
+          "enum": [
+            "embedded",
+            "installed",
+            "downloaded",
+            "missing"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "family",
+        "script",
+        "weight",
+        "style",
+        "slideNumbers",
+        "sources",
+        "evidence",
+        "status"
+      ],
+      "title": "FontRoleSummary",
+      "type": "object"
+    },
+    "FontUse": {
+      "additionalProperties": false,
+      "properties": {
+        "family": {
+          "title": "Family",
+          "type": "string"
+        },
+        "script": {
+          "enum": [
+            "latin",
+            "ea",
+            "cs",
+            "sym"
+          ],
+          "title": "Script",
+          "type": "string"
+        },
+        "weight": {
+          "maximum": 900,
+          "minimum": 100,
+          "title": "Weight",
+          "type": "integer"
+        },
+        "style": {
+          "enum": [
+            "normal",
+            "italic"
+          ],
+          "title": "Style",
+          "type": "string"
+        },
+        "sizesPt": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sizespt"
+        },
+        "source": {
+          "title": "Source",
+          "type": "string"
+        },
+        "evidence": {
+          "enum": [
+            "observed",
+            "placeholder",
+            "size-heuristic",
+            "text-heuristic"
+          ],
+          "title": "Evidence",
+          "type": "string"
+        },
+        "shapeIds": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Shapeids",
+          "type": "array"
+        },
+        "characters": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Characters"
+        },
+        "assetId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Assetid"
+        },
+        "status": {
+          "enum": [
+            "embedded",
+            "installed",
+            "downloaded",
+            "missing"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "family",
+        "script",
+        "weight",
+        "style",
+        "source",
+        "evidence",
+        "shapeIds",
+        "status"
+      ],
+      "title": "FontUse",
+      "type": "object"
+    },
+    "MissingFont": {
+      "additionalProperties": false,
+      "properties": {
+        "family": {
+          "title": "Family",
+          "type": "string"
+        },
+        "weight": {
+          "title": "Weight",
+          "type": "integer"
+        },
+        "style": {
+          "enum": [
+            "normal",
+            "italic"
+          ],
+          "title": "Style",
+          "type": "string"
+        }
+      },
+      "required": [
+        "family",
+        "weight",
+        "style"
+      ],
+      "title": "MissingFont",
+      "type": "object"
+    },
+    "SlideFontData": {
+      "additionalProperties": false,
+      "properties": {
+        "number": {
+          "exclusiveMinimum": 0,
+          "title": "Number",
+          "type": "integer"
+        },
+        "kind": {
+          "enum": [
+            "title",
+            "content"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "elements": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "items": {
+                  "$ref": "#/$defs/FontUse"
+                },
+                "type": "array"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Elements"
+        }
+      },
+      "required": [
+        "number",
+        "kind"
+      ],
+      "title": "SlideFontData",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": 2,
+      "default": 2,
+      "title": "Schemaversion",
+      "type": "integer"
+    },
+    "presentation": {
+      "title": "Presentation",
+      "type": "string"
+    },
+    "slides": {
+      "items": {
+        "$ref": "#/$defs/SlideFontData"
+      },
+      "title": "Slides",
+      "type": "array"
+    },
+    "usageBySlideKind": {
+      "additionalProperties": {
+        "additionalProperties": {
+          "items": {
+            "$ref": "#/$defs/FontRoleSummary"
+          },
+          "type": "array"
+        },
+        "type": "object"
+      },
+      "title": "Usagebyslidekind",
+      "type": "object"
+    },
+    "fontAssets": {
+      "items": {
+        "$ref": "#/$defs/FontAsset"
+      },
+      "title": "Fontassets",
+      "type": "array"
+    },
+    "unresolved": {
+      "items": {
+        "$ref": "#/$defs/MissingFont"
+      },
+      "title": "Unresolved",
+      "type": "array"
+    },
+    "warnings": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
+    }
+  },
+  "required": [
+    "presentation",
+    "slides",
+    "usageBySlideKind",
+    "fontAssets",
+    "unresolved",
+    "warnings"
+  ],
+  "title": "PresentationFontData",
+  "type": "object"
+}

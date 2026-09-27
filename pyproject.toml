@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "presentation-studio"
 version = "0.1.0"
 description = "VK Forma template-aware editable presentation compiler with a two-stage pipeline"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = ["fastapi>=0.115,<1", "uvicorn>=0.30,<1", "python-multipart>=0.0.18", "python-pptx>=1.0,<2", "pydantic>=2.9,<3", "httpx>=0.27,<1", "Pillow>=12,<13", "numpy>=1.26,<3", "reportlab>=4.2,<6", "pypdfium2>=4.30,<6", "pypdf>=6,<7", "defusedxml>=0.7", "fonttools>=4.59,<5"]
 
 [project.optional-dependencies]
@@ -14,8 +14,7 @@ test = ["pytest>=8,<10"]
 deeppresenter = ["openai==1.109.1", "PyYAML==6.0.2", "Jinja2==3.1.6", "jsonlines==4.0.0"]
 
 [tool.setuptools.package-data]
-"studio" = ["font_decoder.mjs"]
-"studio._vendor.mtx_decompressor" = ["*.mjs", "LICENSE", "PROVENANCE.md"]
+"studio._vendor.font_extraction" = ["*.mjs", "*.md", "*.json", "*.txt", "*.csv", "vendor/mtx-decompressor/*.mjs", "vendor/mtx-decompressor/LICENSE", "schemas/*.json", "dataset/*.jsonl", "dataset/*.csv"]
 "studio._vendor.deeppresenter" = ["LICENSE", "PROVENANCE.md"]
 
 [project.scripts]

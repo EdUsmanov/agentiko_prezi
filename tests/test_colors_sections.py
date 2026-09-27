@@ -3,7 +3,13 @@ from PIL import Image
 from pptx import Presentation
 from pptx.util import Inches
 from pptx.dml.color import RGBColor
-from studio.colors import extract_colors
+from studio.colors import (
+    agent_color_context,
+    color_schemes,
+    extract_colors,
+    resolve_rendered_schemes,
+)
+from studio.template import analyze_template
 from studio.models import Box, Pattern, Element, SlideScene
 from studio.artwork import safe_body_zone
 from studio.planner import extractive_plans, validate_plans, assign_compositions
@@ -31,6 +37,126 @@ def test_color_roles_table_evidence_and_potx(template, potx, tmp_path):
     roles, summary = extract_colors(path, tmp_path / "report2")
     assert summary["table_styles"]["1"]["header"] == {"color": "#123456", "opacity": 1}
     assert summary["table_styles"]["1"]["body"] == {"color": "#AABBCC", "opacity": 1}
+
+
+def test_color_schemes_keep_text_with_its_source_background():
+    def slide(number, background, text):
+        return {
+            "number": number,
+            "uses": [
+                {"role": "background", "color": background, "opacity": 1},
+                {"role": "text.other", "color": text, "opacity": 1},
+            ],
+        }
+
+    schemes, mapping = color_schemes(
+        {
+            "slides": [
+                slide(1, "#EF3124", "#FFFFFF"),
+                slide(2, "#EBEBEB", "#000000"),
+                slide(3, "#EF3124", "#FFFFFF"),
+            ]
+        }
+    )
+    assert [(row["background"], row["foreground"], row["slides"]) for row in schemes] == [
+        ("#EF3124", "#FFFFFF", [1, 3]),
+        ("#EBEBEB", "#000000", [2]),
+    ]
+    assert mapping == {"1": "scheme-1", "2": "scheme-2", "3": "scheme-1"}
+
+    # Card copy may be more frequent than the slide headline; it belongs to
+    # its own local surface and must not redefine the canvas scheme.
+    report = {
+        "slides": [
+            {
+                "number": 13,
+                "uses": [
+                    {"role": "background", "color": "#EF3124", "opacity": 1},
+                    *[{"role": "text.other", "color": "#000000", "opacity": 1} for _ in range(8)],
+                    {"role": "text.other", "color": "#FFFFFF", "opacity": 1},
+                ],
+            }
+        ]
+    }
+    schemes, _ = color_schemes(report, {13: "#FFFFFF"})
+    assert schemes[0]["foreground"] == "#FFFFFF"
+    assert "#000000" in schemes[0]["text_colors"]
+
+
+def test_large_authored_white_text_stays_white_on_brand_red(template, tmp_path):
+    from studio.template_adaptation import adapt_native_text_fields
+
+    profile = analyze_template(template, tmp_path / "profile")
+    pattern = profile.patterns[0]
+    profile.patterns = [pattern]
+    profile.width, profile.height = 720, 405
+    pattern.source_slide = 1
+    pattern.reusable = True
+    pattern.title_zone = Box(x=30, y=20, w=600, h=80)
+    pattern.body_zones = [Box(x=30, y=120, w=600, h=80), Box(x=30, y=230, w=600, h=60)]
+    pattern.title_background = "#EF3124"
+    pattern.zone_backgrounds = ["#EF3124", "#EF3124"]
+    pattern.title_foreground = "#FFFFFF"
+    pattern.zone_foregrounds = ["#FFFFFF", "#FFFFFF"]
+    profile.colors = ["#EF3124", "#FFFFFF", "#000000"]
+    image = tmp_path / "red.png"
+    Image.new("RGB", (720, 405), "#EF3124").save(image)
+    pattern.background_image = str(image)
+    pattern.fields = [
+        {"role": "title", "index": 0, "font_size": 60, "style": {"bold": True}},
+        {"role": "body", "index": 0, "font_size": 28.5, "style": {"bold": False}},
+        {"role": "body", "index": 1, "font_size": 16, "style": {"bold": False}},
+    ]
+    adapt_native_text_fields(profile)
+    assert pattern.title_foreground == "#FFFFFF"
+    assert pattern.zone_foregrounds == ["#FFFFFF", "#000000"]
+
+
+def test_agent_color_context_keeps_canvas_and_card_pairs(template, tmp_path):
+    profile = analyze_template(template, tmp_path / "profile")
+    pattern = profile.patterns[0]
+    profile.patterns = [pattern]
+    pattern.color_scheme_id = "scheme-red"
+    pattern.title_background = "#EF3124"
+    pattern.title_foreground = "#FFFFFF"
+    pattern.body_zones = [Box(x=10, y=100, w=300, h=100)]
+    pattern.zone_backgrounds = ["#FFFFFF"]
+    pattern.zone_foregrounds = ["#000000"]
+    profile.color_schemes = [
+        {"id": "scheme-red", "background": "#EF3124", "foreground": "#FFFFFF", "slides": [1]}
+    ]
+    context = agent_color_context(profile)
+    assert context["source_schemes"][0]["text"] == "#FFFFFF"
+    assert context["patterns"][pattern.id] == {
+        "scheme_id": "scheme-red",
+        "title": {"background": "#EF3124", "text": "#FFFFFF"},
+        "body": [{"background": "#FFFFFF", "text": "#000000"}],
+    }
+
+
+def test_rendered_schemes_resolve_dominant_raster_background(template, tmp_path):
+    profile = analyze_template(template, tmp_path / "profile")
+    base = profile.patterns[0]
+    profile.patterns = []
+    for number, background, foreground in (
+        (1, "#152848", "#EEF2F5"),
+        (2, "#1B2F52", "#EEF2F5"),
+        (3, "#F5F1EA", "#111827"),
+    ):
+        pattern = base.model_copy(deep=True)
+        pattern.id = f"slide-{number}"
+        pattern.source_slide = number
+        pattern.title_background = background
+        pattern.title_foreground = foreground
+        profile.patterns.append(pattern)
+    original = profile.color_schemes
+    resolve_rendered_schemes(profile)
+    assert profile.color_analysis["static_schemes"] == original
+    assert len(profile.color_schemes) == 2
+    assert profile.color_schemes[0]["slides"] == [1, 2]
+    assert profile.background == "#152848"
+    assert profile.foreground == "#EEF2F5"
+    assert profile.patterns[0].color_scheme_id == profile.patterns[1].color_scheme_id
 
 
 def test_transparent_table_native_and_html(prepared, tmp_path):

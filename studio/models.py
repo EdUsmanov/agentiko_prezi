@@ -70,6 +70,7 @@ class Box(StrictModel):
 class Pattern(StrictModel):
     id: str
     source_slide: int
+    color_scheme_id: str = ""
     source_layout: str
     text_zones: list[Box]
     role: str
@@ -128,13 +129,14 @@ class TemplateProfile(StrictModel):
     font_origin: dict = Field(default_factory=dict)
     font_roles: dict[str, str] = Field(default_factory=dict)
     font_assets: list[dict] = Field(default_factory=list)
-    font_substitutions: list[dict] = Field(default_factory=list)
+    font_replacements: list[dict] = Field(default_factory=list)
     missing_fonts: list[dict] = Field(default_factory=list)
     font_sizes: list[float]
     title_size: float
     body_size: float
     colors: list[str]
     color_roles: dict[str, list[str]] = Field(default_factory=dict)
+    color_schemes: list[dict] = Field(default_factory=list)
     color_analysis: dict = Field(default_factory=dict)
     background: str
     foreground: str

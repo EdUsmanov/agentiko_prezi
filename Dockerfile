@@ -1,5 +1,5 @@
 # VK Forma — Presentation Studio.
-# Python 3.11+ (venv команды проверены на 3.12), Node.js для декодера сжатых
+# Python 3.12+, Node.js для декодера сжатых
 # EOT/MTX-шрифтов, LibreOffice Impress для экспорта PDF/PNG.
 FROM python:3.12-slim
 
