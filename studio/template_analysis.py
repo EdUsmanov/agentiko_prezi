@@ -7,7 +7,7 @@ from .powerpoint import open_presentation
 from .pictures import is_picture, embedded_picture_blob
 from .models import StrictModel
 from .security import digest, scan_text
-from .template import walk_shapes
+from .template_geometry import walk_shapes
 from .archetype_catalog import Archetype, catalog_payload
 
 

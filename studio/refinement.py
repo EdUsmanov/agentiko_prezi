@@ -1,11 +1,10 @@
 """Bounded render-observe-repair cycle. Only typed, authorized layout edits."""
 
+from dataclasses import dataclass
 import asyncio
 import time
 from collections import Counter
-from typing import Literal
-from pydantic import Field
-from .models import StrictModel
+from .layout_edits import LayoutEdit as LayoutEdit, RepairBatch as RepairBatch
 from .contracts import candidates
 from .composer import CompositionSession
 from .audit import audit_scenes, repair_scenes
@@ -16,15 +15,10 @@ from .artifacts import publish_variants, PublicationRollbackError
 from .export_audit import audit_export
 
 
-class LayoutEdit(StrictModel):
-    variant: Literal["executive", "analytical", "story"]
-    slide: int = Field(ge=1, le=30)
-    operation: Literal["change_layout", "readable_chart"] = "change_layout"
-    pattern_id: str | None = Field(default=None, min_length=1, max_length=120)
-
-
-class RepairBatch(StrictModel):
-    edits: list[LayoutEdit] = Field(max_length=30)
+@dataclass(frozen=True)
+class ValidatedEdits:
+    edits: list[LayoutEdit]
+    rejected: int
 
 
 def error_counts(findings):
@@ -76,6 +70,60 @@ def apply_edits(package, plans, decks, edits, allowed, composition_cache=None):
             )
         changed[key] = scenes
     return trial, changed
+
+
+def select_edits(
+    package, plans, decks, proposed, allowed, issues, composition_cache
+) -> ValidatedEdits:
+    """Validate model edits and bounded server candidates before staging any files."""
+    edits = []
+    seen = set()
+    rejected = 0
+    for edit in proposed:
+        key = (edit.variant, edit.slide)
+        if key in seen:
+            rejected += 1
+            continue
+        try:
+            apply_edits(package, plans, decks, [edit], allowed, composition_cache)
+        except ValueError:
+            rejected += 1
+            continue
+        edits.append(edit)
+        seen.add(key)
+    # Known chart-reading defects have a safe server-owned candidate,
+    # even if the model declines or proposes a malformed unrelated edit.
+    for finding in issues:
+        key = (finding["variant"], finding["slide"])
+        if (
+            key not in seen
+            and "@readable_chart" in allowed.get(key, [])
+            and finding["code"] in ("readability", "overlap", "hierarchy")
+        ):
+            edit = LayoutEdit(variant=key[0], slide=key[1], operation="readable_chart")
+            try:
+                apply_edits(package, plans, decks, [edit], allowed, composition_cache)
+            except ValueError:
+                continue
+            edits.append(edit)
+            seen.add(key)
+    # A malformed model proposal is not a reason to skip a safe physical
+    # candidate. The unchanged story is re-rendered and reviewed below.
+    for key, choices in allowed.items():
+        if key in seen:
+            continue
+        for choice in choices:
+            if choice == "@readable_chart":
+                continue
+            edit = LayoutEdit(variant=key[0], slide=key[1], pattern_id=choice)
+            try:
+                apply_edits(package, plans, decks, [edit], allowed, composition_cache)
+            except ValueError:
+                continue
+            edits.append(edit)
+            seen.add(key)
+            break
+    return ValidatedEdits(edits, rejected)
 
 
 async def refine(
@@ -143,54 +191,11 @@ async def refine(
             except Exception as exc:
                 proposed = []
                 report["proposal_error"] = type(exc).__name__
-            edits = []
-            seen = set()
-            rejected = 0
-            for edit in proposed:
-                key = (edit.variant, edit.slide)
-                if key in seen:
-                    rejected += 1
-                    continue
-                try:
-                    apply_edits(package, plans, decks, [edit], allowed, composition_cache)
-                except ValueError:
-                    rejected += 1
-                    continue
-                edits.append(edit)
-                seen.add(key)
-            # Known chart-reading defects have a safe server-owned candidate,
-            # even if the model declines or proposes a malformed unrelated edit.
-            for finding in issues:
-                key = (finding["variant"], finding["slide"])
-                if (
-                    key not in seen
-                    and "@readable_chart" in allowed.get(key, [])
-                    and finding["code"] in ("readability", "overlap", "hierarchy")
-                ):
-                    edit = LayoutEdit(variant=key[0], slide=key[1], operation="readable_chart")
-                    try:
-                        apply_edits(package, plans, decks, [edit], allowed, composition_cache)
-                    except ValueError:
-                        continue
-                    edits.append(edit)
-                    seen.add(key)
-            # A malformed model proposal is not a reason to skip a safe physical
-            # candidate. The unchanged story is re-rendered and reviewed below.
-            for key, choices in allowed.items():
-                if key in seen:
-                    continue
-                for choice in choices:
-                    if choice == "@readable_chart":
-                        continue
-                    edit = LayoutEdit(variant=key[0], slide=key[1], pattern_id=choice)
-                    try:
-                        apply_edits(package, plans, decks, [edit], allowed, composition_cache)
-                    except ValueError:
-                        continue
-                    edits.append(edit)
-                    seen.add(key)
-                    break
-            report["rejected_proposals"] = rejected
+            selection = select_edits(
+                package, plans, decks, proposed, allowed, issues, composition_cache
+            )
+            edits = selection.edits
+            report["rejected_proposals"] = selection.rejected
             report["proposed_edits"] = [e.model_dump() for e in edits]
             if not edits:
                 report.update(status="unresolved", reason="no_safe_edit_proposed")

@@ -9,6 +9,14 @@ from typing import Literal
 from pydantic import Field
 from .models import StrictModel
 from .security import scan_text
+from dataclasses import dataclass
+from .stage_results import JsonObject
+
+
+@dataclass(frozen=True)
+class VisualReviewInput:
+    payload: JsonObject
+    images: list[bytes]
 
 
 class VisualFinding(StrictModel):
@@ -48,6 +56,121 @@ def authored_title_position(scene, patterns):
         and title["w"] <= box.w + 2
         and title["h"] <= box.h + 2
     )
+
+
+def visual_payload(numbers, scenes, variant, package, directory) -> VisualReviewInput:
+    """Build read-only evidence, keeping model output away from filesystem selection."""
+    images = [(directory / variant["key"] / f"slide-{i}.png").read_bytes() for i in numbers]
+    payload = {
+        "slides": [{"slide": i, "title": scenes[i - 1]["title"]} for i in numbers],
+        "image_order": numbers,
+        "checks": [
+            "text inside containers",
+            "readable titles",
+            "paragraph hierarchy",
+            "unintended overlaps",
+        ],
+    }
+    if package:
+        from pathlib import Path
+
+        by_id = {p.id: p for p in package.template.patterns}
+        refs = []
+        for i in numbers:
+            pattern = by_id.get(scenes[i - 1].get("pattern_id"))
+            # Sample wording in a raw template page was repeatedly
+            # mistaken for output text. Compare only sanitized art.
+            reference = pattern.background_image if pattern else ""
+            if reference and Path(reference).is_file():
+                images.append(Path(reference).read_bytes())
+                refs.append(
+                    {
+                        "image_position": len(images),
+                        "for_slide": i,
+                        "purpose": pattern.purpose,
+                        "kind": "sanitized_template_artwork_not_output",
+                        "source_slide": pattern.source_slide,
+                        "derived_divider": pattern.id.startswith("derived-divider-"),
+                    }
+                )
+        # Show an eligible source exemplar as well as the chosen background.
+        # Otherwise a plain master is compared only with itself.
+        for i in numbers:
+            selected = by_id.get(scenes[i - 1].get("pattern_id"))
+            if selected is not None and selected.source_slide:
+                continue  # Exact authored reference suffices; alternatives confused image ownership.
+            alternatives = [
+                p
+                for p in package.template.patterns
+                if p.reusable
+                and p.source_slide
+                and p.background_image
+                and Path(p.background_image).is_file()
+                and p.purpose in (scenes[i - 1].get("purpose"), "content", "unknown")
+                and (selected is None or p.id != selected.id)
+                and (p.role in ("cover", "divider"))
+                == (scenes[i - 1].get("purpose") in ("cover", "divider"))
+            ]
+            if alternatives:
+                exemplar = max(
+                    alternatives,
+                    key=lambda p: (
+                        p.purpose == scenes[i - 1].get("purpose"),
+                        p.graphic_count,
+                    ),
+                )
+                images.append(Path(exemplar.background_image).read_bytes())
+                refs.append(
+                    {
+                        "image_position": len(images),
+                        "for_slide": i,
+                        "purpose": exemplar.purpose,
+                        "kind": "alternative_sanitized_style_reference_not_required_layout",
+                        "source_slide": exemplar.source_slide,
+                    }
+                )
+        payload["reference_images"] = refs
+        payload["slides"] = [
+            {
+                "slide": i,
+                "title": scenes[i - 1]["title"],
+                "authored_title_position": authored_title_position(scenes[i - 1], by_id),
+                "layout": scenes[i - 1]["layout"],
+                "purpose": scenes[i - 1].get("purpose", "auto"),
+                "field_safety": by_id[scenes[i - 1]["pattern_id"]].safe_text_zone.get(
+                    "field_checks", []
+                )
+                if scenes[i - 1].get("pattern_id") in by_id
+                else [],
+                "text_sizes_pt": [
+                    e.get("size")
+                    for e in scenes[i - 1]["elements"]
+                    if e["kind"] in ("text", "table", "chart")
+                ],
+                "expected_chart_types": [
+                    e.get("chart_type") for e in scenes[i - 1]["elements"] if e["kind"] == "chart"
+                ],
+            }
+            for i in numbers
+        ]
+        from .uploads import assign_images
+
+        plan = (
+            next(
+                (v for v in package.prepared_plans.variants if v.key == variant["key"]),
+                None,
+            )
+            if package.prepared_plans
+            else None
+        )
+        assigned = assign_images(package, plan) if plan else []
+        for row in payload["slides"]:
+            row["supplied_images"] = (
+                [{"id": a.id, "caption": a.caption} for a in assigned[row["slide"] - 1]]
+                if assigned
+                else []
+            )
+    return VisualReviewInput(payload, images)
 
 
 async def review_visuals(results, directory, gateway, timeout, progress=None, package=None):
@@ -152,133 +275,9 @@ async def review_visuals(results, directory, gateway, timeout, progress=None, pa
                         progress(
                             f"Рассматриваем вариант {variant_index} из {len(results)}: слайды {numbers[0]}–{numbers[-1]} из {variant['slides']}"
                         )
-                    images = [
-                        (directory / variant["key"] / f"slide-{i}.png").read_bytes()
-                        for i in numbers
-                    ]
-                    payload = {
-                        "slides": [{"slide": i, "title": scenes[i - 1]["title"]} for i in numbers],
-                        "image_order": numbers,
-                        "checks": [
-                            "text inside containers",
-                            "readable titles",
-                            "paragraph hierarchy",
-                            "unintended overlaps",
-                        ],
-                    }
+                    evidence = visual_payload(numbers, scenes, variant, package, directory)
+                    payload, images = evidence.payload, evidence.images
                     if package:
-                        from pathlib import Path
-
-                        by_id = {p.id: p for p in package.template.patterns}
-                        refs = []
-                        for i in numbers:
-                            pattern = by_id.get(scenes[i - 1].get("pattern_id"))
-                            # Sample wording in a raw template page was repeatedly
-                            # mistaken for output text. Compare only sanitized art.
-                            reference = pattern.background_image if pattern else ""
-                            if reference and Path(reference).is_file():
-                                images.append(Path(reference).read_bytes())
-                                refs.append(
-                                    {
-                                        "image_position": len(images),
-                                        "for_slide": i,
-                                        "purpose": pattern.purpose,
-                                        "kind": "sanitized_template_artwork_not_output",
-                                        "source_slide": pattern.source_slide,
-                                        "derived_divider": pattern.id.startswith(
-                                            "derived-divider-"
-                                        ),
-                                    }
-                                )
-                        # Show an eligible source exemplar as well as the chosen background.
-                        # Otherwise a plain master is compared only with itself.
-                        for i in numbers:
-                            selected = by_id.get(scenes[i - 1].get("pattern_id"))
-                            if selected is not None and selected.source_slide:
-                                continue  # Exact authored reference suffices; alternatives confused image ownership.
-                            alternatives = [
-                                p
-                                for p in package.template.patterns
-                                if p.reusable
-                                and p.source_slide
-                                and p.background_image
-                                and Path(p.background_image).is_file()
-                                and p.purpose
-                                in (scenes[i - 1].get("purpose"), "content", "unknown")
-                                and (selected is None or p.id != selected.id)
-                                and (p.role in ("cover", "divider"))
-                                == (scenes[i - 1].get("purpose") in ("cover", "divider"))
-                            ]
-                            if alternatives:
-                                exemplar = max(
-                                    alternatives,
-                                    key=lambda p: (
-                                        p.purpose == scenes[i - 1].get("purpose"),
-                                        p.graphic_count,
-                                    ),
-                                )
-                                images.append(Path(exemplar.background_image).read_bytes())
-                                refs.append(
-                                    {
-                                        "image_position": len(images),
-                                        "for_slide": i,
-                                        "purpose": exemplar.purpose,
-                                        "kind": "alternative_sanitized_style_reference_not_required_layout",
-                                        "source_slide": exemplar.source_slide,
-                                    }
-                                )
-                        payload["reference_images"] = refs
-                        payload["slides"] = [
-                            {
-                                "slide": i,
-                                "title": scenes[i - 1]["title"],
-                                "authored_title_position": authored_title_position(
-                                    scenes[i - 1], by_id
-                                ),
-                                "layout": scenes[i - 1]["layout"],
-                                "purpose": scenes[i - 1].get("purpose", "auto"),
-                                "field_safety": by_id[
-                                    scenes[i - 1]["pattern_id"]
-                                ].safe_text_zone.get("field_checks", [])
-                                if scenes[i - 1].get("pattern_id") in by_id
-                                else [],
-                                "text_sizes_pt": [
-                                    e.get("size")
-                                    for e in scenes[i - 1]["elements"]
-                                    if e["kind"] in ("text", "table", "chart")
-                                ],
-                                "expected_chart_types": [
-                                    e.get("chart_type")
-                                    for e in scenes[i - 1]["elements"]
-                                    if e["kind"] == "chart"
-                                ],
-                            }
-                            for i in numbers
-                        ]
-                        from .uploads import assign_images
-
-                        plan = (
-                            next(
-                                (
-                                    v
-                                    for v in package.prepared_plans.variants
-                                    if v.key == variant["key"]
-                                ),
-                                None,
-                            )
-                            if package.prepared_plans
-                            else None
-                        )
-                        assigned = assign_images(package, plan) if plan else []
-                        for row in payload["slides"]:
-                            row["supplied_images"] = (
-                                [
-                                    {"id": a.id, "caption": a.caption}
-                                    for a in assigned[row["slide"] - 1]
-                                ]
-                                if assigned
-                                else []
-                            )
                         report["method"] = "rendered_pptx_and_sanitized_template_artwork"
                     image_hashes = [hashlib.sha256(image).hexdigest() for image in images]
                     cache_key = json.dumps(

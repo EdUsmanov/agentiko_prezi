@@ -1,6 +1,6 @@
 """A single paint policy shared by native PPTX, HTML, PDF and chart fallback."""
 
-from .template import contrast
+from .template_geometry import contrast
 
 
 def apply_table_style(element, pattern=None):

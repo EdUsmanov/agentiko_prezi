@@ -75,7 +75,7 @@ def metric_elements(element, profile):
 def render_metric_cards(slide, element, profile):
     from pptx.util import Pt
     from pptx.enum.shapes import MSO_SHAPE
-    from .render import set_text, rgb
+    from .pptx_text import set_text, rgb
 
     for item in metric_elements(element, profile):
         b = item.box

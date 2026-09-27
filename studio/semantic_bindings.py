@@ -6,7 +6,7 @@ text in a general field rather than inventing a participant/value association.
 """
 
 import re
-from .contracts import body_and_title_sources
+from .content_sources import body_and_title_sources
 
 
 def inline_group_text(label, texts):

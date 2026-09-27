@@ -6,7 +6,7 @@ import json
 from pydantic import Field, model_validator
 from .models import StrictModel
 from .repair_errors import RepairIssue, RepairFailure, LayoutCapacityError, validation_issues
-from .editorial import (
+from .editorial_domain import (
     EditorialSlide,
     EditorialPlan,
     EditorialReview,
@@ -258,7 +258,7 @@ async def prepare_with_targeted_repairs(
             else:
                 candidate = deepcopy(package)
                 apply_plan(candidate, raw, {}, bounds, source_content=content)
-                from .narrative import narrative_storyboard
+                from .narrative_layout import narrative_storyboard
 
                 narrative_storyboard(candidate)
                 budget = candidate.analysis.get("slide_budget", {})

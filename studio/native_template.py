@@ -1,23 +1,23 @@
 """Source geometry and native artwork, without copying source narrative into new slides."""
 
+from .shape_geometry import box as box, intersects as intersects
+from .native_surface import (
+    scrub_surface as scrub_surface,
+    copy_node as copy_node,
+    source_slide as source_slide,
+)
+
 from collections import Counter
 from copy import deepcopy
 from pathlib import Path
-from hashlib import sha256
 import re
 from pptx.enum.shapes import PP_PLACEHOLDER, MSO_SHAPE_TYPE
 from .models import Pattern, Box, SlideScene
-from .pictures import is_picture, embedded_picture_blob, embedded_blip_blob
+from .pictures import is_picture
 
 P = "{http://schemas.openxmlformats.org/presentationml/2006/main}"
 A = "{http://schemas.openxmlformats.org/drawingml/2006/main}"
 R = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
-
-
-def box(shape):
-    return Box(
-        x=shape.left / 12700, y=shape.top / 12700, w=shape.width / 12700, h=shape.height / 12700
-    )
 
 
 def text_bounds(shape):
@@ -32,13 +32,6 @@ def text_bounds(shape):
     ]
     return Box(
         x=bounds.x + left, y=bounds.y + top, w=bounds.w - left - right, h=bounds.h - top - bottom
-    )
-
-
-def intersects(a, b):
-    return (
-        min(a.x + a.w, b.x + b.w) - max(a.x, b.x) > 2
-        and min(a.y + a.h, b.y + b.h) - max(a.y, b.y) > 2
     )
 
 
@@ -92,7 +85,7 @@ def title_bounds(shape, surface, layout):
                     bounds = Box(x=bounds.x, y=bounds.y, w=right - bounds.x, h=bottom - bounds.y)
     # Empty auto-shapes still have a text frame. Large decorative shapes are
     # protected artwork too, not free space inside an oversized placeholder.
-    from .template import walk_shapes
+    from .template_geometry import walk_shapes
 
     for owner in (surface, layout, layout.slide_master):
         for sh, b in walk_shapes(owner.shapes):
@@ -134,7 +127,7 @@ def geometry_surface(surface):
     from types import SimpleNamespace
     from pptx.shapes.shapetree import BaseShapeFactory
     from pptx.util import Pt
-    from .template import walk_shapes
+    from .template_geometry import walk_shapes
 
     shapes = []
     for shape, bounds in walk_shapes(surface.shapes):
@@ -485,85 +478,11 @@ def native_patterns(prs, styles=None):
     return result
 
 
-def scrub_surface(surface):
-    # Masters/layouts keep their artwork and geometry; sample placeholder copy is not content.
-    for node in surface._element.iter(A + "t"):
-        node.text = ""
-    for node in list(surface._element.iter()):
-        if node.tag in (A + "hlinkClick", A + "hlinkMouseOver"):
-            node.getparent().remove(node)
-
-
-def copy_node(node, source_part, target_part):
-    copied = deepcopy(node)
-    for child in list(copied.iter()):
-        if child.tag in (A + "hlinkClick", A + "hlinkMouseOver"):
-            child.getparent().remove(child)
-            continue
-        for attr, value in list(child.attrib.items()):
-            if not attr.startswith(R):
-                continue
-            rel = source_part.rels.get(value)
-            if rel and not rel.is_external and rel.reltype.endswith("/image"):
-                child.set(attr, target_part.relate_to(rel.target_part, rel.reltype))
-            else:
-                del child.attrib[attr]
-    return copied
-
-
-def source_slide(prs, pattern):
-    layout = prs.slide_masters[pattern.master_index].slide_layouts[pattern.layout_index]
-    slide = prs.slides.add_slide(layout)
-    for sh in list(slide.shapes):
-        sh._element.getparent().remove(sh._element)
-    if pattern.source_slide:
-        original = prs._studio_sources[pattern.source_slide - 1]
-        bg = original._element.find(P + "cSld/" + P + "bg")
-        if bg is not None:
-            slide._element.cSld.insert(0, copy_node(bg, original.part, slide.part))
-        if "showMasterSp" in original._element.attrib:
-            slide._element.set("showMasterSp", original._element.get("showMasterSp"))
-        for sh in original.shapes:
-            if getattr(prs, "_studio_background_clean", False):
-                copied = copy_node(sh._element, original.part, slide.part)
-                slide.shapes._spTree.insert_element_before(copied, "p:extLst")
-                continue
-            # Ordinary slide pictures/charts may be prior content. Do not silently reuse them.
-            if sh.is_placeholder or sh.has_chart or sh.has_table:
-                continue
-            if is_picture(sh):
-                raw = embedded_picture_blob(sh)
-                if raw is None or sha256(raw).hexdigest()[:20] not in prs._studio_brand_hashes:
-                    continue
-            # Pictures nested in groups must obey the same rule as top-level
-            # pictures; otherwise an old private photo can bypass the guard.
-            untrusted_image = False
-            for node in sh._element.iter(A + "blip"):
-                raw = embedded_blip_blob(node, original.part)
-                if raw is None or sha256(raw).hexdigest()[:20] not in prs._studio_brand_hashes:
-                    untrusted_image = True
-                    break
-            if untrusted_image:
-                continue
-            has_text = any((n.text or "").strip() for n in sh._element.iter(A + "t"))
-            if has_text and not (
-                sh.shape_type == MSO_SHAPE_TYPE.AUTO_SHAPE
-                and any(intersects(box(sh), b) for b in pattern.body_zones)
-            ):
-                continue
-            copied = copy_node(sh._element, original.part, slide.part)
-            if has_text:
-                for node in copied.iter(A + "t"):
-                    node.text = ""
-            slide.shapes._spTree.insert_element_before(copied, "p:extLst")
-    return slide
-
-
 def compile_backgrounds(profile, source, directory):
     """Preparation has no five-minute limit: render sanitized artwork once and cache it."""
     from .office import executable, to_pdf
     from .render import render_pptx, _pdfium_lock
-    from .template import contrast
+    from .template_geometry import contrast
     from .portable_templates import extract_backgrounds, inspect_text_zone
 
     model = extract_backgrounds(profile, source, directory)

@@ -119,7 +119,7 @@ def test_stage_version_ignores_unrelated_application_changes(tmp_path, monkeypat
 
 def test_editorial_truncation_switches_to_checkpointed_outline(monkeypatch, tmp_path):
     from studio.editorial import prepare_editorial
-    from studio import narrative
+    from studio import narrative_layout as narrative
     from studio.content import parse_content
     from studio.models import Constraints
     from studio.gateway import ModelResponseTruncated

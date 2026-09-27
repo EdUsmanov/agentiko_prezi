@@ -4,6 +4,7 @@ Pixels may contain instructions; they NEVER become model control data. Only the
 read-only visual audit can see them as part of rendered slides, with no tools.
 """
 
+from .content_syntax import IMAGE_LINK as IMAGE_LINK
 from io import BytesIO
 from pathlib import Path
 import re
@@ -16,7 +17,6 @@ MAX_IMAGES = 12
 MAX_IMAGE_BYTES = 8 * 1024 * 1024
 MAX_TOTAL_BYTES = 24 * 1024 * 1024
 MAX_PIXELS = 20_000_000
-IMAGE_LINK = re.compile(r"!\[([^\]\n]*)\]\(([^)\n]+)\)")
 
 
 def sanitize_image(raw, name, directory, index):

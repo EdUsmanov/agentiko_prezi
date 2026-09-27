@@ -120,7 +120,7 @@ def derive_data_patterns(profile):
 
 def adapt_native_text_fields(profile):
     """Keep source artwork while repairing type on authored solid-colour plates."""
-    from .template import contrast
+    from .template_geometry import contrast
 
     changes = []
     for pattern in profile.patterns:
@@ -210,7 +210,7 @@ def adapt_native_text_fields(profile):
 def derive_numbered_timelines(profile, source):
     """Turn proven sequential number fields into dated row headings, retaining art."""
     from .powerpoint import open_presentation
-    from .template import walk_shapes
+    from .template_geometry import walk_shapes
     import re
 
     prs = open_presentation(source)

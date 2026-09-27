@@ -6,7 +6,7 @@ from .models import ContextualAudit
 
 
 async def review(slides, plans, gateway, stage, timeout, context=None):
-    from .pipeline import grounded_review
+    from .review_grounding import grounded_review
 
     unique = []
     aliases = {}

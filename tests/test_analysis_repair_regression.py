@@ -64,7 +64,7 @@ def test_patch_signature_ignores_only_resolved_quotes():
 
 
 def test_unchanged_patch_is_rejected_then_corrected_with_feedback(monkeypatch, tmp_path):
-    from studio import narrative
+    from studio import narrative_layout as narrative
 
     monkeypatch.setattr(
         narrative,

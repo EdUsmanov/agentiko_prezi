@@ -2,7 +2,7 @@
 
 from pydantic import Field
 from .models import StrictModel
-from .editorial import EditorialSlide, EditorialPlan, Omission
+from .editorial_domain import EditorialSlide, EditorialPlan, Omission
 from .archetype_catalog import Archetype
 from .induction import validated_request
 

@@ -176,7 +176,7 @@ def test_geometry_contract_preserves_fitting_neighbor_title_and_data():
 
 @pytest.mark.parametrize("mixed", [False, True])
 def test_unresolved_table_failure_never_calls_editorial_model(monkeypatch, mixed):
-    from studio import narrative
+    from studio import narrative_layout as narrative
 
     source = parse_content("Original evidence.")
     package = SimpleNamespace(

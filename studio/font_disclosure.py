@@ -68,7 +68,7 @@ def preparation_substitutions(package):
 
 def exported_substitutions(prs, profile):
     """Read explicit fallback runs/bullets in the actual exported presentation."""
-    from .template import walk_shapes
+    from .template_geometry import walk_shapes
 
     records = []
     used_faces = set()

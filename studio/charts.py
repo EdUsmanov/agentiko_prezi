@@ -137,7 +137,7 @@ def render_chart(slide, e, profile):
     from pptx.chart.data import CategoryChartData
     from pptx.enum.chart import XL_CHART_TYPE, XL_LEGEND_POSITION, XL_LABEL_POSITION
     from pptx.util import Pt
-    from .render import rgb
+    from .pptx_text import rgb
 
     data = CategoryChartData()
     readable = e.chart_style == "readable"
@@ -169,7 +169,7 @@ def render_chart(slide, e, profile):
     # Use the exact same caption height as selection and pre-export audit.
     text, height = chart_caption_layout(e.rows, b.w, profile)
     if text:
-        from .render import set_text
+        from .pptx_text import set_text
         from .models import Box
 
         if b.h - height - 12 < 160:
@@ -209,7 +209,7 @@ def render_chart(slide, e, profile):
         chart.legend.font.size = Pt(min(16, e.size))
         chart.legend.font.color.rgb = rgb(e.color)
     palette = list(dict.fromkeys([profile.accent] + profile.colors))
-    from .template import contrast
+    from .template_geometry import contrast
 
     palette = [
         c for c in palette if contrast(c, e.background_hint or profile.background) > 1.6

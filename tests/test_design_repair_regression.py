@@ -79,7 +79,7 @@ def test_shortening_cannot_switch_subject_or_drop_an_event():
 
 
 def test_bad_replacement_is_retried_before_caching_or_semantic_review(monkeypatch, tmp_path):
-    from studio import narrative
+    from studio import narrative_layout as narrative
 
     monkeypatch.setattr(
         narrative,

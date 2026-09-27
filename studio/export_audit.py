@@ -4,7 +4,7 @@ from copy import deepcopy
 import re
 from pptx.util import Pt
 from .fonts import role_font, resolve_font, wrap_text, font_runs, table_cell_fits, text_width
-from .template import walk_shapes
+from .template_geometry import walk_shapes
 
 
 def text_key(text):
@@ -382,7 +382,7 @@ def geometry(prs, profile, repair=False):
                     "pptx_text_overflow",
                     "Текст в готовом PPTX не помещается по метрической проверке; требуется другой макет или больше слайдов.",
                 )
-        from .audit import overlaps
+        from .shape_geometry import intersects as overlaps
 
         for i, (object_id, a) in enumerate(occupied):
             for other_id, b in occupied[i + 1 :]:
@@ -425,7 +425,7 @@ def inspect_content(prs, variant, package):
     from .security import digest
 
     normalized = text_key
-    from .template import walk_shapes
+    from .template_geometry import walk_shapes
     from .pictures import embedded_picture_blob
 
     actual, findings, images = [], [], set()

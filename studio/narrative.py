@@ -1,24 +1,18 @@
 """Count-aware, grounded editorial planning from immutable user evidence."""
 
+from .narrative_data import DataRow as DataRow, choose_visualization as choose_visualization
+from .narrative_layout import narrative_storyboard as narrative_storyboard
+
 import re
 from collections import Counter
 from typing import Literal
 from pydantic import Field
-from .models import StrictModel, SlidePlan, VariantPlan
-from .repair_errors import RepairIssue
-from .repair_policy import scene_fit_feedback
-from .content import numeric_column
+from .models import StrictModel
 
 
 class Excerpt(StrictModel):
     fact_id: str
     quotes: list[str] = Field(min_length=1, max_length=12)
-
-
-class DataRow(StrictModel):
-    fact_id: str
-    label: str = Field(min_length=1, max_length=200)
-    value: str = Field(min_length=1, max_length=100)
 
 
 class NarrativeSlide(StrictModel):
@@ -96,33 +90,6 @@ def validate_narrative(raw, content):
     return parsed.model_dump()
 
 
-def choose_visualization(table, relationship):
-    numeric = numeric_column(table)
-    if not numeric or relationship == "table":
-        return "table"
-    _, values, unit = numeric
-    if relationship == "time":
-        # Only recognisable dates can claim a temporal axis.
-        if all(
-            re.search(
-                r"\d{4}|квартал|месяц|январ|феврал|март|апрел|ма[йя]|июн|июл|август|сентябр|октябр|ноябр|декабр|Q[1-4]",
-                r[0],
-                re.I,
-            )
-            for r in table.rows
-        ):
-            return "line"
-        return "table"
-    if (
-        relationship == "share"
-        and unit == "%"
-        and abs(sum(values) - 100) < 0.01
-        and len(values) <= 5
-    ):
-        return "pie"
-    return "bar" if max(map(len, (r[0] for r in table.rows))) > 14 else "column"
-
-
 async def prepare_narrative(package, gateway, progress=None):
     if not package.constraints.summarize:
         return False
@@ -134,101 +101,3 @@ async def prepare_narrative(package, gateway, progress=None):
     from .editorial import prepare_editorial
 
     return await prepare_editorial(package, gateway, progress)
-
-
-def narrative_storyboard(package):
-    from .storyboard import fit_storyboard
-
-    facts = {f.id: f for f in package.content.facts}
-    tables = {t.id: t for t in package.content.tables}
-    outline = []
-    for group in package.analysis["narrative"]["groups"]:
-        ids = group["fact_ids"]
-        tid = next((facts[fid].source for fid in ids if facts[fid].source in tables), None)
-        units = [
-            u
-            for u in package.analysis.get("archetypes", {}).get("units", [])
-            if u["fact_ids"] == ids
-        ]
-        purpose = group.get("purpose") or (units[0]["purpose"] if len(units) == 1 else "content")
-        visualization = tables[tid].visualization if tid else None
-        chart = visualization not in (None, "auto", "table", "metrics")
-        outline.append(
-            SlidePlan(
-                title=group["title"],
-                fact_ids=ids,
-                table_id=tid,
-                purpose=purpose,
-                layout="chart"
-                if chart
-                else "table"
-                if tid
-                else "process"
-                if purpose in ("process", "timeline")
-                else "columns",
-                chart_type=visualization if chart else "auto",
-            )
-        )
-    if package.analysis.get("editorial"):
-        from .composer import compose_slide
-        from .uploads import assign_images
-        from .audit import audit_scenes, repair_scenes
-
-        # Probe the same final scene that generation will export. Raw compose()
-        # can still contain a provisional table before native chart conversion.
-        variant = VariantPlan(key="executive", title="Readability preview", slides=outline)
-        image_groups = assign_images(package, variant)
-        bad = []
-        fit_issues = []
-        for index, slide in enumerate(outline):
-            try:
-                scene = compose_slide(variant, package, index, image_groups)
-                repair_scenes([scene], package)
-                feedback = scene_fit_feedback(
-                    scene,
-                    audit_scenes([scene], package),
-                    index + 1,
-                    {row["fact_id"] for row in package.analysis["editorial"].get("provenance", [])},
-                )
-                if feedback["repair_issues"]:
-                    bad.append(index + 1)
-                    fit_issues.append(feedback)
-            except ValueError as exc:
-                bad.append(index + 1)
-                fit_issues.append(
-                    {
-                        "slide": index + 1,
-                        "message": str(exc),
-                        "fields": [],
-                        "repair_issues": [
-                            RepairIssue(
-                                code="composition_failed",
-                                message=str(exc),
-                                slide=index + 1,
-                                action="stop",
-                            ).model_dump()
-                        ],
-                    }
-                )
-        if bad:
-            package.analysis["slide_budget"] = {
-                "status": "needs_input",
-                "planned": None,
-                "fit_issues": fit_issues,
-                "message": "Компоновка требует исправления на слайдах "
-                + ", ".join(map(str, bad))
-                + ". Причины и допустимые действия записаны по каждому объекту.",
-            }
-            return
-    else:
-        outline = fit_storyboard(package, outline)
-    package.analysis["storyboard"] = [s.model_dump() for s in outline]
-    package.analysis["slide_budget"] = {
-        "status": "adjusted",
-        "requested": package.constraints.slides,
-        "count_mode": package.constraints.count_mode,
-        "planned": len(outline),
-        "required": len(outline),
-        "requested_range": package.analysis["narrative"]["requested_range"],
-        "message": f"По смыслу и читаемости предложено {len(outline)} слайдов. Можно принять или пересобрать план.",
-    }

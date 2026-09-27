@@ -11,7 +11,7 @@ def contained(image, box):
 
 
 def compose_images(slide, package, index, variant, images):
-    from .composer import text_element, fact_elements
+    from .text_composer import text_element, fact_elements
     from .audit import audit_scenes
     from .contracts import body_and_title_sources, candidates as semantic_candidates
 

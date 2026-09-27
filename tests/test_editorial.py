@@ -112,7 +112,7 @@ def test_review_cannot_skip_a_claim_or_invent_missing_evidence():
 
 
 def test_semantic_reviewer_forces_editor_to_restore_essential_caveat(monkeypatch):
-    from studio import narrative
+    from studio import narrative_layout as narrative
 
     def fit(p):
         p.analysis["slide_budget"] = {"status": "adjusted", "planned": 1}
@@ -160,7 +160,7 @@ def test_semantic_reviewer_forces_editor_to_restore_essential_caveat(monkeypatch
 
 
 def test_geometry_retry_passes_real_field_limits_and_keeps_original_source(monkeypatch):
-    from studio import narrative
+    from studio import narrative_layout as narrative
 
     fits = []
 
@@ -218,7 +218,7 @@ def test_geometry_retry_passes_real_field_limits_and_keeps_original_source(monke
 
 
 def test_rejected_summary_is_never_committed_and_corrections_survive(monkeypatch):
-    from studio import narrative
+    from studio import narrative_layout as narrative
 
     fits = []
 

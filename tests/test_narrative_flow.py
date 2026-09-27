@@ -72,7 +72,7 @@ def test_chart_selection(rows, relation, expected):
 
 
 def test_narrative_keeps_original_and_builds_provenance(monkeypatch):
-    from studio import narrative
+    from studio import narrative_layout as narrative
 
     monkeypatch.setattr(
         narrative,

@@ -102,7 +102,7 @@ def picture_safe_body_zone(surface, zone, width, height, scale=1.5):
     to a model.
     """
     from .pictures import embedded_picture_blob, is_picture
-    from .native_template import box
+    from .shape_geometry import box
 
     canvas = Image.new(
         "RGB", (max(1, round(width * scale)), max(1, round(height * scale))), "white"

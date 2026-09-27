@@ -158,7 +158,7 @@ def constrain_patch_schema(schema, contracts, allowed, previous=None):
 
 def validate_repaired_plan(changed, content, bounds, budget, require_cover, allowed):
     """Reject deterministic errors in changed slides without re-editing neighbours."""
-    from .editorial import validate_plan
+    from .editorial_domain import validate_plan
 
     try:
         validate_plan(changed, content, bounds, budget, require_cover=require_cover)
@@ -177,7 +177,7 @@ def numeric_evidence_hints(previous, allowed, content):
     Matching digits are candidates only: the model must verify attribution and
     units, and the independent semantic review still evaluates the final claim.
     """
-    from .editorial import nums
+    from .editorial_domain import nums
 
     facts = {fact.id: fact.text for fact in content.facts}
     fact_numbers = {fid: set(nums(text)) for fid, text in facts.items()}

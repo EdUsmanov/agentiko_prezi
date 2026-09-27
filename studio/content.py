@@ -63,7 +63,7 @@ def parse_content(text: str) -> ContentModel:
     i = 0
     while i < len(lines):
         raw = lines[i].strip()
-        from .uploads import IMAGE_LINK
+        from .content_syntax import IMAGE_LINK
 
         raw = IMAGE_LINK.sub("", raw).strip()
         if not raw or re.fullmatch(r"(?:-\s*){3,}|(?:\*\s*){3,}|(?:_\s*){3,}", raw):

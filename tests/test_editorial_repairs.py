@@ -224,7 +224,7 @@ def test_explicit_chart_requests_are_output_requirements():
 
 def test_existing_plan_can_receive_scoped_quality_feedback(monkeypatch):
     import asyncio
-    from studio import narrative
+    from studio import narrative_layout as narrative
     from studio.editorial import prepare_editorial
     from studio.models import Constraints
 

@@ -1,7 +1,7 @@
 import re
 from .models import Finding
 from .fonts import wrap_text, element_font, table_cell_fits
-from .template import contrast
+from .template_geometry import contrast
 from .table_style import column_widths, row_heights
 
 
@@ -13,11 +13,11 @@ def overlaps(a, b):
 
 
 def audit_scenes(scenes, package):
-    from .sections import divider_members
+    from .section_metadata import divider_members
 
     chapters = divider_members(package)
     p = package.template
-    from .quality import scene_quality_findings
+    from .scene_quality import scene_quality_findings
 
     findings = scene_quality_findings(scenes, package)
 
@@ -26,7 +26,7 @@ def audit_scenes(scenes, package):
             Finding(code=code, severity=severity, message=msg, slide=slide, element=element)
         )
 
-    from .storyboard import planned_slide_count
+    from .slide_budget import planned_slide_count
 
     adjusted = package.analysis.get("slide_budget", {}).get("status") == "adjusted"
     target = planned_slide_count(package) if adjusted else package.constraints.slides
