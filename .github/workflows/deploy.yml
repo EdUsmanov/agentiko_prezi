@@ -1,0 +1,50 @@
+# Деплой на сервер: GitHub Actions подключается по SSH и пересобирает контейнер.
+# Требуемые секреты репозитория (Settings → Secrets and variables → Actions):
+#   SSH_HOST        — IP или домен сервера
+#   SSH_USER        — пользователь на сервере с правом на docker
+#   SSH_PRIVATE_KEY — приватный ключ для входа на сервер (ed25519)
+#   SSH_PORT        — необязательно, по умолчанию 22
+#   DEPLOY_PATH     — необязательно, по умолчанию /opt/agentiko_prezi
+# Конфиг приложения (.env с STUDIO_* ключами) живёт только на сервере и через
+# GitHub не проходит: compose подхватывает его из директории деплоя.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # ручной запуск из вкладки Actions
+
+# Второй деплой дождётся завершения первого, а не пойдёт параллельно.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -euo pipefail
+            cd "${{ secrets.DEPLOY_PATH || '/opt/agentiko_prezi' }}"
+            git pull --ff-only
+            docker compose up -d --build
+            docker image prune -f
+            # Ждём готовности: /api/health должен отвечать 200
+            # (start-period контейнера 20 c, так что до 2.5 минут запас).
+            for i in $(seq 1 30); do
+              if curl -fsS http://127.0.0.1:8765/api/health >/dev/null; then
+                echo "Studio healthy after deploy"
+                exit 0
+              fi
+              sleep 5
+            done
+            echo "Health check failed after deploy:"
+            docker compose logs --tail=100 studio
+            exit 1

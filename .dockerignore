@@ -1,0 +1,28 @@
+# Не попадает в build-контекст: локальные окружения, секреты и данные.
+.git
+.github
+.idea
+.vscode
+.venv
+venv
+__pycache__/
+*.py[cod]
+.pytest_cache
+.ruff_cache
+.mypy_cache
+.coverage
+htmlcov
+node_modules
+data
+test-results
+build
+dist
+*.egg-info
+*.log
+.DS_Store
+uv.lock
+
+# Секреты передаются в рантайме через env (docker-compose env_file), не пекутся в образ.
+.env
+.env.*
+!.env.example
