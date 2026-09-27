@@ -1,4 +1,5 @@
 """Fail-closed job admission on known injection signatures, not a full classifier."""
+
 from zipfile import ZipFile
 from defusedxml import ElementTree as ET
 from .security import scan_text, validate_pptx
@@ -6,17 +7,24 @@ from .security import scan_text, validate_pptx
 
 class PromptInjectionDetected(ValueError):
     def __init__(self, findings):
-        super().__init__("Обнаружена подозрительная инструкция. Обработка материалов заблокирована.")
+        super().__init__(
+            "Обнаружена подозрительная инструкция. Обработка материалов заблокирована."
+        )
         self.findings = findings
 
     def public(self):
-        return {"code": "prompt_injection_detected", "message": str(self),
-                "count": len(self.findings), "sources": sorted({f["source"] for f in self.findings})}
+        return {
+            "code": "prompt_injection_detected",
+            "message": str(self),
+            "count": len(self.findings),
+            "sources": sorted({f["source"] for f in self.findings}),
+        }
 
 
 def check_text_fields(**fields):
-    findings = [finding for source, text in fields.items()
-                for finding in scan_text(text or "", source)[1]]
+    findings = [
+        finding for source, text in fields.items() for finding in scan_text(text or "", source)[1]
+    ]
     if findings:
         raise PromptInjectionDetected(findings)
 
@@ -45,8 +53,12 @@ def check_template(path):
 
 
 def check_package(package, source):
-    check_text_fields(content=package.content.model_dump_json(), audience=package.constraints.audience,
-                      instructions=package.constraints.instructions, template_name=package.template.name)
+    check_text_fields(
+        content=package.content.model_dump_json(),
+        audience=package.constraints.audience,
+        instructions=package.constraints.instructions,
+        template_name=package.template.name,
+    )
     if package.content.quarantined:
         raise PromptInjectionDetected(package.content.quarantined)
     check_template(source)

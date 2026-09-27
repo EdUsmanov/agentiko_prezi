@@ -1,4 +1,5 @@
 """Optional local demo files. Registration never runs analysis or a model."""
+
 import json
 import logging
 from pathlib import Path
@@ -25,8 +26,13 @@ def sources(settings):
         if not isinstance(row, dict):
             continue
         rid, name = row.get("id"), row.get("name")
-        if (not isinstance(rid, str) or not re.fullmatch(r"[a-f0-9]{20}", rid)
-                or not isinstance(name, str) or not name or rid in seen):
+        if (
+            not isinstance(rid, str)
+            or not re.fullmatch(r"[a-f0-9]{20}", rid)
+            or not isinstance(name, str)
+            or not name
+            or rid in seen
+        ):
             continue
         if not (path.parent / rid / "input.pptx").is_file():
             continue

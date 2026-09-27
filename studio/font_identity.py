@@ -1,4 +1,5 @@
 """Match a requested face to binary metadata, never to an OOXML slot weight."""
+
 from io import BytesIO
 from functools import lru_cache
 from pathlib import Path
@@ -6,40 +7,65 @@ import re
 from fontTools.ttLib import TTFont
 from .fonts import font_key
 
-WEIGHTS = {"thin":100,"extralight":200,"ultralight":200,"light":300,
-           "regular":400,"normal":400,"book":400,"roman":400,"medium":500,
-           "semibold":600,"demibold":600,"bold":700,"extrabold":800,
-           "ultrabold":800,"black":900,"heavy":900}
-SUFFIX = re.compile(r"(?:^|[\s_-])((?:extra|ultra)[ -]?(?:light|bold)|(?:semi|demi)[ -]?bold|"
-                    r"thin|light|regular|normal|book|roman|medium|bold|black|heavy|italic|oblique)$",re.I)
+WEIGHTS = {
+    "thin": 100,
+    "extralight": 200,
+    "ultralight": 200,
+    "light": 300,
+    "regular": 400,
+    "normal": 400,
+    "book": 400,
+    "roman": 400,
+    "medium": 500,
+    "semibold": 600,
+    "demibold": 600,
+    "bold": 700,
+    "extrabold": 800,
+    "ultrabold": 800,
+    "black": 900,
+    "heavy": 900,
+}
+SUFFIX = re.compile(
+    r"(?:^|[\s_-])((?:extra|ultra)[ -]?(?:light|bold)|(?:semi|demi)[ -]?bold|"
+    r"thin|light|regular|normal|book|roman|medium|bold|black|heavy|italic|oblique)$",
+    re.I,
+)
 
 
 def requested_face(name):
-    family=name.strip(); weight=None; italic=False
-    while (match:=SUFFIX.search(family)) and match.start()>0:
-        token=re.sub(r"[\s_-]","",match[1]).lower()
-        if token in ("italic","oblique"):
-            italic=True
+    family = name.strip()
+    weight = None
+    italic = False
+    while (match := SUFFIX.search(family)) and match.start() > 0:
+        token = re.sub(r"[\s_-]", "", match[1]).lower()
+        if token in ("italic", "oblique"):
+            italic = True
         elif weight is None:
-            weight=WEIGHTS[token]
-        family=family[:match.start()].strip()
+            weight = WEIGHTS[token]
+        family = family[: match.start()].strip()
     return family, weight or 400, italic
 
 
 def binary_identity(raw):
-    with TTFont(BytesIO(raw),lazy=False) as font:
-        names=font["name"]
-        return {"family":names.getBestFamilyName(),"style":names.getBestSubFamilyName(),
-                "weight":font["OS/2"].usWeightClass,
-                "italic":bool(font["OS/2"].fsSelection & 1 or font["head"].macStyle & 2)}
+    with TTFont(BytesIO(raw), lazy=False) as font:
+        names = font["name"]
+        return {
+            "family": names.getBestFamilyName(),
+            "style": names.getBestSubFamilyName(),
+            "weight": font["OS/2"].usWeightClass,
+            "italic": bool(font["OS/2"].fsSelection & 1 or font["head"].macStyle & 2),
+        }
 
 
 def matches_face(raw, requested):
-    family,weight,italic=requested_face(requested)
-    actual=binary_identity(raw)
-    actual_family=requested_face(actual["family"])[0]
-    return (font_key(actual_family)==font_key(family) and actual["weight"]==weight
-            and actual["italic"]==italic)
+    family, weight, italic = requested_face(requested)
+    actual = binary_identity(raw)
+    actual_family = requested_face(actual["family"])[0]
+    return (
+        font_key(actual_family) == font_key(family)
+        and actual["weight"] == weight
+        and actual["italic"] == italic
+    )
 
 
 def ooxml_face(path):
@@ -56,11 +82,11 @@ def ooxml_face(path):
 @lru_cache(maxsize=128)
 def _ooxml_face(path, stamp, size):
     with TTFont(path, lazy=True) as font:
-        names = font['name']
+        names = font["name"]
         family = names.getDebugName(1) or names.getBestFamilyName()
         if not family:
-            raise ValueError('В шрифте отсутствует название семейства Office')
-        flags = font['head'].macStyle
+            raise ValueError("В шрифте отсутствует название семейства Office")
+        flags = font["head"].macStyle
         return family, bool(flags & 1), bool(flags & 2)
 
 

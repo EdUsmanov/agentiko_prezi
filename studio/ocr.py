@@ -4,6 +4,7 @@ Contract: https://neuraldeep.ru/llms-full.txt, OCR section (2026-09-23).
 Submission and retrieval are deliberately separate: never automatically repeat
 a quota-charging POST after a timeout. Callers must persist the returned ticket.
 """
+
 import asyncio
 from dataclasses import dataclass, field
 import json
@@ -34,21 +35,34 @@ class NeuralDeepOcr:
     def __post_init__(self):
         self.base_url = self.base_url.rstrip("/")
         url = urlsplit(self.base_url)
-        if (url.scheme != "https" or not url.hostname or url.username or url.password
-                or url.query or url.fragment):
+        if (
+            url.scheme != "https"
+            or not url.hostname
+            or url.username
+            or url.password
+            or url.query
+            or url.fragment
+        ):
             raise OcrError("OCR endpoint должен быть серверным HTTPS URL без credentials")
         if not self.api_key:
             raise OcrError("Не задан ключ OCR")
 
     async def _request(self, method, path, **kwargs):
         try:
-            async with httpx.AsyncClient(timeout=30, follow_redirects=False,
-                                         trust_env=False, transport=self.transport) as client:
-                async with client.stream(method, self.base_url + path,
-                        headers={"Authorization": "Bearer " + self.api_key}, **kwargs) as response:
+            async with httpx.AsyncClient(
+                timeout=30, follow_redirects=False, trust_env=False, transport=self.transport
+            ) as client:
+                async with client.stream(
+                    method,
+                    self.base_url + path,
+                    headers={"Authorization": "Bearer " + self.api_key},
+                    **kwargs,
+                ) as response:
                     if response.status_code >= 300:
                         # Do not reflect upstream response bodies, URLs or credentials.
-                        raise OcrError(f"OCR HTTP {response.status_code}; автоматический повтор не выполнялся")
+                        raise OcrError(
+                            f"OCR HTTP {response.status_code}; автоматический повтор не выполнялся"
+                        )
                     raw = bytearray()
                     async for chunk in response.aiter_bytes():
                         raw.extend(chunk)
@@ -59,7 +73,9 @@ class NeuralDeepOcr:
                         raise OcrError("Неверный формат ответа OCR")
                     return result
         except httpx.RequestError:
-            raise OcrError("Сетевая ошибка OCR; состояние загрузки может быть неизвестно. Не повторяйте загрузку автоматически") from None
+            raise OcrError(
+                "Сетевая ошибка OCR; состояние загрузки может быть неизвестно. Не повторяйте загрузку автоматически"
+            ) from None
 
     @staticmethod
     def _job_id(value):
@@ -81,12 +97,22 @@ class NeuralDeepOcr:
             name, mime = "document.jpg", "image/jpeg"
         else:
             raise OcrError("Адаптер принимает только PDF, PNG и JPEG")
-        response = await self._request("POST", "/ocr/extract",
-            files={"file": (name, document, mime)}, data={"model_profile": profile})
+        response = await self._request(
+            "POST",
+            "/ocr/extract",
+            files={"file": (name, document, mime)},
+            data={"model_profile": profile},
+        )
         jid = self._job_id(response.get("id"))
         pages, charged = response.get("page_count"), response.get("scan_pages_charged")
-        if type(pages) is not int or pages < 1 or (charged is not None and (type(charged) is not int or charged < 0)):
-            raise OcrError("OCR вернул некорректный учёт страниц; повторная загрузка не выполнялась")
+        if (
+            type(pages) is not int
+            or pages < 1
+            or (charged is not None and (type(charged) is not int or charged < 0))
+        ):
+            raise OcrError(
+                "OCR вернул некорректный учёт страниц; повторная загрузка не выполнялась"
+            )
         return OcrTicket(jid, pages, charged)
 
     async def result(self, job_id: str, *, timeout=300, poll_interval=1):
@@ -104,10 +130,16 @@ class NeuralDeepOcr:
                 state = status.get("status")
                 if state == "completed":
                     break
-                if state in ("failed", "error", "cancelled") or not isinstance(state, str) or not state:
+                if (
+                    state in ("failed", "error", "cancelled")
+                    or not isinstance(state, str)
+                    or not state
+                ):
                     raise OcrError("OCR-задача завершилась ошибкой или вернула неизвестный статус")
                 await asyncio.sleep(poll_interval)
-            response = await self._request("GET", f"/ocr/jobs/{jid}/result", params={"format": "markdown"})
+            response = await self._request(
+                "GET", f"/ocr/jobs/{jid}/result", params={"format": "markdown"}
+            )
             content = response.get("content")
             if not isinstance(content, str) or not content.strip() or len(content) > 120_000:
                 raise OcrError("Пустой, слишком длинный или некорректный текст OCR")

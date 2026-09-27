@@ -9,21 +9,24 @@ from .powerpoint import open_presentation
 from .pictures import is_picture, embedded_picture_blob
 from defusedxml import ElementTree as SafeET
 from .models import TemplateProfile, Pattern, Asset, Box
-from .fonts import resolve_font
-from .embedded_fonts import extract_embedded_font
+from .fonts import resolve_font as resolve_font
+from .embedded_fonts import extract_embedded_font as extract_embedded_font
 from .security import validate_pptx, scan_text, digest, InputRejected
 
 EMU = 12700
 A = "{http://schemas.openxmlformats.org/drawingml/2006/main}"
 
+
 def luminance(color):
-    values = [int(color[i:i+2], 16) / 255 for i in (1, 3, 5)]
-    values = [v / 12.92 if v <= 0.04045 else ((v + .055) / 1.055) ** 2.4 for v in values]
-    return sum(x * w for x, w in zip(values, [.2126, .7152, .0722]))
+    values = [int(color[i : i + 2], 16) / 255 for i in (1, 3, 5)]
+    values = [v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4 for v in values]
+    return sum(x * w for x, w in zip(values, [0.2126, 0.7152, 0.0722]))
+
 
 def contrast(a, b):
     light, dark = sorted([luminance(a), luminance(b)], reverse=True)
-    return (light + .05) / (dark + .05)
+    return (light + 0.05) / (dark + 0.05)
+
 
 def color_value(color):
     try:
@@ -31,21 +34,35 @@ def color_value(color):
     except (AttributeError, ValueError, TypeError):
         return None
 
-def walk_shapes(shapes, sx=1., sy=1., ox=0., oy=0.):
+
+def walk_shapes(shapes, sx=1.0, sy=1.0, ox=0.0, oy=0.0):
     for shape in shapes:
-        box = Box(x=(ox + shape.left * sx) / EMU, y=(oy + shape.top * sy) / EMU,
-                  w=shape.width * sx / EMU, h=shape.height * sy / EMU)
+        box = Box(
+            x=(ox + shape.left * sx) / EMU,
+            y=(oy + shape.top * sy) / EMU,
+            w=shape.width * sx / EMU,
+            h=shape.height * sy / EMU,
+        )
         yield shape, box
         if hasattr(shape, "shapes"):
             xf = shape._element.grpSpPr.xfrm
             if xf is not None and xf.chExt is not None:
                 nsx, nsy = shape.width / max(xf.chExt.cx, 1), shape.height / max(xf.chExt.cy, 1)
-                yield from walk_shapes(shape.shapes, sx * nsx, sy * nsy,
-                    ox + sx * (shape.left - xf.chOff.x * nsx), oy + sy * (shape.top - xf.chOff.y * nsy))
+                yield from walk_shapes(
+                    shape.shapes,
+                    sx * nsx,
+                    sy * nsy,
+                    ox + sx * (shape.left - xf.chOff.x * nsx),
+                    oy + sy * (shape.top - xf.chOff.y * nsy),
+                )
 
-def analyze_template(path: Path, artifact_dir: Path, allow_download=False, font_progress=None) -> TemplateProfile:
+
+def analyze_template(
+    path: Path, artifact_dir: Path, allow_download=False, font_progress=None
+) -> TemplateProfile:
     warnings = validate_pptx(path)
     from .colors import extract_colors
+
     color_roles, color_analysis = extract_colors(path, artifact_dir)
     prs = open_presentation(path)
     width, height = prs.slide_width / EMU, prs.slide_height / EMU
@@ -69,7 +86,9 @@ def analyze_template(path: Path, artifact_dir: Path, allow_download=False, font_
                                 theme_colors.append("#" + c.upper())
     patterns, counts, photos = [], Counter(), defaultdict(list)
     margins, title_sizes = [], []
-    masters_layouts = [m for m in prs.slide_masters] + [l for m in prs.slide_masters for l in m.slide_layouts]
+    masters_layouts = [m for m in prs.slide_masters] + [
+        layout for m in prs.slide_masters for layout in m.slide_layouts
+    ]
     for idx, surface in enumerate(list(prs.slides) + masters_layouts):
         zones = []
         for shape, box in walk_shapes(surface.shapes):
@@ -87,10 +106,18 @@ def analyze_template(path: Path, artifact_dir: Path, allow_download=False, font_
             if shape.has_text_frame:
                 _, suspicious = scan_text(shape.text, "template")
                 if suspicious:
-                    warnings.append("Подозрительные инструкции внутри шаблона изолированы и исключены из модельного анализа")
-                if shape.text.strip() and box.w > 20 and box.h > 8 and 0 <= box.x < width and 0 <= box.y < height:
+                    warnings.append(
+                        "Подозрительные инструкции внутри шаблона изолированы и исключены из модельного анализа"
+                    )
+                if (
+                    shape.text.strip()
+                    and box.w > 20
+                    and box.h > 8
+                    and 0 <= box.x < width
+                    and 0 <= box.y < height
+                ):
                     zones.append(box)
-                    if .02 * width < box.x < .15 * width:
+                    if 0.02 * width < box.x < 0.15 * width:
                         margins.append(box.x)
                 for p in shape.text_frame.paragraphs:
                     for r in p.runs:
@@ -99,61 +126,93 @@ def analyze_template(path: Path, artifact_dir: Path, allow_download=False, font_
                         if r.font.size:
                             size = round(r.font.size.pt, 1)
                             sizes[size] += max(1, len(r.text))
-                            if box.y < height * .22 and size >= 20:
+                            if box.y < height * 0.22 and size >= 20:
                                 title_sizes.append(size)
                         c = color_value(r.font.color)
                         if c:
                             colors[c] += max(1, len(r.text) / 5)
                             if idx < len(prs.slides):
-                                text_colors[c] += max(1,len(r.text))
+                                text_colors[c] += max(1, len(r.text))
             if idx < len(prs.slides) and is_picture(shape):
                 raw = embedded_picture_blob(shape)
                 if raw is None:
-                    warnings.append("Изображение без доступного встроенного содержимого пропущено; внешние ссылки не загружались")
+                    warnings.append(
+                        "Изображение без доступного встроенного содержимого пропущено; внешние ссылки не загружались"
+                    )
                     continue
                 key = digest(raw)
                 # Small repeated assets at the canvas edge are candidate brand marks.
-                if box.w * box.h < width * height * .04 and (box.y < height * .15 or box.y + box.h > height * .85):
+                if box.w * box.h < width * height * 0.04 and (
+                    box.y < height * 0.15 or box.y + box.h > height * 0.85
+                ):
                     photos[key].append((idx, box, raw))
         if idx < len(prs.slides) and zones:
             zones = sorted(zones, key=lambda b: (b.y, b.x))
-            patterns.append(Pattern(id=f"slide-{idx+1}", source_slide=idx+1,
-                source_layout=surface.slide_layout.name, text_zones=zones[:16],
-                role="columns" if len(zones) >= 3 else "split" if len(zones) == 2 else "statement"))
+            patterns.append(
+                Pattern(
+                    id=f"slide-{idx + 1}",
+                    source_slide=idx + 1,
+                    source_layout=surface.slide_layout.name,
+                    text_zones=zones[:16],
+                    role="columns"
+                    if len(zones) >= 3
+                    else "split"
+                    if len(zones) == 2
+                    else "statement",
+                )
+            )
     allowed_fonts = list(dict.fromkeys([f for f, _ in fonts.most_common()] + theme_fonts))
     if not allowed_fonts:
         raise InputRejected("В шаблоне не найден шрифт")
     from .font_manifest import build_font_manifest
+
     font_model = build_font_manifest(prs, path, artifact_dir, allow_download, font_progress)
     warnings.extend(font_model["warnings"])
     assets_by_id = {a["id"]: a for a in font_model["assets"]}
-    primary = assets_by_id.get(font_model["roles"].get("body")) or next(iter(assets_by_id.values()), None)
+    primary = assets_by_id.get(font_model["roles"].get("body")) or next(
+        iter(assets_by_id.values()), None
+    )
     font = primary["requested"] if primary else allowed_fonts[0]
     font_file = primary["path"] if primary else ""
     font_origin = primary["origin"] if primary else {"kind": "missing"}
-    allowed_fonts = list(dict.fromkeys(allowed_fonts + [a["requested"] for a in font_model["assets"]]))
+    allowed_fonts = list(
+        dict.fromkeys(allowed_fonts + [a["requested"] for a in font_model["assets"]])
+    )
     palette = list(dict.fromkeys([c for c, _ in colors.most_common(64)] + theme_colors))
     palette = list(dict.fromkeys(palette + [c for values in color_roles.values() for c in values]))
-    palette = list(dict.fromkeys(palette + [paint["color"] for style in color_analysis.get("table_styles",{}).values() for paint in style.values()]))
+    palette = list(
+        dict.fromkeys(
+            palette
+            + [
+                paint["color"]
+                for style in color_analysis.get("table_styles", {}).values()
+                for paint in style.values()
+            ]
+        )
+    )
     if not palette:
         raise InputRejected("В шаблоне не найдена палитра")
-    primary_text=text_colors.most_common(1)[0][0] if text_colors else min(palette,key=luminance)
-    background = max(palette, key=lambda c: contrast(c,primary_text))
+    primary_text = text_colors.most_common(1)[0][0] if text_colors else min(palette, key=luminance)
+    background = max(palette, key=lambda c: contrast(c, primary_text))
     if color_roles.get("background"):
         background = color_roles["background"][0]
     foreground = max(palette, key=lambda c: contrast(c, background))
     role_text = color_roles.get("text.body") or color_roles.get("text.other") or []
     if role_text and contrast(role_text[0], background) >= 4.5:
         foreground = role_text[0]
-    saturated = [c for c in palette if colorsys.rgb_to_hsv(*[int(c[i:i+2], 16)/255 for i in (1,3,5)])[1] > .15]
+    saturated = [
+        c
+        for c in palette
+        if colorsys.rgb_to_hsv(*[int(c[i : i + 2], 16) / 255 for i in (1, 3, 5)])[1] > 0.15
+    ]
     accent = saturated[0] if saturated else foreground
     scale = sorted(s for s in sizes if 8 <= s <= 80)
     if not scale:
         raise InputRejected("Не удалось извлечь типографическую шкалу")
-    title_size = min(scale, key=lambda s: abs(s - min(36, width * .038)))
-    body_size = min(scale, key=lambda s: abs(s - min(20, width * .022)))
-    margin = sorted(margins)[len(margins)//2] if margins else width * .05
-    margin = max(width * .04, min(margin, width * .08))
+    title_size = min(scale, key=lambda s: abs(s - min(36, width * 0.038)))
+    body_size = min(scale, key=lambda s: abs(s - min(20, width * 0.022)))
+    margin = sorted(margins)[len(margins) // 2] if margins else width * 0.05
+    margin = max(width * 0.04, min(margin, width * 0.08))
     assets = []
     asset_dir = artifact_dir / "assets"
     asset_dir.mkdir(parents=True, exist_ok=True)
@@ -162,19 +221,27 @@ def analyze_template(path: Path, artifact_dir: Path, allow_download=False, font_
             continue
         _, box, raw = entries[0]
         # A logo is only reused if repeated at essentially the same location.
-        if any(abs(b.x-box.x) > 4 or abs(b.y-box.y) > 4 for _, b, _ in entries):
+        if any(abs(b.x - box.x) > 4 or abs(b.y - box.y) > 4 for _, b, _ in entries):
             continue
         try:
             with Image.open(BytesIO(raw)) as im:
                 if im.width * im.height > 20_000_000:
                     continue
-                if box.h<=0 or abs((im.width/im.height)/(box.w/box.h)-1)>.03:
+                if box.h <= 0 or abs((im.width / im.height) / (box.w / box.h) - 1) > 0.03:
                     # Cropped or masked source images need a dedicated crop adapter.
                     # Skip rather than stretch the full image into its source frame.
                     continue
                 target = asset_dir / f"{key[:20]}.png"
                 im.convert("RGBA").save(target)
-            assets.append(Asset(id=key[:20], path=str(target), box=box, occurrences=len(entries), role="brand_candidate"))
+            assets.append(
+                Asset(
+                    id=key[:20],
+                    path=str(target),
+                    box=box,
+                    occurrences=len(entries),
+                    role="brand_candidate",
+                )
+            )
         except (OSError, ValueError):
             continue
         if len(assets) == 2:
@@ -184,20 +251,52 @@ def analyze_template(path: Path, artifact_dir: Path, allow_download=False, font_
     ratio = counts["placeholders"] / max(counts["objects"], 1)
     from .native_template import native_patterns
     from .native_style import native_styles
+
     native = native_patterns(prs, native_styles(path))
-    palette=list(dict.fromkeys(palette+[c for p in native for c in [p.title_foreground,*p.zone_foregrounds] if c]))
+    palette = list(
+        dict.fromkeys(
+            palette + [c for p in native for c in [p.title_foreground, *p.zone_foregrounds] if c]
+        )
+    )
     for pattern in native:
-        pattern.table_style = color_analysis.get("table_styles", {}).get(str(pattern.source_slide), {})
+        pattern.table_style = color_analysis.get("table_styles", {}).get(
+            str(pattern.source_slide), {}
+        )
     if not native:
-        warnings.append("Не найден безопасный макет с заголовком и текстовыми зонами: используется композиция по токенам, сходство с шаблоном требует проверки.")
-    return TemplateProfile(sha256=digest(path.read_bytes()), name=path.name, width=width, height=height,
-        slide_count=len(prs.slides), master_count=len(prs.slide_masters),
+        warnings.append(
+            "Не найден безопасный макет с заголовком и текстовыми зонами: используется композиция по токенам, сходство с шаблоном требует проверки."
+        )
+    return TemplateProfile(
+        sha256=digest(path.read_bytes()),
+        name=path.name,
+        width=width,
+        height=height,
+        slide_count=len(prs.slides),
+        master_count=len(prs.slide_masters),
         layout_count=sum(len(m.slide_layouts) for m in prs.slide_masters),
-        object_count=counts["objects"], placeholder_count=counts["placeholders"],
-        fonts=allowed_fonts, font=font, font_file=font_file, font_origin=font_origin,
-        font_roles=font_model["roles"], font_assets=font_model["assets"], missing_fonts=font_model["unresolved"],
-        font_sizes=scale, title_size=title_size, body_size=body_size,
-        colors=palette, background=background, foreground=foreground, accent=accent, margin=margin,
-        color_roles=color_roles, color_analysis=color_analysis,
-        patterns=native or patterns, assets=assets, warnings=sorted(set(warnings)),
-        source_kind="layout_rich" if ratio > .25 else "example_deck", layout_index=layout_index, analysis_version=9)
+        object_count=counts["objects"],
+        placeholder_count=counts["placeholders"],
+        fonts=allowed_fonts,
+        font=font,
+        font_file=font_file,
+        font_origin=font_origin,
+        font_roles=font_model["roles"],
+        font_assets=font_model["assets"],
+        missing_fonts=font_model["unresolved"],
+        font_sizes=scale,
+        title_size=title_size,
+        body_size=body_size,
+        colors=palette,
+        background=background,
+        foreground=foreground,
+        accent=accent,
+        margin=margin,
+        color_roles=color_roles,
+        color_analysis=color_analysis,
+        patterns=native or patterns,
+        assets=assets,
+        warnings=sorted(set(warnings)),
+        source_kind="layout_rich" if ratio > 0.25 else "example_deck",
+        layout_index=layout_index,
+        analysis_version=9,
+    )

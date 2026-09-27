@@ -1,0 +1,2 @@
+# Developer checks; runtime/test dependencies remain in requirements.lock.
+ruff==0.15.7

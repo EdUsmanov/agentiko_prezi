@@ -14,16 +14,17 @@ import unicodedata
 _lock = threading.Lock()
 
 # This is symbol substitution only, never a replacement for missing letters.
-SYMBOLS = frozenset('←↑→↓↔↕↖↗↘↙⇒⇐⇔•')
+SYMBOLS = frozenset("←↑→↓↔↕↖↗↘↙⇒⇐⇔•")
 
 
 def symbol_font():
-    return str(ROOT / 'fonts' / 'Montserrat-Regular.ttf')
+    return str(ROOT / "fonts" / "Montserrat-Regular.ttf")
 
 
 @lru_cache(maxsize=128)
 def _coverage(path, stamp, size):
     from fontTools.ttLib import TTFont as FontToolsFont
+
     with FontToolsFont(path, lazy=True) as font:
         return frozenset((font.getBestCmap() or {}).keys())
 
@@ -40,29 +41,50 @@ def font_runs(text, path):
     supported = coverage(fallback) if Path(fallback).is_file() else frozenset()
     current, buffer = None, []
     for char in text:
-        selected = fallback if char in SYMBOLS and ord(char) not in primary and ord(char) in supported else str(path)
+        selected = (
+            fallback
+            if char in SYMBOLS and ord(char) not in primary and ord(char) in supported
+            else str(path)
+        )
         if selected != current and buffer:
-            yield ''.join(buffer), current
+            yield "".join(buffer), current
             buffer = []
         current = selected
         buffer.append(char)
     if buffer:
-        yield ''.join(buffer), current
+        yield "".join(buffer), current
 
 
 def text_width(text, path, size):
-    return sum(pdfmetrics.stringWidth(value, pdf_font(face), size) for value, face in font_runs(text, path))
+    return sum(
+        pdfmetrics.stringWidth(value, pdf_font(face), size) for value, face in font_runs(text, path)
+    )
+
 
 def font_roots():
     home = Path.home()
-    roots = [ROOT / "fonts", ROOT / "data/local-fonts", home / "Library/Fonts", Path("/Library/Fonts"),
-             Path("/System/Library/Fonts"), home / ".local/share/fonts", home / ".fonts",
-             Path("/usr/share/fonts"), Path("/usr/local/share/fonts")]
-    roots.extend(Path("/Applications") / app / "Contents/Resources/DFonts"
-                 for app in ("Microsoft PowerPoint.app", "Microsoft Word.app", "Microsoft Excel.app"))
+    roots = [
+        ROOT / "fonts",
+        ROOT / "data/local-fonts",
+        home / "Library/Fonts",
+        Path("/Library/Fonts"),
+        Path("/System/Library/Fonts"),
+        home / ".local/share/fonts",
+        home / ".fonts",
+        Path("/usr/share/fonts"),
+        Path("/usr/local/share/fonts"),
+    ]
+    roots.extend(
+        Path("/Applications") / app / "Contents/Resources/DFonts"
+        for app in ("Microsoft PowerPoint.app", "Microsoft Word.app", "Microsoft Excel.app")
+    )
     if os.name == "nt":
-        roots.extend([Path(os.environ.get("WINDIR", "C:/Windows")) / "Fonts",
-                      Path(os.environ.get("LOCALAPPDATA", str(home))) / "Microsoft/Windows/Fonts"])
+        roots.extend(
+            [
+                Path(os.environ.get("WINDIR", "C:/Windows")) / "Fonts",
+                Path(os.environ.get("LOCALAPPDATA", str(home))) / "Microsoft/Windows/Fonts",
+            ]
+        )
     return roots
 
 
@@ -75,15 +97,16 @@ def role_font(profile, role="body"):
 
 
 def font_asset(profile, requested):
-    return (next((a for a in profile.font_assets if a["requested"] == requested), None) or
-            next((a for a in profile.font_assets if requested in a.get("template_aliases", [])), None))
+    return next((a for a in profile.font_assets if a["requested"] == requested), None) or next(
+        (a for a in profile.font_assets if requested in a.get("template_aliases", [])), None
+    )
 
 
 def element_font(profile, element):
-    requested = getattr(element, 'field_style', {}).get('requested_font')
+    requested = getattr(element, "field_style", {}).get("requested_font")
     asset = font_asset(profile, requested) if requested else None
     if asset:
-        return asset['requested'], asset['path']
+        return asset["requested"], asset["path"]
     role = element.kind if element.kind in ("table", "chart") else element.role
     return role_font(profile, role)
 
@@ -133,8 +156,10 @@ def _font_catalog(files):
             continue
     return entries
 
+
 def resolve_font(name):
     return font_catalog().get(font_key(name), "")
+
 
 @lru_cache(maxsize=64)
 def pdf_font(path):
@@ -146,8 +171,9 @@ def pdf_font(path):
             pdfmetrics.registerFont(TTFont(name, path))
     return name
 
+
 def wrap_text(text, font_path, size, width):
-    name = pdf_font(font_path)
+    _name = pdf_font(font_path)
     result = []
     for paragraph in text.split("\n"):
         current = ""
@@ -178,17 +204,17 @@ def table_cell_fits(text, font_path, size, width, height, bold=False):
     # Measure the actual installed bold face when it exists; never substitute
     # another family or embed this measurement font into the output.
     if bold:
-        stat=Path(font_path).stat()
-        font_path=_bold_measurement_face(str(font_path),stat.st_mtime_ns,stat.st_size)
-    width *= .94 if bold else 1
-    if any(text_width(word,font_path,size)>width for word in text.split()):
+        stat = Path(font_path).stat()
+        font_path = _bold_measurement_face(str(font_path), stat.st_mtime_ns, stat.st_size)
+    width *= 0.94 if bold else 1
+    if any(text_width(word, font_path, size) > width for word in text.split()):
         return False
-    return len(wrap_text(text,font_path,size,width))*size*1.25<=height
+    return len(wrap_text(text, font_path, size, width)) * size * 1.25 <= height
 
 
 @lru_cache(maxsize=128)
 def _bold_measurement_face(path, stamp, size):
-    family,style=ImageFont.truetype(path,16).getname()
-    if 'bold' in style.casefold():
+    family, style = ImageFont.truetype(path, 16).getname()
+    if "bold" in style.casefold():
         return path
-    return resolve_font(family+' Bold') or path
+    return resolve_font(family + " Bold") or path

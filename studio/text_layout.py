@@ -3,6 +3,7 @@
 Keep original input/fact text unchanged. Only the layout projection omits
 Word Joiner and its legacy equivalent; other characters are not filtered.
 """
+
 WORD_JOINERS = frozenset(("\u2060", "\ufeff"))
 
 

@@ -2,8 +2,10 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 from .archetype_catalog import Archetype
 
+
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
+
 
 class Fact(StrictModel):
     id: str
@@ -15,12 +17,16 @@ class Fact(StrictModel):
     emphasis: str = ""
     kind: Literal["body", "caveat"] = "body"
 
+
 class TableData(StrictModel):
     id: str
     headers: list[str]
     rows: list[list[str]]
     section: str = ""
-    visualization: Literal["auto", "table", "metrics", "bar", "column", "column_stacked", "line", "pie"] = "auto"
+    visualization: Literal[
+        "auto", "table", "metrics", "bar", "column", "column_stacked", "line", "pie"
+    ] = "auto"
+
 
 class ContentModel(StrictModel):
     title: str
@@ -30,6 +36,7 @@ class ContentModel(StrictModel):
     quarantined: list[dict] = Field(default_factory=list)
     headings: list[dict] = Field(default_factory=list)
     directives: list[dict] = Field(default_factory=list)
+
 
 class UploadedImage(StrictModel):
     id: str
@@ -41,6 +48,7 @@ class UploadedImage(StrictModel):
     section: str = ""
     caption: str = ""
 
+
 class Constraints(StrictModel):
     slides: int = Field(default=10, ge=1, le=30)
     audience: str = Field(default="", max_length=2000)
@@ -51,11 +59,13 @@ class Constraints(StrictModel):
     confirm_plan: bool = False
     include_cover: bool = True
 
+
 class Box(StrictModel):
     x: float
     y: float
     w: float
     h: float
+
 
 class Pattern(StrictModel):
     id: str
@@ -79,16 +89,19 @@ class Pattern(StrictModel):
     heading_zones: list[Box | None] = Field(default_factory=list)
     graphic_count: int = 0
     graphic_order_verified: bool = False
-    graphic_kind: Literal['none','cards','sequence','comparison','hierarchy','radial','pyramid','matrix'] = 'none'
+    graphic_kind: Literal[
+        "none", "cards", "sequence", "comparison", "hierarchy", "radial", "pyramid", "matrix"
+    ] = "none"
     graphic_shape_ids: list[int] = Field(default_factory=list)
-    graphic_edges: list[tuple[int,int]] = Field(default_factory=list, max_length=160)
+    graphic_edges: list[tuple[int, int]] = Field(default_factory=list, max_length=160)
     number_zones: list[Box | None] = Field(default_factory=list)
     table_style: dict = Field(default_factory=dict)
-    purpose: Archetype | Literal['unknown', 'service', 'reference'] = "unknown"
+    purpose: Archetype | Literal["unknown", "service", "reference"] = "unknown"
     reusable: bool = True
     reference_image: str = ""
     image_zones: list[Box] = Field(default_factory=list)
     fields: list[dict] = Field(default_factory=list)
+
 
 class Asset(StrictModel):
     id: str
@@ -96,6 +109,7 @@ class Asset(StrictModel):
     box: Box
     occurrences: int
     role: str
+
 
 class TemplateProfile(StrictModel):
     background_source: str = ""
@@ -133,24 +147,30 @@ class TemplateProfile(StrictModel):
     layout_index: int = 0
     analysis_version: int = 1
 
+
 class SlidePlan(StrictModel):
     title: str = Field(min_length=1, max_length=240)
     fact_ids: list[str]
-    layout: Literal["statement", "split", "columns", "table", "chart", "process", "evidence", "divider"] = "split"
+    layout: Literal[
+        "statement", "split", "columns", "table", "chart", "process", "evidence", "divider"
+    ] = "split"
     table_id: str | None = None
     role: Literal["context", "insight", "evidence", "action", "appendix"] = "insight"
     pattern_id: str | None = None
-    purpose: Archetype | Literal['auto'] = "auto"
+    purpose: Archetype | Literal["auto"] = "auto"
     chart_type: Literal["auto", "bar", "column", "column_stacked", "line", "pie"] = "auto"
-    chart_style: Literal['standard','readable'] = 'standard'
+    chart_style: Literal["standard", "readable"] = "standard"
+
 
 class VariantPlan(StrictModel):
     key: Literal["executive", "analytical", "story"]
     title: str
     slides: list[SlidePlan]
 
+
 class Plans(StrictModel):
     variants: list[VariantPlan] = Field(min_length=3, max_length=3)
+
 
 class PreparedPackage(StrictModel):
     schema_version: int = 1
@@ -164,6 +184,7 @@ class PreparedPackage(StrictModel):
     analysis: dict = Field(default_factory=dict)
     prepared_plans: Plans | None = None
     images: list[UploadedImage] = Field(default_factory=list)
+
 
 class Element(StrictModel):
     kind: Literal["text", "rect", "line", "image", "table", "chart"]
@@ -194,7 +215,8 @@ class Element(StrictModel):
     category_title: str = ""
     series_names: list[str] = Field(default_factory=list)
     series_values: list[list[float]] = Field(default_factory=list)
-    chart_style: Literal['standard','readable'] = 'standard'
+    chart_style: Literal["standard", "readable"] = "standard"
+
 
 class SlideScene(StrictModel):
     title: str
@@ -202,13 +224,15 @@ class SlideScene(StrictModel):
     elements: list[Element]
     source_ids: list[str]
     layout: str
-    purpose: Archetype | Literal['auto'] = 'auto'
+    purpose: Archetype | Literal["auto"] = "auto"
     pattern_id: str | None = None
     strategy: str = "token_composition"
     notes: str = ""
 
+
 class ContextualAudit(StrictModel):
     findings: list["ContextualFinding"] = Field(max_length=100)
+
 
 class Finding(StrictModel):
     code: str
@@ -217,6 +241,7 @@ class Finding(StrictModel):
     slide: int = 0
     element: int | None = None
     repaired: bool = False
+
 
 class ContextualFinding(StrictModel):
     variant: Literal["executive", "analytical", "story"]
