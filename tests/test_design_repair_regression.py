@@ -58,7 +58,8 @@ def test_shortening_cannot_switch_subject_or_drop_an_event():
         original,
         [2],
         {
-            "validation": "s2: condense bullets and labels to 500 characters; retain essential meaning"
+            "validation": "human-readable explanation can change",
+            "repair_issues": [{"code": "text_budget", "slide": 2, "action": "shorten_text"}],
         },
         500,
     )
@@ -219,7 +220,11 @@ def test_adjusted_plan_cannot_bypass_minimum():
 def test_other_slide_error_does_not_unlock_a_shortening_repair():
     _, original = timeline_case()
     feedback = {
-        "validation": "s1b1: Unsupported number; s2: condense bullets and labels to 500 characters; retain essential meaning"
+        "validation": "diagnostic wording is not a protocol",
+        "repair_issues": [
+            {"slide": 1, "code": "unsupported_number", "action": "revise_content"},
+            {"slide": 2, "code": "text_budget", "action": "shorten_text"},
+        ],
     }
     contracts = shortening_contracts(original, [1, 2], feedback, 500)
     assert [c["slide"] for c in contracts] == [2]

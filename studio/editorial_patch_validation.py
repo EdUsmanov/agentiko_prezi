@@ -1,27 +1,60 @@
 """Keep a local text repair on its original subject and validate before caching."""
 
 from copy import deepcopy
-import re
+from .repair_errors import PlanValidationError, validation_issues
+
+
+def claim_signature(claim):
+    result = deepcopy(claim)
+    # Quotes are server-resolved; immutable evidence is identified by fact IDs.
+    result["evidence"] = [{"fact_id": row["fact_id"]} for row in result["evidence"]]
+    return result
 
 
 def shortening_contracts(previous, allowed, feedback, budget):
     """Lock valid structure only when the requested change is text shortening."""
-    validation = feedback.get("validation", "")
-    messages = re.split(r"; (?=s\d+(?:b\d+|\b))", validation) if validation else []
-    geometry = bool(feedback.get("geometry")) and not (
-        feedback.get("issues") or feedback.get("essential_facts_to_restore")
-    )
+    issues = feedback.get("repair_issues", [])
     contracts = []
     for index in allowed:
-        local = [message for message in messages if re.match(rf"s{index}(?:b\d+|\b)", message)]
-        shorten = bool(local) and all("condense bullets and labels" in message for message in local)
-        if not (shorten or geometry):
+        local = [issue for issue in issues if issue.get("slide") == index]
+        # Wording is for humans. Only explicit actions may lock a text repair.
+        if not local or any(issue.get("action") != "shorten_text" for issue in local):
             continue
         slide = previous["slides"][index - 1]
         labels = sum(len(b["group"]) for b in slide["bullets"])
+        fields = [
+            field
+            for row in feedback.get("fields", [])
+            if row.get("slide") == index
+            for field in row.get("fields", [])
+        ]
+        geometry_only = all(issue["code"] in ("text_overflow", "readability") for issue in local)
+        affected = {
+            fid
+            for field in fields
+            if field.get("role") != "title"
+            for fid in field.get("fact_ids", [])
+        }
+        fixed = (
+            [
+                {"index": j, "content": claim_signature(bullet)}
+                for j, bullet in enumerate(slide["bullets"], 1)
+                if f"summary-{index}-{j}" not in affected
+            ]
+            if geometry_only and fields
+            else []
+        )
+
         contracts.append(
             {
                 "slide": index,
+                "fixed_bullets": fixed,
+                "bullet_count": len(slide["bullets"]) if fixed else None,
+                "fixed_title": slide["title"]
+                if geometry_only
+                and fields
+                and not any(field.get("role") == "title" for field in fields)
+                else None,
                 "purpose": slide["purpose"],
                 "source_table_id": slide["source_table_id"],
                 "source_columns": slide["source_columns"],
@@ -44,6 +77,17 @@ def validate_contracts(changed, contracts):
     for contract in contracts:
         slide = changed["slides"][contract["slide"] - 1]
         prefix = f"s{contract['slide']}: shortening-only repair"
+        if contract.get("fixed_title") is not None and slide["title"] != contract["fixed_title"]:
+            raise ValueError(f"{prefix} must preserve the unaffected title")
+        if (
+            contract.get("bullet_count") is not None
+            and len(slide["bullets"]) != contract["bullet_count"]
+        ):
+            raise ValueError(f"{prefix} must preserve bullet positions")
+        for fixed in contract.get("fixed_bullets", []):
+            if claim_signature(slide["bullets"][fixed["index"] - 1]) != fixed["content"]:
+                raise ValueError(f"{prefix} must preserve unaffected bullet {fixed['index']}")
+
         for key in (
             "purpose",
             "source_table_id",
@@ -115,19 +159,16 @@ def constrain_patch_schema(schema, contracts, allowed, previous=None):
 def validate_repaired_plan(changed, content, bounds, budget, require_cover, allowed):
     """Reject deterministic errors in changed slides without re-editing neighbours."""
     from .editorial import validate_plan
-    from .editorial_repair import validation_targets
 
     try:
         validate_plan(changed, content, bounds, budget, require_cover=require_cover)
     except ValueError as error:
-        messages = re.split(r"; (?=s\d+(?:b\d+|\b))", str(error))
-        relevant = []
-        for message in messages:
-            targets = validation_targets(ValueError(message), len(changed["slides"]))
-            if not targets or set(targets) & set(allowed):
-                relevant.append(message)
+        issues = validation_issues(error)
+        if not issues:
+            raise
+        relevant = [issue for issue in issues if issue.slide is None or issue.slide in allowed]
         if relevant:
-            raise ValueError("; ".join(relevant)) from error
+            raise PlanValidationError(relevant) from error
 
 
 def numeric_evidence_hints(previous, allowed, content):

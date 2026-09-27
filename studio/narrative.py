@@ -5,6 +5,8 @@ from collections import Counter
 from typing import Literal
 from pydantic import Field
 from .models import StrictModel, SlidePlan, VariantPlan
+from .repair_errors import RepairIssue
+from .repair_policy import scene_fit_feedback
 from .content import numeric_column
 
 
@@ -182,55 +184,40 @@ def narrative_storyboard(package):
             try:
                 scene = compose_slide(variant, package, index, image_groups)
                 repair_scenes([scene], package)
-                defects = [
-                    f
-                    for f in audit_scenes([scene], package)
-                    if f.code
-                    in (
-                        "container_overflow",
-                        "out_of_bounds",
-                        "text_overflow",
-                        "table_overflow",
-                        "chart_overflow",
-                        "overlap",
-                        "readability",
-                    )
-                ]
-                if defects:
+                feedback = scene_fit_feedback(
+                    scene,
+                    audit_scenes([scene], package),
+                    index + 1,
+                    {row["fact_id"] for row in package.analysis["editorial"].get("provenance", [])},
+                )
+                if feedback["repair_issues"]:
                     bad.append(index + 1)
-                    fit_issues.append(
-                        {
-                            "slide": index + 1,
-                            "pattern_id": scene.pattern_id,
-                            "findings": [f.model_dump() for f in defects],
-                            "fields": [
-                                {
-                                    "text": e.text,
-                                    "fact_ids": e.source_ids,
-                                    "current_font_size": e.size,
-                                    "minimum_font_size": 18 if e.role == "title" else 16,
-                                    "width": round(e.box.w),
-                                    "height": round(e.box.h),
-                                    "target_max_characters": max(
-                                        12, int(e.box.w / 9) * max(1, int(e.box.h / 22))
-                                    ),
-                                }
-                                for e in scene.elements
-                                if e.kind == "text" and (e.source_ids or e.role == "title")
-                            ],
-                        }
-                    )
+                    fit_issues.append(feedback)
             except ValueError as exc:
                 bad.append(index + 1)
-                fit_issues.append({"slide": index + 1, "message": str(exc), "fields": []})
+                fit_issues.append(
+                    {
+                        "slide": index + 1,
+                        "message": str(exc),
+                        "fields": [],
+                        "repair_issues": [
+                            RepairIssue(
+                                code="composition_failed",
+                                message=str(exc),
+                                slide=index + 1,
+                                action="stop",
+                            ).model_dump()
+                        ],
+                    }
+                )
         if bad:
             package.analysis["slide_budget"] = {
                 "status": "needs_input",
                 "planned": None,
                 "fit_issues": fit_issues,
-                "message": "Не помещается читаемый текст на слайдах "
+                "message": "Компоновка требует исправления на слайдах "
                 + ", ".join(map(str, bad))
-                + ". Требуется повторное сокращение без изменения числа слайдов.",
+                + ". Причины и допустимые действия записаны по каждому объекту.",
             }
             return
     else:

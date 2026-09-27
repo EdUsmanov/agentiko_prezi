@@ -62,11 +62,15 @@ def background_work():
 
 
 def exception(name, error):
+    from .repair_errors import RepairFailure
+
+    details = {"repair_issues": error.public()} if isinstance(error, RepairFailure) else {}
     event(
         name,
         "error",
         error_type=type(error).__name__,
         traceback="".join(traceback.format_exception(type(error), error, error.__traceback__)),
+        **details,
     )
 
 

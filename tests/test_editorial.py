@@ -6,6 +6,22 @@ from studio.editorial import validate_plan, validate_review, apply_plan, prepare
 from studio.models import Constraints
 
 
+def text_fit_issue():
+    return {
+        "slide": 1,
+        "fields": [{"target_max_characters": 28, "role": "body", "fact_ids": ["summary-1-1"]}],
+        "repair_issues": [
+            {
+                "code": "text_overflow",
+                "action": "shorten_text",
+                "slide": 1,
+                "element": 0,
+                "message": "Card too small",
+            }
+        ],
+    }
+
+
 def source():
     return parse_content(
         "Проект ускорит обработку заявок. Пилот не гарантирует экономии. Встреча пройдёт в комнате 7."
@@ -154,7 +170,7 @@ def test_geometry_retry_passes_real_field_limits_and_keeps_original_source(monke
             {
                 "status": "needs_input",
                 "message": "Card too small",
-                "fit_issues": [{"slide": 1, "fields": [{"target_max_characters": 28}]}],
+                "fit_issues": [text_fit_issue()],
             }
             if len(fits) == 1
             else {"status": "adjusted"}
@@ -211,7 +227,11 @@ def test_rejected_summary_is_never_committed_and_corrections_survive(monkeypatch
         p.analysis["slide_budget"] = (
             {"status": "adjusted"}
             if len(fits) == 1
-            else {"status": "needs_input", "message": "Small field", "fit_issues": [{"slide": 1}]}
+            else {
+                "status": "needs_input",
+                "message": "Small field",
+                "fit_issues": [text_fit_issue()],
+            }
         )
 
     monkeypatch.setattr(narrative, "narrative_storyboard", fit)
@@ -232,7 +252,7 @@ def test_rejected_summary_is_never_committed_and_corrections_survive(monkeypatch
                 self.edits += 1
                 if self.edits > 1:
                     assert payload["revision_feedback"]["fields"] == (
-                        [] if self.edits == 2 else [{"slide": 1}]
+                        [] if self.edits == 2 else [text_fit_issue()]
                     )
                     assert (
                         payload["revision_feedback"]["previous_semantic_corrections"][0]["claims"][
@@ -263,7 +283,7 @@ def test_rejected_summary_is_never_committed_and_corrections_survive(monkeypatch
     with pytest.raises(InductionFailure):
         asyncio.run(prepare_editorial(p, gateway))
     assert gateway.edits == 4  # one actual correction, then two rejected no-op responses
-    assert p.analysis["editorial_repair_diagnostics"]["feedback"]["fields"] == [{"slide": 1}]
+    assert p.analysis["editorial_repair_diagnostics"]["feedback"]["fields"] == [text_fit_issue()]
     assert len(p.content.facts) == 3 and "editorial" not in p.analysis
 
 

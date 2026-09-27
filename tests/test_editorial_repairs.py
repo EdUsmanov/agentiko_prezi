@@ -103,7 +103,21 @@ def test_target_selection_and_uniform_region_artwork_guard(tmp_path):
     from studio.models import Box
     from studio.template_adaptation import uniform_region
 
-    assert validation_targets(ValueError("s2b1 number; s4 title"), 5) == [2, 4]
+    from studio.repair_errors import PlanValidationError, RepairIssue
+
+    error = PlanValidationError(
+        [
+            RepairIssue(
+                code="unsupported_number",
+                message="diagnostic wording",
+                action="revise_content",
+                slide=slide,
+            )
+            for slide in (2, 4)
+        ]
+    )
+    assert validation_targets(error, 5) == [2, 4]
+    assert validation_targets(ValueError("s2b1 number; s4 title"), 5) == []
     path = tmp_path / "background.png"
     im = Image.new("RGB", (400, 300), "blue")
     im.save(path)

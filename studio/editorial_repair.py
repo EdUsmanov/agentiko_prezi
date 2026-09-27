@@ -5,6 +5,7 @@ import re
 import json
 from pydantic import Field, model_validator
 from .models import StrictModel
+from .repair_errors import RepairIssue, RepairFailure, LayoutCapacityError, validation_issues
 from .editorial import (
     EditorialSlide,
     EditorialPlan,
@@ -65,13 +66,13 @@ def plan_signature(plan, content=None):
 
 
 def validation_targets(error, count):
-    targets = {int(i) for i in re.findall(r"\bs(\d+)(?:b\d+|\b)", str(error))}
-    if hasattr(error, "errors"):
-        for row in error.errors():
-            loc = row.get("loc", ())
-            if len(loc) > 1 and loc[0] == "slides" and isinstance(loc[1], int):
-                targets.add(loc[1] + 1)
-    return sorted(i for i in targets if 1 <= i <= count)
+    return sorted(
+        {
+            issue.slide
+            for issue in validation_issues(error)
+            if issue.slide is not None and 1 <= issue.slide <= count
+        }
+    )
 
 
 def review_targets(review, plan, content):
@@ -242,12 +243,16 @@ async def prepare_with_targeted_repairs(
                 raw = validate_plan(raw, content, bounds, 500, require_cover=cover)
             except ValueError as exc:
                 allowed = validation_targets(exc, len(raw["slides"]))
-                if not allowed:
+                if not allowed or any(
+                    issue.slide is None or issue.action == "stop"
+                    for issue in validation_issues(exc)
+                ):
                     raise
                 if str(exc) not in validation_corrections:
                     validation_corrections.append(str(exc))
                 feedback = {
                     "validation": str(exc),
+                    "repair_issues": [issue.model_dump() for issue in validation_issues(exc)],
                     "previous_validation_corrections": validation_corrections[:],
                 }
             else:
@@ -258,6 +263,37 @@ async def prepare_with_targeted_repairs(
                 narrative_storyboard(candidate)
                 budget = candidate.analysis.get("slide_budget", {})
                 geometry_bad = budget.get("status") == "needs_input"
+                geometry_issues = []
+                if geometry_bad:
+                    geometry_issues = [
+                        RepairIssue.model_validate(issue)
+                        for row in budget.get("fit_issues", [])
+                        for issue in row.get("repair_issues", [])
+                    ]
+                    if not geometry_issues:
+                        geometry_issues = [
+                            RepairIssue(
+                                code="unclassified_geometry",
+                                action="stop",
+                                message="Компоновка не прошла проверку без адреса дефекта; автоматическое сокращение запрещено.",
+                            )
+                        ]
+                    if any(issue.action != "shorten_text" for issue in geometry_issues):
+                        package.analysis["editorial_repair_diagnostics"] = {
+                            "round": attempt + 1,
+                            "slides": sorted(
+                                {issue.slide for issue in geometry_issues if issue.slide}
+                            ),
+                            "feedback": {
+                                "geometry": budget.get("message"),
+                                "fields": budget.get("fit_issues", []),
+                                "repair_issues": [issue.model_dump() for issue in geometry_issues],
+                            },
+                            "last_plan": deepcopy(raw),
+                            "history": deepcopy(history),
+                            "stopped_reason": "layout_capacity_exhausted",
+                        }
+                        raise LayoutCapacityError(geometry_issues)
                 # Deterministic fit failures are fixed before spending another
                 # model request reviewing text which must change anyway.
                 review = {
@@ -317,6 +353,7 @@ async def prepare_with_targeted_repairs(
                     "essential_facts_to_restore": review["missing_essential_fact_ids"],
                     "explanation": review["explanation"],
                     "geometry": budget.get("message") if geometry_bad else None,
+                    "repair_issues": [issue.model_dump() for issue in geometry_issues],
                     "fields": budget.get("fit_issues", []),
                     "previous_semantic_corrections": semantic_corrections,
                 }
@@ -402,6 +439,12 @@ async def prepare_with_targeted_repairs(
             }
         )
         package.analysis["editorial_repair_history"] = history
-    raise ValueError(
-        "Не удалось подтвердить смысл и читаемость после адресных исправлений. Исходный текст и журнал сохранены."
+    raise RepairFailure(
+        [
+            RepairIssue(
+                code="repair_exhausted",
+                action="stop",
+                message="Не удалось подтвердить смысл и читаемость после адресных исправлений. Исходный текст и журнал сохранены.",
+            )
+        ]
     )

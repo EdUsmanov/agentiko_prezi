@@ -414,6 +414,10 @@ def prepare(
         }
         from .cache_version import atomic_json
 
+        from .repair_errors import RepairFailure
+
+        if isinstance(exc, RepairFailure):
+            diagnostic["repair_issues"] = exc.public()
         atomic_json(directory / "failure-report.json", diagnostic)
         (directory / "failure-report.json").chmod(0o600)
         from .induction import InductionFailure

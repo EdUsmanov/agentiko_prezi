@@ -550,26 +550,22 @@ def _compose_slide(variant, package, index, image_groups=None):
 
 
 def compose_slide(variant, package, index, image_groups=None):
-    """Prefer native geometry; retry data layout before rewriting source prose."""
+    """Try deterministic geometry before requesting any editorial rewrite."""
     scene = _compose_slide(variant, package, index, image_groups)
     slide = variant.slides[index]
-    if not slide.table_id or slide.pattern_id is not None or not scene.pattern_id:
+    if (
+        slide.pattern_id is not None
+        or not scene.pattern_id
+        or slide.purpose in ("cover", "divider")
+    ):
         return scene
     from .audit import audit_scenes, repair_scenes
 
-    geometry = {
-        "container_overflow",
-        "out_of_bounds",
-        "text_overflow",
-        "table_overflow",
-        "chart_overflow",
-        "overlap",
-        "readability",
-    }
+    from .repair_policy import FIT_CODES
 
     def defects(candidate):
         repair_scenes([candidate], package)
-        return [f for f in audit_scenes([candidate], package) if f.code in geometry]
+        return [f for f in audit_scenes([candidate], package) if f.code in FIT_CODES]
 
     if not defects(scene.model_copy(deep=True)):
         return scene
@@ -578,7 +574,7 @@ def compose_slide(variant, package, index, image_groups=None):
     try:
         candidate = _compose_slide(alternate, package, index, image_groups)
         if not defects(candidate):
-            candidate.notes += "\nLayout adapted from template fonts and palette: authored data fields were too small."
+            candidate.notes += "\nLayout adapted from template fonts and palette: authored fields could not fit the content."
             return candidate
     except ValueError:
         pass

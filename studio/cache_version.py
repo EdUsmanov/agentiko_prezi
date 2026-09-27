@@ -148,6 +148,8 @@ def stage_version(stage):
         "studio/induction.py",
         "studio/gateway.py",
         "studio/models.py",
+        "studio/repair_errors.py",
+        "studio/repair_policy.py",
         "studio/security.py",
         "studio/security_gate.py",
         "studio/config.py",
