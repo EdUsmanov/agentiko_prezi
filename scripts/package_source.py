@@ -5,7 +5,14 @@ from zipfile import ZipFile, ZIP_DEFLATED
 
 ROOT = Path(__file__).resolve().parent.parent
 DIRECTORIES = {"studio", "web", "prompts", "config", "fonts", "scripts", "tests", "vendor"}
-ROOT_FILES = {"LICENSE", "pyproject.toml", "requirements.lock", ".env.example", ".gitignore"}
+ROOT_FILES = {
+    "LICENSE",
+    "pyproject.toml",
+    "requirements.lock",
+    "requirements-dev.txt",
+    ".env.example",
+    ".gitignore",
+}
 PUBLIC_FONTS = {
     "Play-Regular.ttf",
     "OFL.txt",

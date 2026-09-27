@@ -16,6 +16,7 @@ def test_source_archive_is_isolated_and_excludes_runtime(tmp_path, monkeypatch):
         ".experiment-runtime/key.json",
         "data/private.txt",
         "README.md",
+        "requirements-dev.txt",
     ):
         path = root / name
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -30,5 +31,6 @@ def test_source_archive_is_isolated_and_excludes_runtime(tmp_path, monkeypatch):
             "isolated-experiment/scripts/runtime/.dockerignore",
             "isolated-experiment/.env.example",
             "isolated-experiment/README.md",
+            "isolated-experiment/requirements-dev.txt",
         }
     assert not (tmp_path / "presentation-studio-source.zip").exists()
