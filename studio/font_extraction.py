@@ -12,6 +12,7 @@ from collections import Counter
 from pathlib import Path
 
 from .config import ROOT
+from .fonts import resolve_font
 from .powerpoint import open_presentation
 
 KIT = Path(__file__).resolve().parent / "_vendor" / "font_extraction"
@@ -69,6 +70,29 @@ class _StudioResolver:
                             }
                         )
                         variants.remove((weight, style))
+        # The previous pipeline also searched user and system font directories.
+        # Resolve exact faces there when Fontconfig is absent (notably on macOS).
+        for family, variants in pending.items():
+            for weight, style in tuple(variants):
+                path = resolve_font(_display_face(family, weight, style))
+                if not path:
+                    continue
+                try:
+                    data = Path(path).read_bytes()
+                except OSError:
+                    continue
+                if len(data) <= 8 * 1024 * 1024 and match(data, family, weight, style):
+                    found.append(
+                        {
+                            "family": family,
+                            "resolvedFamily": family,
+                            "weight": weight,
+                            "style": style,
+                            "source": "installed",
+                            "data": data,
+                        }
+                    )
+                    variants.remove((weight, style))
         missing = {family: variants for family, variants in pending.items() if variants}
         if missing and self.downloads is not None:
             found.extend(await self.downloads.resolve_variants(missing))
@@ -120,6 +144,83 @@ def _role_bindings(model, assets):
     roles = {role: asset_by_key[key]["id"] for role, key in selected.items() if key in asset_by_key}
     primary = by_id.get(roles.get("body")) or next(iter(assets), None)
     return roles, selected, primary
+
+
+def _bundled_fallback(weight: int, assets: list[dict]) -> dict:
+    label = "Bold" if weight >= 600 else "Medium" if weight >= 450 else "Regular"
+    path = ROOT / "fonts" / f"Montserrat-{label}.ttf"
+    raw = path.read_bytes()
+    digest = hashlib.sha256(raw).hexdigest()
+    existing = next((asset for asset in assets if asset["sha256"] == digest), None)
+    if existing:
+        return existing
+    asset = {
+        "id": digest[:20],
+        "requested": "Montserrat" if label == "Regular" else f"Montserrat {label}",
+        "family": "Montserrat",
+        "path": str(path),
+        "sha256": digest,
+        "bytes": len(raw),
+        "status": "substituted",
+        "weight": {"Regular": 400, "Medium": 500, "Bold": 700}[label],
+        "style": "normal",
+        "italic": False,
+        "redistributable": True,
+        "origin": {"kind": "missing_font_fallback", "source": "bundled", "sha256": digest},
+    }
+    assets.append(asset)
+    return asset
+
+
+def _apply_missing_font_fallbacks(model, assets, roles, selected, allow_download):
+    """Keep the kit's exact report intact and bind unresolved output faces explicitly."""
+    by_key = {(a["family"], a["weight"], a["style"]): a for a in assets}
+    replacements = []
+    fallback_by_key = {}
+    for item in model.unresolved:
+        key = (item.family, item.weight, item.style)
+        same_family = [a for a in assets if a["family"].casefold() == item.family.casefold()]
+        if same_family:
+            fallback = min(
+                same_family,
+                key=lambda a: (a["style"] != item.style, abs(a["weight"] - item.weight)),
+            )
+        else:
+            fallback = next(
+                (
+                    by_key[choice]
+                    for role in ("body", "title")
+                    if (choice := selected.get(role)) in by_key
+                ),
+                None,
+            )
+            if fallback is None:
+                fallback = _bundled_fallback(item.weight, assets)
+        requested = _display_face(*key)
+        fallback["template_aliases"] = list(
+            dict.fromkeys([*fallback.get("template_aliases", []), requested])
+        )
+        fallback_by_key[key] = fallback
+        replacements.append(
+            {
+                "scope": "font",
+                "template_font": requested,
+                "fallback_font": fallback["requested"],
+                "reason": "missing_font",
+                "download_attempted": allow_download,
+                "style_changed": (item.weight, item.style)
+                != (fallback["weight"], fallback["style"]),
+            }
+        )
+    for role, key in selected.items():
+        if role not in roles and key in fallback_by_key:
+            roles[role] = fallback_by_key[key]["id"]
+    by_id = {a["id"]: a for a in assets}
+    primary = by_id.get(roles.get("body")) or by_id.get(roles.get("title"))
+    if primary is None:
+        primary = _bundled_fallback(400, assets)
+        roles.update(body=primary["id"], title=primary["id"])
+    return primary, replacements, fallback_by_key
 
 
 async def _extract(path: Path, directory: Path, allow_download: bool, layout_face: str | None):
@@ -180,7 +281,7 @@ def extract_template_fonts(
 ):
     """Run bundle v2 and adapt its validated output to Studio's rendering model."""
     if progress:
-        progress("Извлекаем шрифты и проверяем точные начертания")
+        progress("Ищем шрифты в шаблоне, системе и открытых каталогах")
     model = asyncio.run(_extract(path, directory, allow_download, layout_face))
     assets = []
     for item in model.fontAssets:
@@ -206,16 +307,19 @@ def extract_template_fonts(
                 },
             }
         )
-    roles, selected, primary = _role_bindings(model, assets)
-    required = set(selected.values())
+    roles, selected, _ = _role_bindings(model, assets)
+    primary, replacements, fallback_by_key = _apply_missing_font_fallbacks(
+        model, assets, roles, selected, allow_download
+    )
     missing = [
         {
             "requested": _display_face(item.family, item.weight, item.style),
             "family": item.family,
             "weight": item.weight,
             "style": item.style,
-            "reason": "Точное начертание недоступно",
-            "required_for_generation": (item.family, item.weight, item.style) in required,
+            "reason": "Точное начертание недоступно; использована подстановка",
+            "required_for_generation": False,
+            "substituted_by": fallback_by_key[(item.family, item.weight, item.style)]["requested"],
         }
         for item in model.unresolved
     ]
@@ -224,6 +328,7 @@ def extract_template_fonts(
         "roles": roles,
         "primary": primary,
         "unresolved": missing,
+        "replacements": replacements,
         "warnings": [
             warning
             for warning in model.warnings

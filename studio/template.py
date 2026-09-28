@@ -276,6 +276,7 @@ def analyze_template(
         font_origin=font_origin,
         font_roles=font_model["roles"],
         font_assets=font_model["assets"],
+        font_replacements=font_model["replacements"],
         missing_fonts=font_model["unresolved"],
         font_sizes=scale,
         title_size=title_size,
@@ -293,5 +294,5 @@ def analyze_template(
         warnings=sorted(set(warnings)),
         source_kind="layout_rich" if ratio > 0.25 else "example_deck",
         layout_index=layout_index,
-        analysis_version=10,
+        analysis_version=11,
     )

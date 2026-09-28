@@ -44,10 +44,13 @@ def test_bundle_model_and_role_adapter(template, tmp_path):
         assert hashlib.sha256(path.read_bytes()).hexdigest() == asset["sha256"]
 
 
-def test_missing_face_is_reported_without_substitution(tmp_path, monkeypatch):
+def test_missing_face_is_downloaded_or_substituted_without_blocking(tmp_path, monkeypatch):
     from studio import font_extraction
 
     monkeypatch.setattr(font_extraction, "ROOT", tmp_path)
+    bundled = tmp_path / "fonts"
+    bundled.mkdir()
+    shutil.copy2(ROOT / "fonts/Montserrat-Regular.ttf", bundled / "Montserrat-Regular.ttf")
     prs = Presentation()
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     shape = slide.shapes.add_textbox(0, 0, Pt(400), Pt(80))
@@ -60,10 +63,35 @@ def test_missing_face_is_reported_without_substitution(tmp_path, monkeypatch):
 
     report = extract_template_fonts(source, tmp_path / "analysis", allow_download=False)
     assert report["unresolved"][0]["requested"] == "Unobtainable Test Family"
-    assert report["unresolved"][0]["required_for_generation"]
-    assert not report["assets"]
+    assert not report["unresolved"][0]["required_for_generation"]
+    assert report["unresolved"][0]["substituted_by"] == "Montserrat"
+    assert report["primary"]["requested"] == "Montserrat"
+    assert report["replacements"][0]["reason"] == "missing_font"
     model = json.loads((tmp_path / "analysis/font-model.json").read_text())
     assert model["slides"][0]["elements"]["title"][0]["status"] == "missing"
+
+
+def test_missing_table_face_falls_back_to_resolved_body_font(tmp_path):
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    shape = slide.shapes.add_textbox(0, 0, Pt(400), Pt(80))
+    run = shape.text_frame.paragraphs[0].add_run()
+    run.text = "Main text"
+    run.font.name = "Play"
+    table = slide.shapes.add_table(1, 1, 0, Pt(100), Pt(400), Pt(100)).table
+    cell_run = table.cell(0, 0).text_frame.paragraphs[0].add_run()
+    cell_run.text = "Table text"
+    cell_run.font.name = "Unobtainable Table Family"
+    source = tmp_path / "missing-table.pptx"
+    prs.save(source)
+
+    report = extract_template_fonts(source, tmp_path / "analysis", allow_download=False)
+
+    table_face = next(a for a in report["assets"] if a["id"] == report["roles"]["table"])
+    assert table_face["requested"] == "Play"
+    assert "Unobtainable Table Family" in table_face["template_aliases"]
+    assert report["primary"]["requested"] == "Play"
+    assert report["replacements"][0]["fallback_font"] == "Play"
 
 
 def test_exact_local_font_is_used_without_network(template, tmp_path):

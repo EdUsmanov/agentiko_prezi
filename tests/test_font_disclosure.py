@@ -42,3 +42,17 @@ def test_preparation_warns_after_model_titles_are_finalized(prepared):
     records = preparation_substitutions(p)
     assert any(r["symbol"] == "→" for r in records)
     assert "будет использован" in warnings(records, planned=True)[0]
+
+
+def test_missing_file_replacement_names_download_attempt():
+    record = {
+        "scope": "font",
+        "template_font": "Arial",
+        "fallback_font": "Play",
+        "reason": "missing_font",
+        "download_attempted": True,
+        "style_changed": False,
+    }
+    message = warnings([record], planned=True)[0]
+    assert "точный файл не найден в шаблоне, системе или открытых каталогах" in message
+    assert "Arial" in message and "Play" in message

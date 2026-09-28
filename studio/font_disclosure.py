@@ -144,9 +144,17 @@ def warnings(records, planned=False):
     for r in unique(records):
         if r.get("scope") == "font":
             detail = " Начертание также изменено." if r.get("style_changed") else ""
+            if r.get("reason") == "missing_font":
+                reason = (
+                    "точный файл не найден в шаблоне, системе или открытых каталогах"
+                    if r.get("download_attempted")
+                    else "точный файл не найден в шаблоне или системе"
+                )
+            else:
+                reason = "в исходном файле нет символов нового текста"
             result.append(
                 f"Вместо шрифта «{r['template_font']}» автоматически {verb} "
-                f"«{r['fallback_font']}»: в исходном файле нет символов нового текста. "
+                f"«{r['fallback_font']}»: {reason}. "
                 "Оформление и переносы строк могут отличаться от шаблона." + detail
             )
         else:
