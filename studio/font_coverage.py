@@ -89,10 +89,12 @@ def ensure_text_coverage(profile, text):
     selected = []
     mapping = {}
     records = list(profile.font_replacements)
+    replaced_faces = {}
     for original in original_assets:
         missing = missing_codepoints(original["path"], text)
         asset = _complete_face(original, text) if missing else dict(original)
         if missing:
+            replaced_faces[original["requested"]] = asset
             asset["template_aliases"] = list(
                 dict.fromkeys([original["requested"], *original.get("template_aliases", [])])
             )
@@ -118,6 +120,18 @@ def ensure_text_coverage(profile, text):
                     [*existing.get("template_aliases", []), *asset.get("template_aliases", [])]
                 )
             )
+    for item in profile.missing_fonts:
+        if final := replaced_faces.get(item.get("substituted_by")):
+            item["substituted_by"] = final["requested"]
+    missing_by_name = {item["requested"]: item for item in profile.missing_fonts}
+    for record in records:
+        if final := replaced_faces.get(record["fallback_font"]):
+            record["fallback_font"] = final["requested"]
+            if missing := missing_by_name.get(record["template_font"]):
+                record["style_changed"] = (missing["weight"], missing["style"]) != (
+                    final["weight"],
+                    final["style"],
+                )
     profile.font_assets = selected
     profile.font_roles = {role: mapping.get(key, key) for role, key in profile.font_roles.items()}
     chosen = next(

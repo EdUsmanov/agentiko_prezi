@@ -6,6 +6,7 @@ import asyncio
 import base64
 import struct
 import shutil
+from types import SimpleNamespace
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 from xml.etree import ElementTree as ET
@@ -17,7 +18,7 @@ from fontTools.ttLib import TTFont
 
 from studio.config import ROOT
 from studio.font_coverage import ensure_text_coverage
-from studio.font_extraction import _kit, extract_template_fonts
+from studio.font_extraction import _apply_missing_font_fallbacks, _kit, extract_template_fonts
 from studio.fonts import check_glyphs, role_font
 from studio.template import analyze_template
 
@@ -92,6 +93,29 @@ def test_missing_table_face_falls_back_to_resolved_body_font(tmp_path):
     assert "Unobtainable Table Family" in table_face["template_aliases"]
     assert report["primary"]["requested"] == "Play"
     assert report["replacements"][0]["fallback_font"] == "Play"
+
+
+def test_missing_bold_face_uses_bold_variant_of_fallback_family():
+    regular = {
+        "id": "regular",
+        "requested": "Available",
+        "family": "Available",
+        "weight": 400,
+        "style": "normal",
+    }
+    bold = {**regular, "id": "bold", "requested": "Available Bold", "weight": 700}
+    model = SimpleNamespace(
+        unresolved=[SimpleNamespace(family="Unavailable", weight=700, style="normal")]
+    )
+    _, replacements, fallback = _apply_missing_font_fallbacks(
+        model,
+        [regular, bold],
+        {"body": regular["id"]},
+        {"body": ("Available", 400, "normal")},
+        allow_download=True,
+    )
+    assert fallback[("Unavailable", 700, "normal")]["requested"] == "Available Bold"
+    assert replacements[0]["style_changed"] is False
 
 
 def test_exact_local_font_is_used_without_network(template, tmp_path):
@@ -185,11 +209,32 @@ def test_cyrillic_fallback_keeps_reference_model_intact(template, tmp_path):
     primary["family"] = "Fixture Sans"
     profile.font_file = str(latin_only)
     profile.font = "Fixture Sans"
+    profile.missing_fonts = [
+        {
+            "requested": "Unavailable Bold",
+            "weight": 700,
+            "style": "normal",
+            "required_for_generation": False,
+            "substituted_by": "Fixture Sans",
+        }
+    ]
+    profile.font_replacements = [
+        {
+            "scope": "font",
+            "template_font": "Unavailable Bold",
+            "fallback_font": "Fixture Sans",
+            "reason": "missing_font",
+            "style_changed": True,
+        }
+    ]
 
     records = ensure_text_coverage(profile, "Привет, мир")
 
-    assert records[0]["template_font"] == "Fixture Sans"
-    assert records[0]["fallback_font"] == "Montserrat"
+    assert [(r["template_font"], r["fallback_font"]) for r in records] == [
+        ("Unavailable Bold", "Montserrat"),
+        ("Fixture Sans", "Montserrat"),
+    ]
+    assert profile.missing_fonts[0]["substituted_by"] == "Montserrat"
     assert profile.font == "Montserrat"
     assert role_font(profile, "body")[0] == "Montserrat"
     check_glyphs(profile.font_file, "Привет, мир")

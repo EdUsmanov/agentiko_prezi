@@ -186,7 +186,7 @@ def _apply_missing_font_fallbacks(model, assets, roles, selected, allow_download
                 key=lambda a: (a["style"] != item.style, abs(a["weight"] - item.weight)),
             )
         else:
-            fallback = next(
+            preferred = next(
                 (
                     by_key[choice]
                     for role in ("body", "title")
@@ -194,8 +194,13 @@ def _apply_missing_font_fallbacks(model, assets, roles, selected, allow_download
                 ),
                 None,
             )
-            if fallback is None:
+            if preferred is None:
                 fallback = _bundled_fallback(item.weight, assets)
+            else:
+                fallback = min(
+                    (a for a in assets if a["family"] == preferred["family"]),
+                    key=lambda a: (a["style"] != item.style, abs(a["weight"] - item.weight)),
+                )
         requested = _display_face(*key)
         fallback["template_aliases"] = list(
             dict.fromkeys([*fallback.get("template_aliases", []), requested])
