@@ -77,7 +77,9 @@ def visual_payload(numbers, scenes, variant, package, directory) -> VisualReview
         by_id = {p.id: p for p in package.template.patterns}
         refs = []
         for i in numbers:
-            pattern = by_id.get(scenes[i - 1].get("pattern_id"))
+            pattern = by_id.get(
+                scenes[i - 1].get("background_pattern_id") or scenes[i - 1].get("pattern_id")
+            )
             # Sample wording in a raw template page was repeatedly
             # mistaken for output text. Compare only sanitized art.
             reference = pattern.background_image if pattern else ""
@@ -96,7 +98,9 @@ def visual_payload(numbers, scenes, variant, package, directory) -> VisualReview
         # Show an eligible source exemplar as well as the chosen background.
         # Otherwise a plain master is compared only with itself.
         for i in numbers:
-            selected = by_id.get(scenes[i - 1].get("pattern_id"))
+            selected = by_id.get(
+                scenes[i - 1].get("background_pattern_id") or scenes[i - 1].get("pattern_id")
+            )
             if selected is not None and selected.source_slide:
                 continue  # Exact authored reference suffices; alternatives confused image ownership.
             alternatives = [

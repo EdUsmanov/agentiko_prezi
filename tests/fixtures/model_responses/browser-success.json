@@ -1464,7 +1464,7 @@
           },
           {
             "role": "user",
-            "content": "{\"untrusted_input\": {\"slides\": [{\"variant\": \"executive\", \"slide\": 1, \"title\": \"Городской проект\", \"actual_text\": \"Городской проект\\nКоманда создаёт общий сервис.\", \"facts\": [{\"id\": \"summary-1-1\", \"text\": \"Команда создаёт общий сервис.\", \"section\": \"Городской проект\", \"source\": \"user_text\", \"line\": 0, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}]}, {\"variant\": \"executive\", \"slide\": 2, \"title\": \"Срок пилота\", \"actual_text\": \"\\n\\nСрок пилота\\nПилот длится 12 недель.\", \"facts\": [{\"id\": \"summary-2-1\", \"text\": \"Пилот длится 12 недель.\", \"section\": \"Срок пилота\", \"source\": \"user_text\", \"line\": 0, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}]}, {\"variant\": \"executive\", \"slide\": 3, \"title\": \"Проверка результата\", \"actual_text\": \"\\n\\nПроверка результата\\nРезультат проверяют по 40 заявкам.\", \"facts\": [{\"id\": \"summary-3-1\", \"text\": \"Результат проверяют по 40 заявкам.\", \"section\": \"Проверка результата\", \"source\": \"user_text\", \"line\": 0, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}]}], \"constraints\": {\"slides\": 5, \"audience\": \"\", \"instructions\": \"\", \"count_mode\": \"default\", \"size_preset\": \"mini\", \"summarize\": true, \"confirm_plan\": true, \"include_cover\": true}, \"slide_budget_adjustment\": {\"status\": \"adjusted\", \"requested\": 5, \"count_mode\": \"default\", \"planned\": 3, \"required\": 3, \"requested_range\": [3, 5], \"message\": \"По смыслу и читаемости предложено 3 слайдов. Можно принять или пересобрать план.\"}}}"
+            "content": "{\"untrusted_input\": {\"slides\": [{\"variant\": \"executive\", \"slide\": 1, \"title\": \"Городской проект\", \"actual_text\": \"Городской проект\\nКоманда создаёт общий сервис.\", \"facts\": [{\"id\": \"summary-1-1\", \"text\": \"Команда создаёт общий сервис.\", \"section\": \"Городской проект\", \"source\": \"user_text\", \"line\": 0, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}]}, {\"variant\": \"executive\", \"slide\": 2, \"title\": \"Срок пилота\", \"actual_text\": \"\\n\\nСрок пилота\\nПилот длится 12 недель.\", \"facts\": [{\"id\": \"summary-2-1\", \"text\": \"Пилот длится 12 недель.\", \"section\": \"Срок пилота\", \"source\": \"user_text\", \"line\": 0, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}]}, {\"variant\": \"executive\", \"slide\": 3, \"title\": \"Проверка результата\", \"actual_text\": \"\\n\\nПроверка результата\\nРезультат проверяют по 40 заявкам.\", \"facts\": [{\"id\": \"summary-3-1\", \"text\": \"Результат проверяют по 40 заявкам.\", \"section\": \"Проверка результата\", \"source\": \"user_text\", \"line\": 0, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}]}, {\"variant\": \"analytical\", \"slide\": 2, \"title\": \"Срок пилота\", \"actual_text\": \"Срок пилота\\nПилот длится 12 недель.\", \"facts\": [{\"id\": \"summary-2-1\", \"text\": \"Пилот длится 12 недель.\", \"section\": \"Срок пилота\", \"source\": \"user_text\", \"line\": 0, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}]}, {\"variant\": \"analytical\", \"slide\": 3, \"title\": \"Проверка результата\", \"actual_text\": \"Проверка результата\\nРезультат проверяют по 40 заявкам.\", \"facts\": [{\"id\": \"summary-3-1\", \"text\": \"Результат проверяют по 40 заявкам.\", \"section\": \"Проверка результата\", \"source\": \"user_text\", \"line\": 0, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}]}], \"constraints\": {\"slides\": 5, \"audience\": \"\", \"instructions\": \"\", \"count_mode\": \"default\", \"size_preset\": \"mini\", \"summarize\": true, \"confirm_plan\": true, \"include_cover\": true}, \"slide_budget_adjustment\": {\"status\": \"adjusted\", \"requested\": 5, \"count_mode\": \"default\", \"planned\": 3, \"required\": 3, \"requested_range\": [3, 5], \"message\": \"По смыслу и читаемости предложено 3 слайдов. Можно принять или пересобрать план.\"}}}"
           }
         ]
       },
@@ -1642,7 +1642,7 @@
           {
             "message": {
               "role": "assistant",
-              "content": "{\"checked_slides\": [1, 2], \"findings\": []}"
+              "content": "{\"findings\": [], \"checked_slides\": [1, 2]}"
             },
             "finish_reason": "stop"
           }
@@ -1790,7 +1790,7 @@
           {
             "message": {
               "role": "assistant",
-              "content": "{\"checked_slides\": [3], \"findings\": []}"
+              "content": "{\"findings\": [], \"checked_slides\": [3]}"
             },
             "finish_reason": "stop"
           }
@@ -1906,17 +1906,7 @@
             "content": [
               {
                 "type": "text",
-                "text": "{\"untrusted_input\": {\"slides\": [{\"slide\": 1, \"title\": \"Городской проект\", \"authored_title_position\": false, \"layout\": \"columns\", \"purpose\": \"cover\", \"field_safety\": [{\"role\": \"title\", \"index\": 0, \"status\": \"safe\", \"before\": {\"x\": 61.2, \"y\": 171.35, \"w\": 597.5999999999999, \"h\": 112.15}, \"reason\": null, \"recognition_mode\": \"flat_pixel_mask\", \"minimum_contrast\": 21.0, \"after\": {\"x\": 61.49846149114173, \"y\": 171.35, \"w\": 596.9850652066929, \"h\": 112.15}}, {\"role\": \"body\", \"index\": 0, \"status\": \"safe\", \"before\": {\"x\": 115.2, \"y\": 309.6, \"w\": 489.6, \"h\": 130.8}, \"reason\": null, \"recognition_mode\": \"flat_pixel_mask\", \"minimum_contrast\": 21.0, \"after\": {\"x\": 115.49711060531496, \"y\": 309.75, \"w\": 488.98776697834643, \"h\": 130.5}}], \"text_sizes_pt\": [44.0, 22.0], \"expected_chart_types\": [], \"supplied_images\": []}, {\"slide\": 2, \"title\": \"Срок пилота\", \"authored_title_position\": true, \"layout\": \"columns\", \"purpose\": \"content\", \"field_safety\": [{\"role\": \"title\", \"index\": 0, \"status\": \"safe\", \"before\": {\"x\": 57.6, \"y\": 39.6, \"w\": 844.7759842519685, \"h\": 75.6}, \"after\": {\"x\": 57.6, \"y\": 39.6, \"w\": 844.7759842519685, \"h\": 75.6}, \"reason\": \"authored_uniform_text_plate\"}, {\"role\": \"body\", \"index\": 0, \"status\": \"safe\", \"before\": {\"x\": 57.6, \"y\": 147.6, \"w\": 844.7759842519685, \"h\": 316.79999999999995}, \"after\": {\"x\": 57.6, \"y\": 127.6, \"w\": 876.7759842519685, \"h\": 384.79999999999995}, \"reason\": \"same_uniform_plate_expansion\"}], \"text_sizes_pt\": [36.0, 22.0], \"expected_chart_types\": [], \"supplied_images\": []}], \"image_order\": [1, 2], \"checks\": [\"text inside containers\", \"readable titles\", \"paragraph hierarchy\", \"unintended overlaps\"], \"reference_images\": [{\"image_position\": 3, \"for_slide\": 1, \"purpose\": \"cover\", \"kind\": \"sanitized_template_artwork_not_output\", \"source_slide\": 0, \"derived_divider\": false}, {\"image_position\": 4, \"for_slide\": 2, \"purpose\": \"content\", \"kind\": \"sanitized_template_artwork_not_output\", \"source_slide\": 1, \"derived_divider\": false}]}}"
-              },
-              {
-                "type": "image_url",
-                "image_url": {
-                  "url": {
-                    "width": 960,
-                    "height": 540
-                  },
-                  "detail": "high"
-                }
+                "text": "{\"untrusted_input\": {\"slides\": [{\"slide\": 2, \"title\": \"Срок пилота\", \"authored_title_position\": false, \"layout\": \"columns\", \"purpose\": \"content\", \"field_safety\": [{\"role\": \"title\", \"index\": 0, \"status\": \"safe\", \"before\": {\"x\": 43.2, \"y\": 25.22503937007874, \"w\": 633.5999999999999, \"h\": 86.4}, \"reason\": null, \"recognition_mode\": \"flat_pixel_mask\", \"minimum_contrast\": 21.0, \"after\": {\"x\": 43.498911786417324, \"y\": 25.5, \"w\": 632.9841646161417, \"h\": 86.12503937007875}}, {\"role\": \"body\", \"index\": 0, \"status\": \"safe\", \"before\": {\"x\": 43.2, \"y\": 129.6, \"w\": 633.5999999999999, \"h\": 349.1750393700787}, \"reason\": null, \"recognition_mode\": \"flat_pixel_mask\", \"minimum_contrast\": 21.0, \"after\": {\"x\": 43.498911786417324, \"y\": 129.75, \"w\": 632.9841646161417, \"h\": 348.75}}], \"text_sizes_pt\": [44.0, 22.0], \"expected_chart_types\": [], \"supplied_images\": []}], \"image_order\": [2], \"checks\": [\"text inside containers\", \"readable titles\", \"paragraph hierarchy\", \"unintended overlaps\"], \"reference_images\": [{\"image_position\": 2, \"for_slide\": 2, \"purpose\": \"content\", \"kind\": \"sanitized_template_artwork_not_output\", \"source_slide\": 0, \"derived_divider\": false}, {\"image_position\": 3, \"for_slide\": 2, \"purpose\": \"content\", \"kind\": \"alternative_sanitized_style_reference_not_required_layout\", \"source_slide\": 1}]}}"
               },
               {
                 "type": "image_url",
@@ -1958,7 +1948,7 @@
           {
             "message": {
               "role": "assistant",
-              "content": "{\"checked_slides\": [1, 2], \"findings\": []}"
+              "content": "{\"findings\": [], \"checked_slides\": [2]}"
             },
             "finish_reason": "stop"
           }
@@ -2074,7 +2064,7 @@
             "content": [
               {
                 "type": "text",
-                "text": "{\"untrusted_input\": {\"slides\": [{\"slide\": 3, \"title\": \"Проверка результата\", \"authored_title_position\": true, \"layout\": \"columns\", \"purpose\": \"content\", \"field_safety\": [{\"role\": \"title\", \"index\": 0, \"status\": \"safe\", \"before\": {\"x\": 57.6, \"y\": 39.6, \"w\": 844.7759842519685, \"h\": 75.6}, \"after\": {\"x\": 57.6, \"y\": 39.6, \"w\": 844.7759842519685, \"h\": 75.6}, \"reason\": \"authored_uniform_text_plate\"}, {\"role\": \"body\", \"index\": 0, \"status\": \"safe\", \"before\": {\"x\": 57.6, \"y\": 147.6, \"w\": 844.7759842519685, \"h\": 316.79999999999995}, \"after\": {\"x\": 57.6, \"y\": 127.6, \"w\": 876.7759842519685, \"h\": 384.79999999999995}, \"reason\": \"same_uniform_plate_expansion\"}], \"text_sizes_pt\": [36.0, 22.0], \"expected_chart_types\": [], \"supplied_images\": []}], \"image_order\": [3], \"checks\": [\"text inside containers\", \"readable titles\", \"paragraph hierarchy\", \"unintended overlaps\"], \"reference_images\": [{\"image_position\": 2, \"for_slide\": 3, \"purpose\": \"content\", \"kind\": \"sanitized_template_artwork_not_output\", \"source_slide\": 2, \"derived_divider\": false}]}}"
+                "text": "{\"untrusted_input\": {\"slides\": [{\"slide\": 3, \"title\": \"Проверка результата\", \"authored_title_position\": false, \"layout\": \"columns\", \"purpose\": \"content\", \"field_safety\": [{\"role\": \"title\", \"index\": 0, \"status\": \"safe\", \"before\": {\"x\": 43.2, \"y\": 25.22503937007874, \"w\": 633.5999999999999, \"h\": 86.4}, \"reason\": null, \"recognition_mode\": \"flat_pixel_mask\", \"minimum_contrast\": 21.0, \"after\": {\"x\": 43.498911786417324, \"y\": 25.5, \"w\": 632.9841646161417, \"h\": 86.12503937007875}}, {\"role\": \"body\", \"index\": 0, \"status\": \"safe\", \"before\": {\"x\": 43.2, \"y\": 129.6, \"w\": 633.5999999999999, \"h\": 349.1750393700787}, \"reason\": null, \"recognition_mode\": \"flat_pixel_mask\", \"minimum_contrast\": 21.0, \"after\": {\"x\": 43.498911786417324, \"y\": 129.75, \"w\": 632.9841646161417, \"h\": 348.75}}], \"text_sizes_pt\": [44.0, 22.0], \"expected_chart_types\": [], \"supplied_images\": []}], \"image_order\": [3], \"checks\": [\"text inside containers\", \"readable titles\", \"paragraph hierarchy\", \"unintended overlaps\"], \"reference_images\": [{\"image_position\": 2, \"for_slide\": 3, \"purpose\": \"content\", \"kind\": \"sanitized_template_artwork_not_output\", \"source_slide\": 0, \"derived_divider\": false}, {\"image_position\": 3, \"for_slide\": 3, \"purpose\": \"content\", \"kind\": \"alternative_sanitized_style_reference_not_required_layout\", \"source_slide\": 1}]}}"
               },
               {
                 "type": "image_url",
@@ -2082,6 +2072,16 @@
                   "url": {
                     "width": 960,
                     "height": 540
+                  },
+                  "detail": "high"
+                }
+              },
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": {
+                    "width": 1440,
+                    "height": 810
                   },
                   "detail": "high"
                 }
@@ -2106,7 +2106,7 @@
           {
             "message": {
               "role": "assistant",
-              "content": "{\"checked_slides\": [3], \"findings\": []}"
+              "content": "{\"findings\": [], \"checked_slides\": [3]}"
             },
             "finish_reason": "stop"
           }
@@ -2274,7 +2274,7 @@
           {
             "message": {
               "role": "assistant",
-              "content": "{\"checked_slides\": [1, 2], \"findings\": []}"
+              "content": "{\"findings\": [], \"checked_slides\": [1, 2]}"
             },
             "finish_reason": "stop"
           }
@@ -2422,7 +2422,7 @@
           {
             "message": {
               "role": "assistant",
-              "content": "{\"checked_slides\": [3], \"findings\": []}"
+              "content": "{\"findings\": [], \"checked_slides\": [3]}"
             },
             "finish_reason": "stop"
           }

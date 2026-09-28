@@ -395,13 +395,27 @@ def _compose_slide(variant, package, index, image_groups=None):
 
     from .stacked_chart import adapt_stacked_scene
 
-    return adapt_stacked_scene(adapt_table_layout(scene, package), package)
+    scene = adapt_stacked_scene(adapt_table_layout(scene, package), package)
+    if slide.background_pattern_id:
+        from .background_selection import apply_background
+
+        selected = apply_background(scene, package, slide.background_pattern_id)
+        if selected is None:
+            raise ValueError("Выбранный фон больше не совместим с областями содержания")
+        return selected
+    return scene
 
 
 def compose_slide(variant, package, index, image_groups=None):
     """Try deterministic geometry before requesting any editorial rewrite."""
     scene = _compose_slide(variant, package, index, image_groups)
     slide = variant.slides[index]
+    if slide.pattern_id is None and slide.purpose not in ("cover", "divider"):
+        from .background_selection import master_fallback
+
+        selected = master_fallback(variant, package, index, scene, image_groups, _compose_slide)
+        if selected is not None:
+            return selected
     if slide.pattern_id is None and slide.layout == "chart":
         from .render import chart_fits
 
@@ -500,7 +514,9 @@ class CompositionSession:
 def compose_native(slide, package, index, variant):
     """Fit editable content into source zones; never substitute a generic full-slide design."""
     p = package.template
-    patterns = semantic_candidates(package, slide, index)
+    patterns = semantic_candidates(
+        package, slide, index, prefer_specialized=slide.pattern_id is None
+    )
     if slide.pattern_id is not None:
         patterns = [pattern for pattern in patterns if pattern.id == slide.pattern_id]
         if not patterns:

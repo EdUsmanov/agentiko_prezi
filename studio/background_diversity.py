@@ -10,6 +10,18 @@ def artwork_family(pattern):
         return "generic"
     path = Path(pattern.background_image) if pattern.background_image else None
     if path and path.is_file():
+        from .background_selection import flat_region
+        from .models import Box
+        from PIL import Image, UnidentifiedImageError
+
+        try:
+            with Image.open(path) as image:
+                width, height = image.size
+            color = flat_region(path, Box(x=0, y=0, w=width, h=height), width, height)
+            if color:
+                return "solid:" + color
+        except (OSError, UnidentifiedImageError):
+            pass
         return sha256(path.read_bytes()).hexdigest()
     return (
         f"source:{pattern.source_slide}"
@@ -29,13 +41,20 @@ def sequence_cost(families):
 
 def background_report(scenes, profile):
     patterns = {p.id: p for p in profile.patterns}
-    families = [artwork_family(patterns.get(s.pattern_id)) for s in scenes]
+    families = [
+        artwork_family(patterns.get(s.background_pattern_id or s.pattern_id))
+        if s.background_pattern_id or s.pattern_id
+        else "solid:" + s.background
+        for s in scenes
+    ]
     counts = Counter(families)
     return {
         "source_slides": [
-            getattr(patterns.get(s.pattern_id), "source_slide", None) for s in scenes
+            getattr(patterns.get(s.background_pattern_id or s.pattern_id), "source_slide", None)
+            for s in scenes
         ],
         "families": families,
+        "background_colors": dict(Counter(s.background for s in scenes)),
         "unique_backgrounds": len(counts),
         "largest_use": max(counts.values(), default=0),
         "adjacent_repeats": sum(a == b for a, b in zip(families, families[1:])),
@@ -48,26 +67,31 @@ def diversify_backgrounds(variant, package, composition_cache=None):
     from .contracts import candidates
     from .audit import repair_scenes
     from .quality import candidate_regressions
+    from .background_selection import background_candidates, apply_background, preserves_data_space
 
     cache = composition_cache or CompositionSession(package)
     original = cache.variant(variant)
     repair_scenes(original, package)
     patterns = {p.id: p for p in package.template.patterns}
     families = {p.id: artwork_family(p) for p in package.template.patterns}
+    donors = background_candidates(package)
     choices = []
     blocked = []
     for index, (slide, scene) in enumerate(zip(variant.slides, original)):
-        base_family = families.get(scene.pattern_id, "generic")
-        options = {base_family: (scene.pattern_id, scene, False)}
+        base_family = families.get(
+            scene.background_pattern_id or scene.pattern_id, "solid:" + scene.background
+        )
+        options = {base_family: (scene.pattern_id, scene.background_pattern_id, scene, False)}
         if scene.purpose not in ("cover", "divider") and not any(
             e.image_id for e in scene.elements
         ):
-            for pattern in candidates(package, slide, index, source_slides_only=True):
+            for pattern in candidates(package, slide, index, prefer_specialized=False):
                 family = families[pattern.id]
                 if family in options:
                     continue
                 trial = variant.model_copy(deep=True)
                 trial.slides[index].pattern_id = pattern.id
+                trial.slides[index].background_pattern_id = None
                 try:
                     result = cache.slide(trial, index)
                     repair_scenes([result], package)
@@ -75,9 +99,20 @@ def diversify_backgrounds(variant, package, composition_cache=None):
                     continue
                 if result.pattern_id != pattern.id or result.strategy != "native_template":
                     continue
-                if candidate_regressions([scene], [result], package):
+                if not preserves_data_space(scene, result) or candidate_regressions(
+                    [scene], [result], package
+                ):
                     continue
-                options[family] = (pattern.id, result, True)
+                options[family] = (pattern.id, None, result, True)
+            if scene.strategy == "token_composition" and not scene.pattern_id:
+                for pattern in donors:
+                    family = families[pattern.id]
+                    if family in options:
+                        continue
+                    result = apply_background(scene, package, pattern.id)
+                    if result is None or candidate_regressions([scene], [result], package):
+                        continue
+                    options[family] = ("token:auto", pattern.id, result, True)
         if len(options) == 1:
             blocked.append(index + 1)
         choices.append(options)
@@ -86,7 +121,7 @@ def diversify_backgrounds(variant, package, composition_cache=None):
     beam = [([], [], 0)]
     for options in choices:
         trials = [
-            (fs + [family], selected + [option], changes + int(option[2]))
+            (fs + [family], selected + [option], changes + int(option[3]))
             for fs, selected, changes in beam
             for family, option in options.items()
         ]
@@ -100,16 +135,18 @@ def diversify_backgrounds(variant, package, composition_cache=None):
     plan = variant.model_copy(deep=True)
     scenes = []
     changes = []
-    for index, (pid, scene, changed) in enumerate(selected):
+    for index, (pid, background_id, scene, changed) in enumerate(selected):
         scenes.append(scene)
         if changed:
             plan.slides[index].pattern_id = pid
+            plan.slides[index].background_pattern_id = background_id
             changes.append(
                 {
                     "slide": index + 1,
                     "from": original[index].pattern_id,
                     "to": pid,
-                    "source_slide": patterns[pid].source_slide,
+                    "background_pattern_id": background_id,
+                    "source_slide": patterns[background_id or pid].source_slide,
                 }
             )
     report = {
@@ -117,6 +154,6 @@ def diversify_backgrounds(variant, package, composition_cache=None):
         "after": background_report(scenes, package.template),
         "changes": changes,
         "slides_without_safe_alternative": blocked,
-        "policy": "source_artwork_with_quality_guards",
+        "policy": "source_layouts_and_sanitized_backgrounds_with_quality_guards",
     }
     return plan, scenes, report

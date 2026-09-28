@@ -185,10 +185,21 @@ def clean_base(source, profile):
 
 
 def render_pptx(scenes, profile, source, path, verify_text=True):
+    from types import SimpleNamespace
+    from .background_selection import background_is_safe
+
+    # Reject stale/unsafe background selections before writing any output.
+    if any(not background_is_safe(s, SimpleNamespace(template=profile)) for s in scenes):
+        raise ValueError("Выбранный фон больше не совместим с содержимым")
     prs = clean_base(source, profile)
     for scene in scenes:
         pattern = next(
-            (p for p in profile.patterns if p.id == scene.pattern_id and p.title_zone), None
+            (
+                p
+                for p in profile.patterns
+                if p.id == (scene.pattern_id or scene.background_pattern_id)
+            ),
+            None,
         )
         if pattern:
             slide = source_slide(prs, pattern)

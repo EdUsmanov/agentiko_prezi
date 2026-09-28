@@ -5,6 +5,7 @@ from .repair_errors import RepairIssue
 
 FIT_CODES = frozenset(
     {
+        "background_conflict",
         "container_overflow",
         "out_of_bounds",
         "text_overflow",

@@ -42,6 +42,8 @@ def apply_edits(package, plans, decks, edits, allowed, composition_cache=None):
         ):
             raise ValueError("Repair outside the affected slide/candidate allowlist")
         seen.add(key)
+        # Geometry may change; never reuse an unchecked background with new boxes.
+        mapping[edit.variant].slides[edit.slide - 1].background_pattern_id = None
         if edit.operation == "change_layout":
             mapping[edit.variant].slides[edit.slide - 1].pattern_id = edit.pattern_id
         else:

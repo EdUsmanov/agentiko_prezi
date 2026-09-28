@@ -103,7 +103,9 @@ def extractive_plans(package):
 
 def validate_plans(plans, package):
     from .sections import divider_members
+    from .background_selection import background_candidates
 
+    backgrounds = {p.id for p in background_candidates(package)}
     chapters = divider_members(package)
     if [v.key for v in plans.variants] != list(NAMES):
         raise ValueError("Нужны три уникальных варианта в заданном порядке")
@@ -134,6 +136,13 @@ def validate_plans(plans, package):
             ]:
                 raise ValueError("Разделители нарушили порядок или состав исходного материала")
         for si, slide in enumerate(variant.slides):
+            if slide.background_pattern_id and (
+                slide.background_pattern_id not in backgrounds
+                or slide.pattern_id not in (None, "token:auto")
+                or slide.purpose in ("cover", "divider")
+                or slide.layout == "divider"
+            ):
+                raise ValueError("Несовместимый фон свободной компоновки")
             if slide.layout == "divider":
                 available = {
                     p.id for p in package.template.patterns if p.role == "divider" and p.title_zone
@@ -227,6 +236,7 @@ def assign_compositions(plans, package):
             # Semantic planning cannot pin an untested physical layout. Design
             # assigns pattern IDs only AFTER this unconstrained fit baseline.
             slide.pattern_id = None
+            slide.background_pattern_id = None
             if slide.table_id:
                 table = tables[slide.table_id]
                 if table.visualization != "auto":
@@ -375,6 +385,8 @@ def planning_schema(package):
     definitions = schema["$defs"]
     definitions["VariantPlan"]["properties"]["key"] = {"type": "string", "const": "executive"}
     definitions["SlidePlan"]["properties"]["pattern_id"] = {"type": "null"}
+    # Physical background selection belongs to server composition, not the model.
+    definitions["SlidePlan"]["properties"].pop("background_pattern_id")
     definitions["SlidePlan"]["properties"]["layout"]["enum"] = [
         "statement",
         "split",

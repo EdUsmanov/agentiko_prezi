@@ -135,8 +135,10 @@ def candidates(package, slide, index=0, *, source_slides_only=False, prefer_spec
                     exact.append(pattern)
             if exact:
                 return exact
-    if package.analysis.get("editorial") and getattr(
-        getattr(package, "constraints", None), "summarize", False
+    if (
+        prefer_specialized
+        and package.analysis.get("editorial")
+        and getattr(getattr(package, "constraints", None), "summarize", False)
     ):
         authored = [p for p in available if p.source_slide and p.fields]
         if authored:

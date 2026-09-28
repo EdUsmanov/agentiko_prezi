@@ -147,6 +147,7 @@ class MeaningfulDiversity(StageResult):
 
 
 class BackgroundDiversity(StageResult):
+    background_colors: dict[str, int] = Field(default_factory=dict)
     source_slides: list[int | None]
     families: list[str]
     unique_backgrounds: int = Field(ge=0)

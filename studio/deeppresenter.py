@@ -397,7 +397,10 @@ async def design(package, plans, gateway, workspace, timeout):
         }
     )
     payload = {
-        "plans": plans.model_dump(),
+        # Background selection is server-owned and runs after Design.
+        "plans": plans.model_dump(
+            exclude={"variants": {"__all__": {"slides": {"__all__": {"background_pattern_id"}}}}}
+        ),
         "facts": [{"id": f.id, "text": f.text} for f in package.content.facts],
         "catalog": catalog,
         "color_schemes": agent_color_context(package.template)["source_schemes"],

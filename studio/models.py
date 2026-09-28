@@ -159,6 +159,7 @@ class SlidePlan(StrictModel):
     table_id: str | None = None
     role: Literal["context", "insight", "evidence", "action", "appendix"] = "insight"
     pattern_id: str | None = None
+    background_pattern_id: str | None = None
     purpose: Archetype | Literal["auto"] = "auto"
     chart_type: Literal["auto", "bar", "column", "column_stacked", "line", "pie"] = "auto"
     chart_style: Literal["standard", "readable"] = "standard"
@@ -228,6 +229,7 @@ class SlideScene(StrictModel):
     layout: str
     purpose: Archetype | Literal["auto"] = "auto"
     pattern_id: str | None = None
+    background_pattern_id: str | None = None
     strategy: str = "token_composition"
     notes: str = ""
 
