@@ -94,6 +94,10 @@ def primitives(element, profile):
 def chart_fits(element, profile):
     """Validate actual chart label/bar geometry, not just its enclosing box."""
     if element.series_values:
+        if element.chart_type == "column_stacked":
+            from .stacked_chart import stacked_layout
+
+            return stacked_layout(element, profile)["fits"]
         # Native charts own axis layout. This is only a minimum-size guard;
         # actual label clipping is checked on the rendered PPTX by vision.
         from .charts import chart_caption_layout

@@ -393,7 +393,9 @@ def _compose_slide(variant, package, index, image_groups=None):
         scene.notes += "\nИсточники:\n" + "\n".join(urls)
     from .table_layout import adapt_table_layout
 
-    return adapt_table_layout(scene, package)
+    from .stacked_chart import adapt_stacked_scene
+
+    return adapt_stacked_scene(adapt_table_layout(scene, package), package)
 
 
 def compose_slide(variant, package, index, image_groups=None):

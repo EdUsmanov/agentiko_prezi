@@ -134,6 +134,11 @@ def chart_caption_layout(rows, width, profile):
 
 
 def render_chart(slide, e, profile):
+    if e.chart_type == "column_stacked":
+        from .stacked_chart import render_stacked_chart
+
+        return render_stacked_chart(slide, e, profile)
+
     from pptx.chart.data import CategoryChartData
     from pptx.enum.chart import XL_CHART_TYPE, XL_LEGEND_POSITION, XL_LABEL_POSITION
     from pptx.util import Pt

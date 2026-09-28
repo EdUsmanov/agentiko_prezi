@@ -93,6 +93,7 @@ TEMPLATE_DEPENDENCIES = [
     "studio/export_audit.py",
     "studio/charts.py",
     "studio/chart_layout.py",
+    "studio/stacked_chart.py",
     "studio/table_style.py",
     "studio/metrics.py",
     "studio/template_analysis.py",
