@@ -120,6 +120,15 @@ def fact_elements(facts, box, profile, color, heading_zone=None, field_style=Non
         },
         reverse=True,
     )
+    # Measure exactly the marker that will be rendered. A single paragraph,
+    # source note or heading must not lose width to an invisible bullet.
+    bullets = [
+        fact.list_item
+        or len(facts) > 1
+        and not fact.text.startswith(("Источник:", "Source:"))
+        and not fact.text.endswith(":")
+        for fact in facts
+    ]
 
     def layout(size):
         gap = size * 0.5
@@ -129,12 +138,13 @@ def fact_elements(facts, box, profile, color, heading_zone=None, field_style=Non
                     f.text,
                     profile.font_file,
                     size,
-                    (box.w - size * 1.4) * (0.94 if f.emphasis else 1),
+                    (box.w - (size * 1.4 if bullet else 0))
+                    * (0.94 if f.emphasis or resolved_style.get("bold") else 1),
                 )
             )
             * size
             * 1.25
-            for f in facts
+            for f, bullet in zip(facts, bullets)
         ]
         return gap, heights
 
@@ -143,14 +153,7 @@ def fact_elements(facts, box, profile, color, heading_zone=None, field_style=Non
         if sum(heights) + gap * (len(facts) - 1) <= box.h:
             break
     y = box.y
-    for fact, height, group in zip(facts, heights, originals):
-        # A list is still useful for legacy packages whose Markdown markers were lost.
-        bullet = (
-            fact.list_item
-            or len(facts) > 1
-            and not fact.text.startswith(("Источник:", "Source:"))
-            and not fact.text.endswith(":")
-        )
+    for fact, height, group, bullet in zip(facts, heights, originals, bullets):
         b = Box(x=box.x, y=y, w=box.w, h=height)
         e = Element(
             kind="text",

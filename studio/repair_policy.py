@@ -55,8 +55,40 @@ def scene_repair_issues(
     return issues
 
 
+def shortening_target(element, profile=None):
+    """A measured length hint, never a substitute for fit and meaning checks."""
+    size = 18 if element.role == "title" else 16
+    width = max(1, element.box.w - (size * 1.4 if element.bullet else 0))
+    width *= 0.94 if element.bold or element.bold_prefix else 1
+    lines = max(1, int(element.box.h / (size * 1.25)))
+    # A failed field must receive a smaller target, even when an approximate
+    # capacity calculation says its current character count fits already.
+    upper = max(1, len(element.text) - 1)
+    if profile is None:
+        return min(upper, max(1, int(width / 9) * lines))
+    from .fonts import element_font, text_width, wrap_text
+
+    font_file = element_font(profile, element)[1]
+    low, high = 0, upper
+    while low < high:
+        count = (low + high + 1) // 2
+        wrapped = wrap_text(element.text[:count], font_file, size, width)
+        if len(wrapped) <= lines and all(
+            text_width(line, font_file, size) <= width for line in wrapped
+        ):
+            low = count
+        else:
+            high = count - 1
+    return max(1, len(element.text[:low].rstrip()))
+
+
 def scene_fit_feedback(
-    scene: SlideScene, findings: list[Finding], slide: int, editable_fact_ids: set[str]
+    scene: SlideScene,
+    findings: list[Finding],
+    slide: int,
+    editable_fact_ids: set[str],
+    *,
+    profile=None,
 ) -> dict:
     issues = scene_repair_issues(scene, findings, slide, editable_fact_ids)
     text_indices = {issue.element for issue in issues if issue.action == "shorten_text"}
@@ -79,9 +111,7 @@ def scene_fit_feedback(
                 "minimum_font_size": 18 if element.role == "title" else 16,
                 "width": round(element.box.w),
                 "height": round(element.box.h),
-                "target_max_characters": max(
-                    12, int(element.box.w / 9) * max(1, int(element.box.h / 22))
-                ),
+                "target_max_characters": shortening_target(element, profile),
             }
             for index, element in enumerate(scene.elements)
             if index in text_indices
