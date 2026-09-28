@@ -6,7 +6,7 @@ text in a general field rather than inventing a participant/value association.
 """
 
 import re
-from .content_sources import body_and_title_sources
+from .content_sources import package_sources
 
 
 def inline_group_text(label, texts):
@@ -69,7 +69,7 @@ def canonicalize_storyboard(plans, package):
 
 
 def content_groups(slide, package):
-    facts, _ = body_and_title_sources(slide, package.content)
+    facts, _ = package_sources(slide, package)
     ids = {f.id for f in facts}
     for binding in package.analysis.get("editorial", {}).get("bindings", []):
         if set(binding["fact_ids"]) == ids and binding["purpose"] == slide.purpose:
@@ -185,7 +185,7 @@ def binding_report(slide, package, pattern, visuals=None):
         if visuals is not None:
             shape_id = next(v["shape_id"] for v in visuals if v.get("table_id") == slide.table_id)
         else:
-            body, _ = body_and_title_sources(slide, package.content)
+            body, _ = package_sources(slide, package)
             tables = {t.id for t in package.content.tables}
             prose = [f.text for f in body if f.source not in tables]
             _, field, _ = table_region(
@@ -390,7 +390,7 @@ def object_contract(slide, package, pattern, images=()):
     }
     assignments[str(title["shape_id"])]["paragraphs"] = [slide.title]
     visuals = []
-    body, _ = body_and_title_sources(slide, package.content)
+    body, _ = package_sources(slide, package)
     tables = {t.id: t for t in package.content.tables}
     body = labeled_facts([f for f in body if f.source not in tables], package)
     regions = [

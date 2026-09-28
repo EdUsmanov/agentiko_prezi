@@ -3,7 +3,8 @@ from .models import Box, Element, SlideScene
 from .fonts import wrap_text, role_font, element_font, table_cell_fits
 from .content import numeric_column
 from .template_geometry import contrast, minimum_text_contrast
-from .contracts import body_and_title_sources, candidates as semantic_candidates
+from .contracts import candidates as semantic_candidates
+from .content_sources import package_sources
 from .field_style import field_style, styled_profile
 from .table_style import column_widths, row_heights
 
@@ -70,7 +71,7 @@ def compose(slide, package, index, variant):
     p = package.template
     w, h, m = p.width, p.height, p.margin
     _facts = {f.id: f for f in package.content.facts}
-    relevant, title_ids = body_and_title_sources(slide, package.content)
+    relevant, title_ids = package_sources(slide, package)
     tables = {t.id: t for t in package.content.tables}
     elements = []
     top_assets = [a for a in p.assets if a.box.y < h * 0.15]
@@ -362,7 +363,7 @@ def _compose_slide(variant, package, index, image_groups=None):
                 )
                 scene.elements[i].background_hint = element.background_hint
                 scene.elements[i].field_style = element.field_style
-    _, title_ids = body_and_title_sources(slide, package.content)
+    _, title_ids = package_sources(slide, package)
     for element in scene.elements:
         if element.role == "title":
             element.source_ids = title_ids
@@ -529,7 +530,7 @@ def compose_native(slide, package, index, variant):
         return None
     _facts = {f.id: f for f in package.content.facts}
     tables = {t.id: t for t in package.content.tables}
-    relevant, title_ids = body_and_title_sources(slide, package.content)
+    relevant, title_ids = package_sources(slide, package)
     body = [f for f in relevant if f.source not in tables]
     if len({f.source for f in relevant if f.source in tables}) > 1:
         raise ValueError("Несколько таблиц на одном слайде: увеличьте число слайдов")

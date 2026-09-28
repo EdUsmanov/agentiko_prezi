@@ -13,12 +13,13 @@ def contained(image, box):
 def compose_images(slide, package, index, variant, images):
     from .text_composer import text_element, fact_elements
     from .audit import audit_scenes
-    from .contracts import body_and_title_sources, candidates as semantic_candidates
+    from .contracts import candidates as semantic_candidates
+    from .content_sources import package_sources
 
     p = package.template
     facts = {f.id: f for f in package.content.facts}
     tables = {t.id: t for t in package.content.tables}
-    relevant, title_ids = body_and_title_sources(slide, package.content)
+    relevant, title_ids = package_sources(slide, package)
     from .semantic_bindings import labeled_facts
 
     body = labeled_facts([f for f in relevant if f.source not in tables], package)
