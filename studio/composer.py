@@ -391,7 +391,9 @@ def _compose_slide(variant, package, index, image_groups=None):
     )
     if urls:
         scene.notes += "\nИсточники:\n" + "\n".join(urls)
-    return scene
+    from .table_layout import adapt_table_layout
+
+    return adapt_table_layout(scene, package)
 
 
 def compose_slide(variant, package, index, image_groups=None):

@@ -179,3 +179,41 @@ def test_numeric_repair_hints_find_sources_without_silencing_validation():
     assert numeric_evidence_hints(plan, [1], source)[0]["candidate_evidence"] == []
     with pytest.raises(ValueError, match="Unsupported number"):
         validate_plan(plan, source, (1, 1))
+
+
+@pytest.mark.parametrize("seed", [17, 29, 43, 71])
+def test_table_and_explanation_reallocate_space_without_losing_data(template, tmp_path, seed):
+    from studio.audit import audit_scenes
+    from studio.repair_policy import FIT_CODES
+
+    package = package_with_data(template, tmp_path, seed)
+    package.template.width = 720
+    package.template.height = 405
+    package.template.body_size = 16
+    package.template.title_size = 20
+    table = package.content.tables[0]
+    table.visualization = "table"
+    table.headers = ["Период", "Запланировано задач", "Выполнено задач", "Выполнение плана"]
+    table.rows = [[str(i), "40", "36", "90%"] for i in range(1, 7)]
+    expected = deepcopy([table.headers] + table.rows)
+    narrative_storyboard(package)
+    assert package.analysis["slide_budget"]["status"] == "adjusted"
+    variant = VariantPlan(key="executive", title="Output", slides=package.analysis["storyboard"])
+    scene = compose_slide(variant, package, 0)
+    repair_scenes([scene], package)
+    actual = next(e for e in scene.elements if e.kind == "table")
+    assert actual.rows == expected
+    assert actual.size >= 16
+    assert any(e.text == "Delivery became more predictable." for e in scene.elements)
+    assert not [f for f in audit_scenes([scene], package) if f.code in FIT_CODES]
+
+
+def test_dense_table_remains_blocked_without_dropping_rows(template, tmp_path):
+    package = package_with_data(template, tmp_path, 17)
+    table = package.content.tables[0]
+    table.visualization = "table"
+    table.rows *= 20
+    expected = deepcopy(table.rows)
+    narrative_storyboard(package)
+    assert package.analysis["slide_budget"]["status"] == "needs_input"
+    assert table.rows == expected
