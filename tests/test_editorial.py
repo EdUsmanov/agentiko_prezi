@@ -333,6 +333,34 @@ def test_numbers_from_uncited_facts_do_not_support_a_claim():
         validate_plan(raw, c, (1, 1))
 
 
+def test_spelled_ordinals_ground_numeric_step_labels():
+    c = parse_content(
+        "Первый этап — сбор требований. Второй этап — разработка. Третий этап — запуск."
+    )
+    raw = {
+        "slides": [
+            {
+                "title": "План запуска",
+                "purpose": "process",
+                "bullets": [
+                    {
+                        "group": f"Этап {i}",
+                        "text": fact.text,
+                        "evidence": [{"fact_id": fact.id}],
+                    }
+                    for i, fact in enumerate(c.facts, 1)
+                ],
+            }
+        ]
+    }
+    validate_plan(raw, c, (1, 1))
+
+    unsupported = deepcopy(raw)
+    unsupported["slides"][0]["bullets"][0]["group"] = "Этап 4"
+    with pytest.raises(ValueError, match="Unsupported number.*4"):
+        validate_plan(unsupported, c, (1, 1))
+
+
 def test_timeline_requires_grounded_time_labels_and_numbers():
     from studio.editorial_patch_validation import numeric_evidence_hints
 

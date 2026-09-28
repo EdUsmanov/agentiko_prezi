@@ -60,11 +60,35 @@ class EditorialReview(StrictModel):
     explanation: str = Field(default="", max_length=800)
 
 
+_ORDINAL_WORDS = {
+    "1": r"перв(?:ый|ая|ое|ые|ого|ой|ому|ым|ом|ую|ых|ыми)|first",
+    "2": r"втор(?:ой|ая|ое|ые|ого|ому|ым|ом|ую|ых|ыми)|second",
+    "3": r"трет(?:ий|ья|ье|ьи|ьего|ьей|ьему|ьим|ьем|ью|ьих|ьими)|third",
+    "4": r"четвёрт(?:ый|ая|ое|ые|ого|ой|ому|ым|ом|ую|ых|ыми)|четверт(?:ый|ая|ое|ые|ого|ой|ому|ым|ом|ую|ых|ыми)|fourth",
+    "5": r"пят(?:ый|ая|ое|ые|ого|ой|ому|ым|ом|ую|ых|ыми)|fifth",
+    "6": r"шест(?:ой|ая|ое|ые|ого|ому|ым|ом|ую|ых|ыми)|sixth",
+    "7": r"седьм(?:ой|ая|ое|ые|ого|ому|ым|ом|ую|ых|ыми)|seventh",
+    "8": r"восьм(?:ой|ая|ое|ые|ого|ому|ым|ом|ую|ых|ыми)|eighth",
+    "9": r"девят(?:ый|ая|ое|ые|ого|ой|ому|ым|ом|ую|ых|ыми)|ninth",
+    "10": r"десят(?:ый|ая|ое|ые|ого|ой|ому|ым|ом|ую|ых|ыми)|tenth",
+}
+_ORDINAL_PATTERNS = {
+    number: re.compile(r"\b(?:" + words + r")\b", re.IGNORECASE)
+    for number, words in _ORDINAL_WORDS.items()
+}
+
+
 def nums(text):
-    return Counter(
+    """Normalize digits and spelled ordinals in cited facts to the same value."""
+    values = Counter(
         n.replace(",", ".")
         for n in re.findall(r"[-−+]?\d+(?:[.,]\d+)?", re.sub(r"(?<=\d)[-–—](?=\d)", " ", text))
     )
+    for number, pattern in _ORDINAL_PATTERNS.items():
+        count = len(pattern.findall(text))
+        if count:
+            values[number] += count
+    return values
 
 
 _TIME_WORD_STEMS = (

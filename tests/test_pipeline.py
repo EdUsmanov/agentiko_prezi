@@ -93,6 +93,23 @@ def test_no_default_padding(prepared):
     assert all(len(v.slides) == 1 for v in plans.variants)
 
 
+def test_small_generic_footer_uses_readable_template_color(prepared):
+    from studio.composer import compose
+    from studio.template_geometry import contrast, minimum_text_contrast
+
+    _, _, package = prepared
+    package.template.background = "#FFFFFF"
+    package.template.foreground = "#0077FF"
+    package.template.colors = ["#FFFFFF", "#0077FF", "#005EFF"]
+    package.template.font_sizes = [12, 20, 32]
+    slide = extractive_plans(package).variants[0].slides[0]
+    slide.pattern_id = "token:auto"
+    scene = compose(slide, package, 0, "executive")
+    footer = next(element for element in scene.elements if element.role == "footer")
+    assert footer.color == "#005EFF"
+    assert contrast(footer.color, scene.background) >= minimum_text_contrast(footer.size)
+
+
 def test_one_slide_table_still_has_three_variants(prepared):
     from studio.composer import compose_variant
 

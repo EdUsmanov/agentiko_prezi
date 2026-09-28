@@ -2,7 +2,7 @@ from .text_composer import text_element as text_element, fact_elements as fact_e
 from .models import Box, Element, SlideScene
 from .fonts import wrap_text, role_font, element_font, table_cell_fits
 from .content import numeric_column
-from .template_geometry import contrast
+from .template_geometry import contrast, minimum_text_contrast
 from .contracts import body_and_title_sources, candidates as semantic_candidates
 from .field_style import field_style, styled_profile
 from .table_style import column_widths, row_heights
@@ -255,15 +255,29 @@ def compose(slide, package, index, variant):
                 )
             )
     footer_size = min(p.font_sizes, key=lambda s: abs(s - 10))
-    elements.append(
-        text_element(
-            f"{index + 1:02d}",
-            Box(x=w - m - 35, y=h - max(m * 0.6, footer_size * 1.5 + 4), w=35, h=footer_size * 1.5),
-            p,
-            "footer",
-            footer_size,
-        )
+    footer = text_element(
+        f"{index + 1:02d}",
+        Box(x=w - m - 35, y=h - max(m * 0.6, footer_size * 1.5 + 4), w=35, h=footer_size * 1.5),
+        p,
+        "footer",
+        footer_size,
     )
+    if contrast(footer.color, p.background) < minimum_text_contrast(footer.size, footer.bold):
+        readable = [
+            color
+            for color in p.colors
+            if contrast(color, p.background) >= minimum_text_contrast(footer.size, footer.bold)
+        ]
+        if readable:
+            original = tuple(int(footer.color[i : i + 2], 16) for i in (1, 3, 5))
+            footer.color = min(
+                readable,
+                key=lambda color: sum(
+                    (int(color[i : i + 2], 16) - original[channel]) ** 2
+                    for channel, i in enumerate((1, 3, 5))
+                ),
+            )
+    elements.append(footer)
     for asset in p.assets:
         elements.append(Element(kind="image", box=asset.box, image_path=asset.path, role="brand"))
     # Adapt safe text zones from an observed ordinary slide when they fit.

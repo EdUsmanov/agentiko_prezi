@@ -5,11 +5,9 @@ services:
     init: true
     ports:
       - "8765:8765"
-    # .env не обязателен: без него сервис работает в автономном extractive-режиме.
-    # Скопируйте .env.example или .env.team в .env для API-режима модели.
-    env_file:
-      - path: .env
-        required: false
+    # Для совместимости с Docker Compose 2.3 нужен строковый env_file.
+    # Создайте .env из .env.example; API-режим требует ключ модели.
+    env_file: .env
     environment:
       STUDIO_DATA_DIR: /app/data
       STUDIO_PORT: "8765"
