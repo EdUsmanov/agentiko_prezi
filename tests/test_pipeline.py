@@ -29,6 +29,13 @@ def test_three_variants_exports_and_coverage(prepared):
         assert {i for s in variant["slides"] for i in s["fact_ids"]} == expected
         signatures.append([(s["fact_ids"], s["layout"]) for s in variant["slides"]])
         folder = root / variant["key"]
+        exported_scenes = json.loads((folder / "slides.json").read_text())
+        assert [s["pattern_id"] for s in variant["slides"]] == [
+            s["pattern_id"] or "token:auto" for s in exported_scenes
+        ]
+        assert [s.get("background_pattern_id") for s in variant["slides"]] == [
+            s.get("background_pattern_id") for s in exported_scenes
+        ]
         deck = Presentation(folder / "deck.pptx")
         assert len(deck.slides) == 5
         assert all(any(sh.has_text_frame for sh in slide.shapes) for slide in deck.slides)

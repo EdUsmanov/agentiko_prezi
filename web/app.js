@@ -162,6 +162,24 @@ for (const type of ['dragover','dragleave','drop']) $('#dropzone').addEventListe
     $('#template').files = event.dataTransfer.files; selectedFile();
   }
 });
+function archetypeSummary(analysis) {
+  const report = analysis.archetypes;
+  if (report?.method === 'reviewed_editorial_groups') {
+    // Older saved analyses stored only an empty classifier list. Their reviewed
+    // editorial groups are already present in the narrative report.
+    const groups = report.reviewed_groups ?? analysis.narrative?.groups;
+    if (report.status === 'completed' && Array.isArray(groups) && groups.length) {
+      return `Слайдов с определённым назначением в редакторском плане: ${groups.length}`;
+    }
+    return 'Нет данных о назначении слайдов';
+  }
+  if (report?.status === 'degraded') return 'частично: неподтверждённые блоки сохранены как обычный текст';
+  if (report?.status === 'completed') {
+    const count = Array.isArray(report.units) ? report.units.length : 0;
+    return count ? `Смысловых блоков проверено по каталогу: ${count}` : 'Нет данных о проверенных смысловых блоках';
+  }
+  return 'не определялись — нужен новый анализ в режиме LLM';
+}
 function displayProfile(job) {
   packageId = job.id;
   armAutoGeneration(job);
@@ -199,7 +217,7 @@ function displayProfile(job) {
     const rows = [['Технический разбор','выполнен'],
       ['Смысловой анализ шаблона',analysis.template_semantics?.status === 'completed' ? (analysis.template_semantics.method === 'text_geometry_and_source_images' ? 'текст, геометрия и изображения, VL' : 'текст и геометрия, LLM') : analysis.template_semantics?.status === 'partial' ? 'частично: непроверенные макеты исключены' : 'не выполнен'],
       ['Структура документа',analysis.document_structure?.status === 'completed' ? 'заголовки, содержание и указания выделены' : analysis.document_structure?.status === 'degraded' ? 'частично по модели; остальные блоки сохранены без сокращения' : 'детерминированный разбор'],
-      ['Архетипы содержания',analysis.archetypes?.status === 'completed' ? `${analysis.archetypes.units.length} смысловых блоков проверено по каталогу` : analysis.archetypes?.status === 'degraded' ? 'частично: неподтверждённые блоки сохранены как обычный текст' : 'не определялись — нужен новый анализ в режиме LLM'],
+      ['Архетипы содержания',archetypeSummary(analysis)],
       ['Разделители',analysis.section_dividers?.reason === 'reserved_before_content_allocation' ? 'зарезервированы в сценарии' : 'статус в отчёте анализа'],
       ['План содержания',analysis.planning_status === 'needs_input' ? 'нужно сократить материал' : analysis.planning_source === 'explicit_author_storyboard' ? 'по вашему сценарию' : analysis.planning_source === 'semantic_summary_storyboard' ? 'главные мысли и данные распределены моделью' : analysis.planning_source === 'model' ? 'подготовлен моделью' : 'экстрактивный'],
       ['Отрисовка макетов',`${analysis.native_render?.patterns || 0} композиций`],

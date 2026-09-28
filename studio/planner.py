@@ -5,6 +5,7 @@ from .models import Plans, VariantPlan, SlidePlan
 from .security import INJECTION
 from .content import numeric_column, slide_heading
 from .storyboard import planned_slide_count
+from .editorial_domain import nums
 
 NAMES = {
     "executive": "Главное и решения",
@@ -192,17 +193,15 @@ def validate_plans(plans, package):
                     "Нарушен явно заданный порядок и состав слайдов: используйте required_outline"
                 )
             evidence = (
-                " ".join(facts[f].text for f in slide.fact_ids)
-                + " "
+                "\n".join(facts[f].text for f in slide.fact_ids)
+                + "\n"
                 + package.content.title
-                + " "
-                + " ".join(facts[f].section for f in slide.fact_ids)
+                + "\n"
+                + "\n".join(facts[f].section for f in slide.fact_ids)
             )
             if INJECTION.search(slide.title):
                 raise ValueError("Инструкция вместо заголовка")
-            if not set(re.findall(r"\d+(?:[.,]\d+)?", slide.title)) <= set(
-                re.findall(r"\d+(?:[.,]\d+)?", evidence)
-            ):
+            if not set(nums(slide.title)) <= set(nums(evidence)):
                 raise ValueError("Неподтверждённое число в заголовке")
             if slide.table_id and (
                 slide.table_id not in tables

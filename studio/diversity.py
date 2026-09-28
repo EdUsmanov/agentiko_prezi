@@ -87,7 +87,23 @@ def ensure_diversity(decks, package):
                 )
                 if original_pattern and original_pattern.role == "cover":
                     continue
-                for pattern in package.template.patterns:
+                from .background_diversity import artwork_family, sequence_cost
+
+                patterns = {p.id: p for p in package.template.patterns}
+                families = [
+                    artwork_family(patterns.get(s.background_pattern_id or s.pattern_id))
+                    if s.background_pattern_id or s.pattern_id
+                    else "solid:" + s.background
+                    for s in layout_trial
+                ]
+                ranked = sorted(
+                    package.template.patterns,
+                    key=lambda p: (
+                        sequence_cost(families[:i] + [artwork_family(p)] + families[i + 1 :]),
+                        p.id,
+                    ),
+                )
+                for pattern in ranked:
                     if (
                         not pattern.title_zone
                         or not pattern.body_zones

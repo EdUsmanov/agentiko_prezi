@@ -305,3 +305,26 @@ def test_shared_field_label_does_not_repeat_existing_subject_or_drop_evidence():
     assert inline_group_text("Ильф", ["Ильфов пример."]) == "Ильф. Ильфов пример."
     assert inline_group_text("1", ["10 задач."]) == "1. 10 задач."
     assert inline_group_text("", ["Точный исходный факт."]) == "Точный исходный факт."
+
+
+def test_generic_asymmetric_panels_do_not_invent_agenda_hierarchy():
+    from studio.contracts import compatible
+    from studio.models import Pattern
+
+    pattern = Pattern(
+        id="asymmetric",
+        source_slide=0,
+        source_layout="Generic",
+        text_zones=[],
+        role="content",
+        title_zone=Box(x=20, y=20, w=900, h=60),
+        body_zones=[Box(x=20, y=120, w=400, h=320), Box(x=460, y=120, w=400, h=50)],
+        purpose="content",
+        graphic_kind="none",
+    )
+    for purpose in ("agenda", "comparison", "structure", "process"):
+        assert not compatible(pattern, SlidePlan(title="Темы", fact_ids=[], purpose=purpose))
+    # A generic content split remains available when no peer relationship is claimed.
+    assert compatible(pattern, SlidePlan(title="Обзор", fact_ids=[], purpose="content"))
+    pattern.body_zones[1].h = 250
+    assert compatible(pattern, SlidePlan(title="Темы", fact_ids=[], purpose="agenda"))

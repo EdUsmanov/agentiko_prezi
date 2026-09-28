@@ -49,14 +49,10 @@ async def prepare_intelligence(package, path, gateway, progress):
     progress("Выделяем смысловые разделы и размещаем разделители", 88)
     if not narrative:
         await prepare_sections(package, gateway)
-    from .archetypes import analyze_content_archetypes
+    from .archetypes import analyze_content_archetypes, reviewed_editorial_report
 
     if package.analysis.get("editorial"):
-        package.analysis["archetypes"] = {
-            "status": "completed",
-            "method": "reviewed_editorial_groups",
-            "units": [],
-        }
+        package.analysis["archetypes"] = reviewed_editorial_report(package)
     else:
         await analyze_content_archetypes(package, gateway, lambda message: progress(message, 89))
     from .storyboard import prepare_storyboard

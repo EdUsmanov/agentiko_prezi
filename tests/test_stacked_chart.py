@@ -107,7 +107,7 @@ def test_percent_values_keep_units_in_visible_labels(profile):
 def test_scene_uses_height_without_crossing_title_footer_or_prose(profile, width, height):
     from types import SimpleNamespace
     from studio.models import Constraints, ContentModel, Element, Fact, SlideScene
-    from studio.stacked_chart import adapt_stacked_scene
+    from studio.stacked_adaptation import adapt_stacked_scene
     from studio.audit import audit_scenes
     from studio.repair_policy import FIT_CODES
 

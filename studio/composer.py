@@ -101,7 +101,9 @@ def compose(slide, package, index, variant):
         raise ValueError("Шаблон не оставляет достаточно места для заголовка и содержания")
     gap = w * 0.025
     # Every fact is rendered, or represented by its full source table.
-    body = [f for f in relevant if f.source not in tables]
+    from .semantic_bindings import labeled_facts
+
+    body = labeled_facts([f for f in relevant if f.source not in tables], package)
     if slide.table_id:
         table = tables[slide.table_id]
         numeric = numeric_column(table)
@@ -393,7 +395,7 @@ def _compose_slide(variant, package, index, image_groups=None):
         scene.notes += "\nИсточники:\n" + "\n".join(urls)
     from .table_layout import adapt_table_layout
 
-    from .stacked_chart import adapt_stacked_scene
+    from .stacked_adaptation import adapt_stacked_scene
 
     scene = adapt_stacked_scene(adapt_table_layout(scene, package), package)
     if slide.background_pattern_id:
@@ -411,7 +413,7 @@ def compose_slide(variant, package, index, image_groups=None):
     scene = _compose_slide(variant, package, index, image_groups)
     slide = variant.slides[index]
     if slide.pattern_id is None and slide.purpose not in ("cover", "divider"):
-        from .background_selection import master_fallback
+        from .background_adaptation import master_fallback
 
         selected = master_fallback(variant, package, index, scene, image_groups, _compose_slide)
         if selected is not None:
@@ -545,6 +547,14 @@ def compose_native(slide, package, index, variant):
         return pattern.body_zones
 
     def elements_for(pattern):
+        from .semantic_bindings import bind_groups, labeled_facts
+
+        binding = bind_groups(slide, package, pattern)
+        render_body = (
+            body
+            if binding["status"] == "specialized" and not slide.table_id
+            else labeled_facts(body, package)
+        )
         foreground = pattern.foreground or p.foreground
         title = text_element(
             slide.title,
@@ -559,11 +569,8 @@ def compose_native(slide, package, index, variant):
         title.background_hint = pattern.title_background
         elements = [title]
         zones = zones_for(pattern)
-        from .semantic_bindings import bind_groups
-
-        binding = bind_groups(slide, package, pattern)
         if len(zones) == len(pattern.body_zones) and binding["status"] != "specialized":
-            for i, zone in enumerate(pattern.number_zones[: min(len(zones), len(body))]):
+            for i, zone in enumerate(pattern.number_zones[: min(len(zones), len(render_body))]):
                 if zone:
                     label = text_element(
                         f"{i + 1:02d}",
@@ -584,9 +591,9 @@ def compose_native(slide, package, index, variant):
                     table,
                     pattern,
                     p,
-                    bool(body),
+                    bool(render_body),
                     chart=slide.layout == "chart",
-                    body_texts=[f.text for f in body],
+                    body_texts=[f.text for f in render_body],
                 )
             except ValueError:
                 return None
@@ -634,7 +641,7 @@ def compose_native(slide, package, index, variant):
                         return None
                 else:
                     elements.append(element)
-            if body:
+            if render_body:
                 remaining = [zone for i, zone in enumerate(pattern.body_zones) if i != selected]
                 if remaining:
                     text_zone = max(remaining, key=lambda zone: zone.w * zone.h)
@@ -646,7 +653,7 @@ def compose_native(slide, package, index, variant):
                     )
                 elements.extend(
                     fact_elements(
-                        body,
+                        render_body,
                         text_zone,
                         p,
                         foreground,
@@ -707,14 +714,18 @@ def compose_native(slide, package, index, variant):
             else:
                 count = (
                     1
-                    if slide.purpose in ("comparison", "process", "timeline") and body
-                    else min(len(zones), len(body))
+                    if slide.purpose
+                    in ("comparison", "process", "timeline", "structure", "composition")
+                    and render_body
+                    else min(len(zones), len(render_body))
                 )
             for i, b in enumerate(zones[:count]):
                 if slide.layout == "split" and count == 2:
-                    group = body[:1] if i == 0 else body[1:]
+                    group = render_body[:1] if i == 0 else render_body[1:]
                 else:
-                    group = body[i * len(body) // count : (i + 1) * len(body) // count]
+                    group = render_body[
+                        i * len(render_body) // count : (i + 1) * len(render_body) // count
+                    ]
                 heading = (
                     pattern.heading_zones[i]
                     if len(zones) == len(pattern.body_zones) and i < len(pattern.heading_zones)

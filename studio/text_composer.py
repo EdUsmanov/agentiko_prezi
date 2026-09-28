@@ -11,8 +11,13 @@ def text_element(
 
     profile, resolved_style = styled_profile(profile, field_style, role)
     size = size or profile.body_size
+    minimum = 18 if role == "title" else 16 if source_ids else None
+    if minimum is not None:
+        size = max(size, minimum)
     family, font_file = role_font(profile, role)
     candidates = [s for s in profile.font_sizes if 10 <= s <= size]
+    if minimum is not None:
+        candidates.append(minimum)
     if role == "title":
         candidates.extend(range(18, int(size) + 1, 2))
     candidates = sorted(set(candidates + [size]), reverse=True)
@@ -112,11 +117,13 @@ def fact_elements(facts, box, profile, color, heading_zone=None, field_style=Non
     facts = [
         group[0].model_copy(update={"text": " ".join(f.text for f in group)}) for group in grouped
     ]
+    preferred_size = max(16, profile.body_size)
     sizes = sorted(
         {
-            profile.body_size,
+            preferred_size,
+            16,
             min(12, profile.body_size),
-            *[s for s in profile.font_sizes if 12 <= s <= profile.body_size],
+            *[s for s in profile.font_sizes if 12 <= s <= preferred_size],
         },
         reverse=True,
     )

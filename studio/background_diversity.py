@@ -116,6 +116,22 @@ def diversify_backgrounds(variant, package, composition_cache=None):
         if len(options) == 1:
             blocked.append(index + 1)
         choices.append(options)
+    from .scene_regions import unused_body_regions
+
+    empty_slots = {
+        id(option[2]): unused_body_regions(option[2], package)
+        for options in choices
+        for option in options.values()
+    }
+
+    def selection_score(row):
+        return (
+            sum(empty_slots[id(option[2])] for option in row[1]),
+            sequence_cost(row[0]),
+            row[2],
+            tuple(str(x[0]) for x in row[1]),
+        )
+
     # Bounded beam, deterministic tie-breaks. Cost considers the whole sequence,
     # including its immutable cover and specialised timelines/charts.
     beam = [([], [], 0)]
@@ -127,11 +143,9 @@ def diversify_backgrounds(variant, package, composition_cache=None):
         ]
         beam = sorted(
             trials,
-            key=lambda row: (sequence_cost(row[0]), row[2], tuple(str(x[0]) for x in row[1])),
+            key=selection_score,
         )[:96]
-    _, selected, _ = (
-        min(beam, key=lambda row: (sequence_cost(row[0]), row[2])) if beam else ([], [], 0)
-    )
+    _, selected, _ = min(beam, key=selection_score) if beam else ([], [], 0)
     plan = variant.model_copy(deep=True)
     scenes = []
     changes = []

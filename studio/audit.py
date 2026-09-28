@@ -45,6 +45,10 @@ def audit_scenes(scenes, package):
     used = set()
     seen = set()
     for si, s in enumerate(scenes, 1):
+        from .semantic_bindings import missing_editorial_labels
+
+        for label in missing_editorial_labels(s, package):
+            add("semantic_label_missing", f"Потеряна смысловая подпись: {label}", si)
         pattern = next((p for p in package.template.patterns if p.id == s.pattern_id), None)
         from .contracts import normalized, compatible
         from .models import SlidePlan

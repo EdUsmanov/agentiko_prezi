@@ -1,28 +1,24 @@
 """Native editable charts, grounded exclusively in source table cells."""
 
-import math
 import re
 from .models import Element
+from .numeric_text import numeric_cell
 
 
 def table_series(table):
     series = []
-    if len(table.rows) > 30:
+    if not table.rows or len(table.rows) > 30:
         return None
     for ci in range(1, len(table.headers)):
         values = []
         units = set()
         for row in table.rows:
-            match = re.fullmatch(
-                r"\s*([−\-+]?\d[\d\s]*(?:[.,]\d+)?)\s*(%|₽|руб\.?|млн|тыс\.?)?\s*", row[ci]
-            )
-            if not match:
+            parsed = numeric_cell(row[ci])
+            if parsed is None:
                 return None
-            number = float(match[1].replace(" ", "").replace(",", ".").replace("−", "-"))
-            if not math.isfinite(number):
-                return None
+            number, unit = parsed
             values.append(number)
-            units.add(match[2] or "")
+            units.add(unit)
         if len(units) > 1:
             return None
         series.append(values)
@@ -82,6 +78,9 @@ def chart_projection(table, *, compact_captions=False):
 
     headers = [plain_inline(c) for c in table.headers]
     rows = [[plain_inline(c) for c in row] for row in table.rows]
+    # A total is a supplement only when there are detail rows to plot.
+    # With totals alone it is the actual category; removing it creates an empty chart.
+    has_details = any(not re.match(r"^(?:всего|итого|total)\b", row[0], re.I) for row in rows)
     units = []
     for ci in range(1, len(headers)):
         suffixes = {re.sub(r"^[\s−\-+\d.,]+", "", row[ci]).strip() for row in rows}
@@ -91,7 +90,7 @@ def chart_projection(table, *, compact_captions=False):
     plotted = []
     supplement = []
     for row in rows:
-        total = bool(re.match(r"^(?:всего|итого|total)\b", row[0], re.I))
+        total = has_details and bool(re.match(r"^(?:всего|итого|total)\b", row[0], re.I))
         columns = list(range(1, len(headers))) if total else omitted
         if columns and (not compact_captions or total):
             supplement.append(
@@ -100,7 +99,11 @@ def chart_projection(table, *, compact_captions=False):
         if not total:
             plotted.append([row[0]] + [row[i] for i in selected])
     if compact_captions:
-        regular = [row for row in rows if not re.match(r"^(?:всего|итого|total)\b", row[0], re.I)]
+        regular = [
+            row
+            for row in rows
+            if not has_details or not re.match(r"^(?:всего|итого|total)\b", row[0], re.I)
+        ]
         supplement = [
             f"{headers[i]} ({headers[0]}): " + "; ".join(f"{row[0]} — {row[i]}" for row in regular)
             for i in omitted

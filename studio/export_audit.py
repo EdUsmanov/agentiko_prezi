@@ -503,6 +503,14 @@ def inspect_content(prs, variant, package):
                 images.add(digest(blob))
         text = "\n".join(texts)
         actual.append({"actual_text": text, "native_tables": tables})
+        for claim in getattr(package, "analysis", {}).get("editorial", {}).get("provenance", []):
+            label = claim.get("group", "")
+            if label and claim["fact_id"] in plan.fact_ids and not contains_text(text, label):
+                add(
+                    "semantic_label_missing",
+                    f"В тексте PPTX потеряна смысловая подпись: {label}",
+                    index,
+                )
         title = normalized(plan.title)
         matches = sum(normalized(t) == title for t in texts)
         if not matches:

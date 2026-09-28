@@ -32,9 +32,27 @@ def unused_body_regions(scene, package):
     if canvas > 0:
         from .models import Box
 
-        for field in pattern.fields:
-            if field.get("role") == "unused" and field.get("box"):
-                zone = Box.model_validate(field["box"])
-                if zone.w * zone.h >= canvas * 0.08:
-                    zones.append(zone)
-    return sum(not occupied(zone) for zone in zones)
+        removed = [
+            Box.model_validate(field["box"])
+            for field in pattern.fields
+            if field.get("role") == "unused" and field.get("box")
+        ]
+        # Several emptied cards can be conspicuous together even when each
+        # text field occupies less than 8% of the canvas. Ignore tiny metadata.
+        substantial = [zone for zone in removed if zone.w * zone.h >= canvas * 0.015]
+        collective = sum(zone.w * zone.h for zone in substantial) >= canvas * 0.08
+        zones.extend(zone for zone in substantial if collective or zone.w * zone.h >= canvas * 0.08)
+    empty = []
+    for zone in zones:
+        if occupied(zone):
+            continue
+        # A card can have both a body placeholder and its containing shape.
+        # Count this as one empty field, not two independent omissions.
+        if any(
+            min(z.x + z.w, zone.x + zone.w) - max(z.x, zone.x) >= min(z.w, zone.w) - 1
+            and min(z.y + z.h, zone.y + zone.h) - max(z.y, zone.y) >= min(z.h, zone.h) - 1
+            for z in empty
+        ):
+            continue
+        empty.append(zone)
+    return len(empty)

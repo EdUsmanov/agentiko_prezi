@@ -18,6 +18,37 @@ def inline_group_text(label, texts):
     return label + ". " + text
 
 
+def labeled_facts(facts, package):
+    """Keep editorial owners/steps visible when no separate heading is rendered."""
+    labels = {
+        row["fact_id"]: row.get("group", "")
+        for row in package.analysis.get("editorial", {}).get("provenance", [])
+    }
+    return [
+        fact.model_copy(update={"text": inline_group_text(labels.get(fact.id, ""), [fact.text])})
+        for fact in facts
+    ]
+
+
+def missing_editorial_labels(scene, package):
+    from .content_sources import normalized
+
+    headings = [
+        e.text for e in scene.elements if e.kind == "text" and e.role in ("subheading", "label")
+    ]
+    missing = []
+    for row in package.analysis.get("editorial", {}).get("provenance", []):
+        label = row.get("group", "")
+        if not label or row["fact_id"] not in scene.source_ids:
+            continue
+        texts = headings + [
+            e.text for e in scene.elements if e.kind == "text" and row["fact_id"] in e.source_ids
+        ]
+        if not any(" " + normalized(label) + " " in " " + normalized(text) + " " for text in texts):
+            missing.append(label)
+    return list(dict.fromkeys(missing))
+
+
 def canonicalize_storyboard(plans, package):
     """Three visual variants, one evidence allocation and narrative."""
     canonical = plans.variants[0].slides
@@ -361,7 +392,7 @@ def object_contract(slide, package, pattern, images=()):
     visuals = []
     body, _ = body_and_title_sources(slide, package.content)
     tables = {t.id: t for t in package.content.tables}
-    body = [f for f in body if f.source not in tables]
+    body = labeled_facts([f for f in body if f.source not in tables], package)
     regions = [
         (fields["body:" + str(i)], b.model_copy())
         for i, b in enumerate(pattern.body_zones)
@@ -448,7 +479,7 @@ def object_contract(slide, package, pattern, images=()):
         if not regions:
             raise ValueError("В макете нет поля для поясняющего текста")
         # No positional guess of comparison ownership in a generic contract.
-        if slide.purpose in ("comparison", "process", "timeline"):
+        if slide.purpose in ("comparison", "process", "timeline", "structure", "composition"):
             regions = [max(regions, key=lambda pair: pair[1].w * pair[1].h)]
         count = min(len(regions), len(body))
         for i, (field, box) in enumerate(regions[:count]):
@@ -457,7 +488,11 @@ def object_contract(slide, package, pattern, images=()):
                 paragraphs=[f.text for f in group], box=box.model_dump()
             )
     report = binding_report(slide, package, pattern, visuals)
-    if visuals and slide.purpose in ("comparison", "process", "timeline") and not slide.table_id:
+    if (
+        visuals
+        and slide.purpose in ("comparison", "process", "timeline", "structure", "composition")
+        and not slide.table_id
+    ):
         report.update(
             status="general",
             reason="Media shares the authored content area; complete source text is kept together",
