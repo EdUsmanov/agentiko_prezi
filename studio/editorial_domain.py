@@ -91,6 +91,23 @@ def nums(text):
     return values
 
 
+_PROCESS_POSITION_LABEL = re.compile(
+    r"(?:шаг|этап|пункт|step|stage|item)\s+([1-9][0-9]*)[.:]?", re.IGNORECASE
+)
+
+
+def claim_numbers(text: str, group: str, purpose: str, position: int) -> set[str]:
+    """Exclude only an explicit process label matching its one-based position.
+
+    Numbered layout labels are not measurements. Numbers inside the claim,
+    descriptive labels and dates still need evidence; semantic review continues
+    to check whether the source supports the process and its order.
+    """
+    label = _PROCESS_POSITION_LABEL.fullmatch(group.strip()) if purpose == "process" else None
+    structural = label is not None and int(label[1]) == position
+    return set(nums(text)) | (set() if structural else set(nums(group)))
+
+
 _TIME_WORD_STEMS = (
     "январ",
     "феврал",
@@ -307,8 +324,11 @@ def validate_plan(raw, content, bounds, character_budget=600, require_cover=Fals
                         )
                     )
                 # Repeating an evidenced value is valid; ownership/context are checked
-                # independently by the semantic reviewer. Include visible labels.
-                missing = set(nums(claim.text + " " + claim.group)) - set(nums(" ".join(evidence)))
+                # independently by the semantic reviewer. Only positional process
+                # labels are exempt; the claim itself always needs evidence.
+                missing = claim_numbers(claim.text, claim.group, slide.purpose, claim_index) - set(
+                    nums(" ".join(evidence))
+                )
                 if missing:
                     issues.append(
                         RepairIssue(

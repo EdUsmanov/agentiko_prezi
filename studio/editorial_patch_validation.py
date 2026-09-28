@@ -177,7 +177,7 @@ def numeric_evidence_hints(previous, allowed, content):
     Matching digits are candidates only: the model must verify attribution and
     units, and the independent semantic review still evaluates the final claim.
     """
-    from .editorial_domain import nums
+    from .editorial_domain import claim_numbers, nums
 
     facts = {fact.id: fact.text for fact in content.facts}
     fact_numbers = {fid: set(nums(text)) for fid, text in facts.items()}
@@ -187,7 +187,12 @@ def numeric_evidence_hints(previous, allowed, content):
         for claim_index, claim in enumerate(slide["bullets"], 1):
             cited = [e["fact_id"] for e in claim["evidence"]]
             supported = set().union(*(fact_numbers.get(fid, set()) for fid in cited))
-            missing = set(nums(claim["text"] + " " + claim["group"])) - supported
+            missing = (
+                claim_numbers(
+                    claim["text"], claim["group"], slide.get("purpose", "content"), claim_index
+                )
+                - supported
+            )
             if not missing:
                 continue
             candidates = [

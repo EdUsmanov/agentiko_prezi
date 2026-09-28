@@ -100,6 +100,14 @@ def chart_fits(element, profile):
 
         text, height = chart_caption_layout(element.rows, element.box.w, profile)
         available = element.box.h - height - (12 if text else 0)
+        if element.chart_type == "bar":
+            from .chart_layout import bar_layout
+
+            return (
+                len(element.labels) <= 30
+                and all(len(v) == len(element.labels) for v in element.series_values)
+                and bar_layout(element, profile, height + (12 if text else 0)).fits
+            )
         return (
             element.box.w >= 260
             and available >= 160

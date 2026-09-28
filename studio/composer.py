@@ -110,7 +110,7 @@ def compose(slide, package, index, variant):
             raise ValueError("Несколько таблиц на одном слайде: увеличьте число слайдов")
         visual_w = w - 2 * m if not body else (w - 2 * m) * 0.62
         table_x = m
-        if variant == "story":
+        if variant == "story" and slide.layout != "chart":
             visual_w *= 0.86
             if not body:
                 table_x = m + (w - 2 * m - visual_w) / 2
@@ -398,6 +398,28 @@ def compose_slide(variant, package, index, image_groups=None):
     """Try deterministic geometry before requesting any editorial rewrite."""
     scene = _compose_slide(variant, package, index, image_groups)
     slide = variant.slides[index]
+    if slide.pattern_id is None and slide.layout == "chart":
+        from .render import chart_fits
+
+        charts = [e for e in scene.elements if e.kind == "chart"]
+        if any(not chart_fits(e, package.template) for e in charts):
+            alternate = variant.model_copy(deep=True)
+            alternate.slides[index].pattern_id = "token:auto"
+            try:
+                candidate = _compose_slide(alternate, package, index, image_groups)
+            except ValueError:
+                # An unavailable token layout must not discard the original scene.
+                return scene
+            candidate_charts = [e for e in candidate.elements if e.kind == "chart"]
+            from .quality import candidate_regressions
+
+            if (
+                len(candidate_charts) == len(charts)
+                and all(chart_fits(e, package.template) for e in candidate_charts)
+                and not candidate_regressions([scene], [candidate], package)
+            ):
+                candidate.notes += "\nChart layout adapted using template fonts and palette: source fields cannot fit its labels."
+                return candidate
     if (
         slide.pattern_id is not None
         or not scene.pattern_id

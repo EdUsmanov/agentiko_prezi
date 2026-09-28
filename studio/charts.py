@@ -190,10 +190,62 @@ def render_chart(slide, e, profile):
         )
         set_text(shape.text_frame, text, caption, profile)
         b.h -= height + 12
+    bar = None
+    if e.chart_type == "bar":
+        from .chart_layout import bar_layout
+        from .pptx_text import set_text
+        from .models import Box
+
+        bar = bar_layout(e, profile, height + (12 if text else 0))
+        if not bar.fits:
+            raise ValueError("Подписи диаграммы не помещаются; требуется более вместительный макет")
+        data.categories = bar.labels
+        if bar.heading:
+            heading = Element(
+                kind="text",
+                text=bar.heading,
+                box=Box(x=b.x, y=b.y, w=b.w, h=bar.heading_height),
+                font=e.font,
+                size=bar.label_size,
+                color=e.color,
+                field_style=e.field_style,
+            )
+            shape = slide.shapes.add_textbox(Pt(b.x), Pt(b.y), Pt(b.w), Pt(bar.heading_height))
+            set_text(shape.text_frame, bar.heading, heading, profile)
+            b.y += bar.heading_height
+            b.h -= bar.heading_height
     chart = slide.shapes.add_chart(
         types[e.chart_type], Pt(b.x), Pt(b.y), Pt(b.w), Pt(b.h), data
     ).chart
     chart.has_title = False
+    if bar is not None:
+        from pptx.enum.chart import XL_TICK_LABEL_POSITION
+        from pptx.oxml.xmlchemy import OxmlElement
+
+        chart.category_axis.tick_label_position = XL_TICK_LABEL_POSITION.LOW
+        chart.value_axis.tick_label_position = XL_TICK_LABEL_POSITION.LOW
+
+        plot_area = chart._chartSpace.chart.plotArea
+        layout = plot_area.find("{http://schemas.openxmlformats.org/drawingml/2006/chart}layout")
+        if layout is None:
+            layout = OxmlElement("c:layout")
+            plot_area.insert(0, layout)
+        manual = OxmlElement("c:manualLayout")
+        for tag, value in (
+            ("layoutTarget", "inner"),
+            ("xMode", "edge"),
+            ("yMode", "edge"),
+            ("wMode", "factor"),
+            ("hMode", "factor"),
+            ("x", bar.left / b.w),
+            ("y", bar.top / b.h),
+            ("w", bar.width / b.w),
+            ("h", bar.height / b.h),
+        ):
+            node = OxmlElement("c:" + tag)
+            node.set("val", str(value))
+            manual.append(node)
+        layout.append(manual)
     from .fonts import element_font
     from .font_identity import apply_ooxml_font
 
@@ -269,7 +321,7 @@ def render_chart(slide, e, profile):
             category_size = max(10, min(label_size, per_category / (longest_word * 0.65)))
         chart.category_axis.tick_labels.font.size = Pt(category_size)
         chart.category_axis.tick_labels.font.color.rgb = rgb(e.color)
-        if readable:
+        if readable or bar is not None:
             axis = chart.category_axis._element
             tx = axis.find("{http://schemas.openxmlformats.org/drawingml/2006/chart}txPr")
             if tx is not None:
@@ -280,7 +332,7 @@ def render_chart(slide, e, profile):
         chart.value_axis.tick_labels.font.size = Pt(label_size)
         chart.value_axis.tick_labels.font.color.rgb = rgb(e.color)
         for axis, title in (
-            (chart.category_axis, e.category_title),
+            (chart.category_axis, "" if bar is not None else e.category_title),
             (chart.value_axis, e.unit if len(e.series_values) <= 1 else ""),
         ):
             axis.has_title = bool(title)
