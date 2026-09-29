@@ -41,6 +41,12 @@ def adapt_stacked_scene(scene, package):
     if width <= 0 or bottom <= top:
         return scene
     gap = package.template.width * 0.025
+
+    def accepted(candidate):
+        return not any(
+            f.code in FIT_CODES for f in audit_scenes([candidate], package)
+        ) and not candidate_regressions([scene], [candidate], package)
+
     for fraction in [0.62 + step * 0.005 for step in range(41)] if body else (1,):
         candidate = scene.model_copy(deep=True)
         e = candidate.elements[index]
@@ -71,10 +77,42 @@ def adapt_stacked_scene(scene, package):
             text.box = Box(x=x, y=y, w=available, h=h)
             y += h + 8
         else:
-            if (
-                y - 8 <= bottom
-                and not any(f.code in FIT_CODES for f in audit_scenes([candidate], package))
-                and not candidate_regressions([scene], [candidate], package)
-            ):
+            if y - 8 <= bottom and accepted(candidate):
                 return candidate
+    # Long category names can require a wider chart than a side column allows.
+    # Keep each claim intact below it, using the same measured text and audit gates.
+    for compact in (False, True) if body else ():
+        candidate = scene.model_copy(deep=True)
+        heights = []
+        for i in body:
+            text = candidate.elements[i]
+            if compact:
+                text.size = min(text.size, 16)
+            measured = (width - (text.size * 1.4 if text.bullet else 0)) * (
+                0.94 if text.bold or text.bold_prefix else 1
+            )
+            heights.append(
+                len(
+                    wrap_text(
+                        text.text, element_font(package.template, text)[1], text.size, measured
+                    )
+                )
+                * text.size
+                * 1.25
+            )
+        spacing = 0 if compact else 8
+        body_height = sum(heights) + spacing * (len(body) - 1)
+        chart_height = bottom - top - body_height - 8
+        if chart_height <= 0:
+            continue
+        e = candidate.elements[index]
+        e.box = Box(x=left, y=top, w=width, h=chart_height)
+        if not stacked_layout(e, package.template)["fits"]:
+            continue
+        y = top + chart_height + 8
+        for i, height in zip(body, heights):
+            candidate.elements[i].box = Box(x=left, y=y, w=width, h=height)
+            y += height + spacing
+        if accepted(candidate):
+            return candidate
     return scene
