@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "fixture_revision": 1,
+  "fixture_revision": 2,
   "provenance": "Explicitly authored synthetic model replies at the real HTTP boundary. Not a provider recording or a quality oracle. Independent reference ledger is authored separately.",
   "image_matching": "dimensions",
   "exchanges": [
@@ -405,6 +405,7 @@
                       },
                       "group": {
                         "default": "",
+                        "description": "Source-grounded topic or participant label; empty only when no useful label is supported. Never invent sequence, dates or causality.",
                         "maxLength": 80,
                         "title": "Group",
                         "type": "string"
@@ -434,7 +435,8 @@
                     },
                     "required": [
                       "text",
-                      "evidence"
+                      "evidence",
+                      "group"
                     ],
                     "title": "Claim",
                     "type": "object"
@@ -640,7 +642,7 @@
           {
             "role": "system",
             "content": {
-              "sha256": "385d841e1a32e67eee4d159d06ded349de62158457616c9b6e6bc09ab5ddc9ee"
+              "sha256": "5858a3aeb84de23f80d7f7fcd8b8830e039e5451ff71cbb00a30eb1e0bd3a76d"
             }
           },
           {
@@ -655,7 +657,7 @@
           {
             "message": {
               "role": "assistant",
-              "content": "{\"slides\": [{\"title\": \"Field Checklist Mockup\", \"purpose\": \"cover\", \"bullets\": [{\"text\": \"The attached tall image is a generated phone-screen checklist used to test portrait screenshot placement.\", \"evidence\": [{\"fact_id\": \"f1\"}]}]}, {\"title\": \"Visible labels\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The screen reads SAMPLE ONLY and SIMULATED CHECKLIST;\", \"evidence\": [{\"fact_id\": \"f2\"}]}, {\"text\": \"all names, timestamps, and task marks are invented layout content.\", \"evidence\": [{\"fact_id\": \"f3\"}]}]}, {\"title\": \"Use limit\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"No checklist entry records an actual inspection or completed work.\", \"evidence\": [{\"fact_id\": \"f4\"}]}]}, {\"title\": \"Review request\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"Preserve the narrow screen shape and enough surrounding space to distinguish the image from editable slide text.\", \"evidence\": [{\"fact_id\": \"f5\"}]}]}, {\"title\": \"Provenance\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The PNG was drawn for this corpus with synthetic labels and has no external image source.\", \"evidence\": [{\"fact_id\": \"f6\"}]}]}], \"omitted\": []}"
+              "content": "{\"slides\": [{\"title\": \"Field Checklist Mockup\", \"purpose\": \"cover\", \"bullets\": [{\"text\": \"The attached tall image is a generated phone-screen checklist used to test portrait screenshot placement.\", \"group\": \"\", \"evidence\": [{\"fact_id\": \"f1\"}]}]}, {\"title\": \"Visible labels\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The screen reads SAMPLE ONLY and SIMULATED CHECKLIST;\", \"group\": \"\", \"evidence\": [{\"fact_id\": \"f2\"}]}, {\"text\": \"all names, timestamps, and task marks are invented layout content.\", \"group\": \"\", \"evidence\": [{\"fact_id\": \"f3\"}]}]}, {\"title\": \"Use limit\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"No checklist entry records an actual inspection or completed work.\", \"group\": \"\", \"evidence\": [{\"fact_id\": \"f4\"}]}]}, {\"title\": \"Review request\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"Preserve the narrow screen shape and enough surrounding space to distinguish the image from editable slide text.\", \"group\": \"\", \"evidence\": [{\"fact_id\": \"f5\"}]}]}, {\"title\": \"Provenance\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The PNG was drawn for this corpus with synthetic labels and has no external image source.\", \"group\": \"\", \"evidence\": [{\"fact_id\": \"f6\"}]}]}], \"omitted\": []}"
             },
             "finish_reason": "stop"
           }
@@ -668,6 +670,7 @@
       }
     }
   ],
+  "ineffective_editorial_repair_allowed": true,
   "authoring_execution_status": "inconclusive",
   "quality_oracle": false
 }

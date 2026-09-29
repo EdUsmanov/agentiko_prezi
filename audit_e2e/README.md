@@ -287,7 +287,7 @@ diff and rerun strict replay before accepting an update. Its canned critic repli
 are plumbing fixtures, not independent quality assessments. Never weaken matching
 to a stage name or derive expected facts from the candidate output.
 
-## Integration with modular backend and current main
+## Initial integration with modular backend and main
 
 The integration branch retains the independent case ledgers, judge prompts and
 oracles from `demo/audit-e2e` at `40d98f3`. Cassette revision 3 matches the current
@@ -302,3 +302,24 @@ link's accessible name. See the [integration report](../docs/AUDIT_MERGE_2026-09
 for actual verification results; the older validation report describes its own
 recorded source revision. The [variant selection follow-up](../docs/VARIANT_SELECTION_FIX_2026-09-29.md)
 records the subsequent fix and its checks.
+
+## Expanded audit integration into main
+
+The expanded audit from `demo/audit-diversity` at `ee56ea2` adds stronger
+organization-diversity and export-consistency checks. These supersede the original
+nine-case audit's narrower verdict rules; the older integration reports describe
+their historical evaluator revision.
+
+The 15 `dev-*` cassettes are explicitly refreshed against the modular product at
+`04aa0b4`: each fixture revision increases by one. Source, author and editorial
+responses are preserved, apart from explicit empty claim `group` fields required
+by the current schema. Previously recorded editorial-review replies are preserved;
+newly reached review stages use explicitly authored synthetic plumbing replies,
+not independent quality judgments. Request schemas, prompt hashes, baseline
+compositions and review batches follow the current pipeline. Recorded failed
+executions remain diagnostic failures; they are not expected successes. Strict
+replay matching and the independent case ledgers are unchanged.
+
+See [the combined merge report](../docs/MAIN_AUDIT_DIVERSITY_MERGE_2026-09-29.md)
+for the integration results. The quality gate remains failing; infrastructure tests
+passing does not qualify the generated presentations.

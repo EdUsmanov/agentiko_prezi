@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "fixture_revision": 1,
+  "fixture_revision": 2,
   "provenance": "Explicitly authored synthetic model replies at the real HTTP boundary. Not a provider recording or a quality oracle. Independent reference ledger is authored separately.",
   "image_matching": "dimensions",
   "exchanges": [
@@ -449,6 +449,7 @@
                       },
                       "group": {
                         "default": "",
+                        "description": "Source-grounded topic or participant label; empty only when no useful label is supported. Never invent sequence, dates or causality.",
                         "maxLength": 80,
                         "title": "Group",
                         "type": "string"
@@ -478,7 +479,8 @@
                     },
                     "required": [
                       "text",
-                      "evidence"
+                      "evidence",
+                      "group"
                     ],
                     "title": "Claim",
                     "type": "object"
@@ -684,7 +686,7 @@
           {
             "role": "system",
             "content": {
-              "sha256": "cf6e8c2a81401e67c025eec3fb2cf1d2bc67c23ddbfde5d6e11c422705b0e446"
+              "sha256": "12d793b23a296540f52da44d0905c9f5946f66dd3a7152ae6594fdacd5b1fa4f"
             }
           },
           {
@@ -699,7 +701,7 @@
           {
             "message": {
               "role": "assistant",
-              "content": "{\"slides\": [{\"title\": \"Regional Service Snapshot\", \"purpose\": \"cover\", \"bullets\": [{\"text\": \"A fictional regional snapshot supplies eight labeled columns for layout testing.\", \"evidence\": [{\"fact_id\": \"f1\"}]}]}, {\"title\": \"Purpose\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The following fictional snapshot stresses a wide table with labeled columns.\", \"evidence\": [{\"fact_id\": \"f2\"}]}, {\"text\": \"It is a synthetic fixture for layout testing, not an operational report.\", \"evidence\": [{\"fact_id\": \"f3\"}]}]}, {\"title\": \"Cross-region rows\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"Cross-region rows: Alder — W18 — 142 — 131 — 6.2 h — 4.0 — 3.1% — DEMO-A18; Birch — W18 — 96 — 88 — 8.4 h — 2.5 — 4.5% — DEMO-B18; Cedar — W18 — 173 — 160 — 5.7 h — 5.0 — 2.5% — DEMO-C18; Alder — W19 — 151 — 139 — 6.0 h — 4.0 — 2.9% — DEMO-A19; Birch — W19 — 102 — 91 — 8.1 h — 2.5 — 4.4% — DEMO-B19\", \"evidence\": [{\"fact_id\": \"f4\"}]}], \"source_table_id\": \"t1\", \"source_columns\": [], \"chart_type\": \"table\", \"rows\": []}, {\"title\": \"Column definitions\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"Requests and Closed are case counts for one week.\", \"evidence\": [{\"fact_id\": \"f5\"}]}, {\"text\": \"Median hours is elapsed time per closed request.\", \"evidence\": [{\"fact_id\": \"f6\"}]}, {\"text\": \"Staff FTE is scheduled staffing expressed as full-time equivalents.\", \"evidence\": [{\"fact_id\": \"f7\"}]}, {\"text\": \"Reopen rate is reopened cases divided by closed cases, in percent.\", \"evidence\": [{\"fact_id\": \"f8\"}]}]}, {\"title\": \"Source and limits\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The DEMO IDs are fictional row labels.\", \"evidence\": [{\"fact_id\": \"f9\"}]}, {\"text\": \"The snapshot has no cost, satisfaction, or backlog-age field, so it cannot support conclusions about those measures.\", \"evidence\": [{\"fact_id\": \"f10\"}]}]}, {\"title\": \"Comparison rule\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"Compare the same week across regions only for the displayed measures.\", \"evidence\": [{\"fact_id\": \"f11\"}]}, {\"text\": \"The source does not describe differences in case mix or staffing coverage.\", \"evidence\": [{\"fact_id\": \"f12\"}]}]}], \"omitted\": []}"
+              "content": "{\"slides\": [{\"title\": \"Regional Service Snapshot\", \"purpose\": \"cover\", \"bullets\": [{\"text\": \"A fictional regional snapshot supplies eight labeled columns for layout testing.\", \"group\": \"\", \"evidence\": [{\"fact_id\": \"f1\"}]}]}, {\"title\": \"Purpose\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The following fictional snapshot stresses a wide table with labeled columns.\", \"group\": \"\", \"evidence\": [{\"fact_id\": \"f2\"}]}, {\"text\": \"It is a synthetic fixture for layout testing, not an operational report.\", \"group\": \"\", \"evidence\": [{\"fact_id\": \"f3\"}]}]}, {\"title\": \"Cross-region rows\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"Cross-region rows: Alder — W18 — 142 — 131 — 6.2 h — 4.0 — 3.1% — DEMO-A18; Birch — W18 — 96 — 88 — 8.4 h — 2.5 — 4.5% — DEMO-B18; Cedar — W18 — 173 — 160 — 5.7 h — 5.0 — 2.5% — DEMO-C18; Alder — W19 — 151 — 139 — 6.0 h — 4.0 — 2.9% — DEMO-A19; Birch — W19 — 102 — 91 — 8.1 h — 2.5 — 4.4% — DEMO-B19\", \"group\": \"\", \"evidence\": [{\"fact_id\": \"f4\"}]}], \"source_table_id\": \"t1\", \"source_columns\": [], \"chart_type\": \"table\", \"rows\": []}, {\"title\": \"Column definitions\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"Requests and Closed are case counts for one week.\", \"group\": \"\", \"evidence\": [{\"fact_id\": \"f5\"}]}, {\"text\": \"Median hours is elapsed time per closed request.\", \"group\": \"\", \"evidence\": [{\"fact_id\": \"f6\"}]}, {\"text\": \"Staff FTE is scheduled staffing expressed as full-time equivalents.\", \"group\": \"\", \"evidence\": [{\"fact_id\": \"f7\"}]}, {\"text\": \"Reopen rate is reopened cases divided by closed cases, in percent.\", \"group\": \"\", \"evidence\": [{\"fact_id\": \"f8\"}]}]}, {\"title\": \"Source and limits\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The DEMO IDs are fictional row labels.\", \"group\": \"\", \"evidence\": [{\"fact_id\": \"f9\"}]}, {\"text\": \"The snapshot has no cost, satisfaction, or backlog-age field, so it cannot support conclusions about those measures.\", \"group\": \"\", \"evidence\": [{\"fact_id\": \"f10\"}]}]}, {\"title\": \"Comparison rule\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"Compare the same week across regions only for the displayed measures.\", \"group\": \"\", \"evidence\": [{\"fact_id\": \"f11\"}]}, {\"text\": \"The source does not describe differences in case mix or staffing coverage.\", \"group\": \"\", \"evidence\": [{\"fact_id\": \"f12\"}]}]}], \"omitted\": []}"
             },
             "finish_reason": "stop"
           }
@@ -712,6 +714,7 @@
       }
     }
   ],
+  "ineffective_editorial_repair_allowed": true,
   "authoring_execution_status": "inconclusive",
   "quality_oracle": false
 }

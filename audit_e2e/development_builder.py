@@ -210,7 +210,12 @@ _SPECS = [
         "background": "F1F6FA",
         "dark": False,
         "features": ["layout_inheritance", "master_graphics", "screenshot_context"],
-        "image": {"file": "dev-screenshot-landscape.png", "width": 1600, "height": 900, "kind": "landscape"},
+        "image": {
+            "file": "dev-screenshot-landscape.png",
+            "width": 1600,
+            "height": 900,
+            "kind": "landscape",
+        },
         "coverage": ["landscape_screenshot", "sample_labels", "image_provenance"],
     },
     {
@@ -228,8 +233,18 @@ _SPECS = [
         "accent": "176C76",
         "background": "F1F8F8",
         "dark": False,
-        "features": ["layout_inheritance", "master_graphics", "portrait_canvas", "screenshot_context"],
-        "image": {"file": "dev-screenshot-portrait.png", "width": 540, "height": 960, "kind": "portrait"},
+        "features": [
+            "layout_inheritance",
+            "master_graphics",
+            "portrait_canvas",
+            "screenshot_context",
+        ],
+        "image": {
+            "file": "dev-screenshot-portrait.png",
+            "width": 540,
+            "height": 960,
+            "kind": "portrait",
+        },
         "coverage": ["portrait_screenshot", "device_fallback", "sample_labels"],
     },
     {
@@ -248,7 +263,12 @@ _SPECS = [
         "background": "FBF6ED",
         "dark": False,
         "features": ["layout_inheritance", "master_graphics", "screenshot_context"],
-        "image": {"file": "dev-screenshot-square.png", "width": 960, "height": 960, "kind": "square"},
+        "image": {
+            "file": "dev-screenshot-square.png",
+            "width": 960,
+            "height": 960,
+            "kind": "square",
+        },
         "coverage": ["square_screenshot", "sample_labels", "image_provenance"],
     },
     {
@@ -267,7 +287,12 @@ _SPECS = [
         "background": "F7F4F1",
         "dark": False,
         "narrow_region": True,
-        "features": ["layout_inheritance", "master_graphics", "narrow_regions", "multi_column_layout"],
+        "features": [
+            "layout_inheritance",
+            "master_graphics",
+            "narrow_regions",
+            "multi_column_layout",
+        ],
         "coverage": ["long_paragraphs", "narrow_regions", "exception_flow"],
     },
     {
@@ -326,7 +351,14 @@ _SPECS = [
         "chart": "column",
         "table": {"rows": 3, "cols": 4},
         "embedded_picture": True,
-        "features": ["layout_inheritance", "master_graphics", "native_charts", "native_tables", "embedded_workbook", "linked_media"],
+        "features": [
+            "layout_inheritance",
+            "master_graphics",
+            "native_charts",
+            "native_tables",
+            "embedded_workbook",
+            "linked_media",
+        ],
         "coverage": ["chart_and_workbook", "native_resources", "unit_labels"],
     },
 ]
@@ -391,8 +423,7 @@ def _normalize_embedded_workbooks(parts):
             continue
         with ZipFile(BytesIO(data)) as workbook:
             workbook_parts = {
-                workbook_name: workbook.read(workbook_name)
-                for workbook_name in workbook.namelist()
+                workbook_name: workbook.read(workbook_name) for workbook_name in workbook.namelist()
             }
         core_name = "docProps/core.xml"
         if core_name in workbook_parts:
@@ -430,9 +461,19 @@ def _add_master_artwork(master, spec, prs):
     sample_slide = prs.slides.add_slide(prs.slide_layouts[6])
     for index in range(spec["master_shapes"]):
         if index % 3 == 0:
-            left, top, shape_width, shape_height = 0, Inches(0.04 + 0.04 * index), width, Inches(0.08)
+            left, top, shape_width, shape_height = (
+                0,
+                Inches(0.04 + 0.04 * index),
+                width,
+                Inches(0.08),
+            )
         elif index % 3 == 1:
-            left, top, shape_width, shape_height = Inches(0.04 + 0.04 * index), 0, Inches(0.1), height
+            left, top, shape_width, shape_height = (
+                Inches(0.04 + 0.04 * index),
+                0,
+                Inches(0.1),
+                height,
+            )
         else:
             left = Inches(0.3 + index * 0.18)
             top = height - Inches(0.15 + index * 0.03)
@@ -601,7 +642,9 @@ def _add_content_areas(slide, spec):
             MSO_SHAPE.RECTANGLE, Inches(1.0), Inches(2.0), Inches(0.1), Inches(4.7)
         )
         _set_fill(rail, accent)
-        for index, label in enumerate(("SAMPLE MILESTONE A", "SAMPLE MILESTONE B", "SAMPLE MILESTONE C")):
+        for index, label in enumerate(
+            ("SAMPLE MILESTONE A", "SAMPLE MILESTONE B", "SAMPLE MILESTONE C")
+        ):
             top = 2.0 + index * 1.45
             _panel(slide, spec, 1.35, top, 7.4, 1.0, label, size=12)
             marker = slide.shapes.add_shape(
@@ -621,13 +664,39 @@ def _add_content_areas(slide, spec):
         gap, margin = 0.25, 0.7
         card_width = (width - 2 * margin - gap * 3) / 4
         for index, label in enumerate(("84 VISITS", "61 JOBS", "23 MIN", "14 RETURNS")):
-            _panel(slide, spec, margin + index * (card_width + gap), 2.2, card_width, 2.3, f"SAMPLE\n{label}")
-        _panel(slide, spec, margin, 4.9, width - 2 * margin, 1.0, "SAMPLE SOURCE NOTES AND UNIT DEFINITIONS", size=12)
+            _panel(
+                slide,
+                spec,
+                margin + index * (card_width + gap),
+                2.2,
+                card_width,
+                2.3,
+                f"SAMPLE\n{label}",
+            )
+        _panel(
+            slide,
+            spec,
+            margin,
+            4.9,
+            width - 2 * margin,
+            1.0,
+            "SAMPLE SOURCE NOTES AND UNIT DEFINITIONS",
+            size=12,
+        )
     elif pattern == "chart_with_unit_legend":
         _add_chart(slide, spec["chart"], accent, left=0.7, top=1.9, width=8.8, height=4.8)
         _panel(slide, spec, 9.8, 2.0, 2.8, 4.5, "SAMPLE\nkg\nL\n°C\n\nDIFFERENT SCALES", size=13)
     elif pattern == "landscape_viewport":
-        _panel(slide, spec, 1.82, 1.65, 9.69, 5.45, "SAMPLE SCREENSHOT VIEWPORT\n16:9 CONTENT AREA", size=16)
+        _panel(
+            slide,
+            spec,
+            1.82,
+            1.65,
+            9.69,
+            5.45,
+            "SAMPLE SCREENSHOT VIEWPORT\n16:9 CONTENT AREA",
+            size=16,
+        )
     elif pattern == "portrait_device":
         _panel(slide, spec, 1.95, 1.8, 3.6, 6.4, "SAMPLE PHONE SCREEN\n9:16 CONTENT AREA", size=15)
         _panel(slide, spec, 0.4, 8.45, 6.7, 0.8, "SAMPLE CAPTION / SOURCE NOTE", size=11)
@@ -638,7 +707,9 @@ def _add_content_areas(slide, spec):
         margin, gap = 0.45, 0.25
         col_width = (width - 2 * margin - 2 * gap) / 3
         for index, label in enumerate(("SAMPLE RECEIPT", "SAMPLE REVIEW", "SAMPLE LOCATION")):
-            _panel(slide, spec, margin + index * (col_width + gap), 2.0, col_width, 4.7, label, size=12)
+            _panel(
+                slide, spec, margin + index * (col_width + gap), 2.0, col_width, 4.7, label, size=12
+            )
     elif pattern == "grouped_process":
         _add_groups(slide, spec["groups"], accent)
         for index in range(spec["groups"] - 1):
@@ -704,7 +775,9 @@ def _build_template(spec, path):
         if slide.shapes.title:
             _format_text(slide.shapes.title, "SAMPLE TEMPLATE CONTENT", accent_text, 24, True)
             if len(slide.placeholders) > 1:
-                body = next((shape for shape in slide.placeholders if shape != slide.shapes.title), None)
+                body = next(
+                    (shape for shape in slide.placeholders if shape != slide.shapes.title), None
+                )
                 if body and body.has_text_frame:
                     _format_text(body, "SAMPLE ONLY • DO NOT USE AS SOURCE FACTS", accent_text, 17)
         if slide_number == 0:
@@ -785,10 +858,17 @@ def _add_second_master(path):
     master_rels_path = _relationship_part(master_path)
     master_rels = ET.fromstring(parts[master_rels_path])
     layout_rels = [rel for rel in master_rels if rel.get("Type") == _SLIDE_LAYOUT_REL]
-    next_layout = max(
-        [int(match.group(1)) for name in parts if (match := re.fullmatch(r"ppt/slideLayouts/slideLayout(\d+)\.xml", name))]
-        + [0]
-    ) + 1
+    next_layout = (
+        max(
+            [
+                int(match.group(1))
+                for name in parts
+                if (match := re.fullmatch(r"ppt/slideLayouts/slideLayout(\d+)\.xml", name))
+            ]
+            + [0]
+        )
+        + 1
+    )
     new_master_path = "ppt/slideMasters/slideMaster2.xml"
     new_master_xml = ET.fromstring(parts[master_path])
     new_master_rels = ET.fromstring(parts[master_rels_path])
@@ -811,7 +891,9 @@ def _add_second_master(path):
                     _replace_relationship_target(item, "../slideMasters/slideMaster2.xml")
             parts[new_layout_rels_path] = _xml_bytes(layout_rels_xml)
         new_rel = new_by_id[rel.get("Id")]
-        _replace_relationship_target(new_rel, posixpath.relpath(new_layout_path, "ppt/slideMasters"))
+        _replace_relationship_target(
+            new_rel, posixpath.relpath(new_layout_path, "ppt/slideMasters")
+        )
         entry = layout_id_entries.get(rel.get("Id"))
         if entry is None:
             raise ValueError("Cloned master layout relationship is missing its identifier")
@@ -833,7 +915,9 @@ def _add_second_master(path):
         )
         parts["[Content_Types].xml"] = _xml_bytes(content_types)
 
-    first_shape = new_master_xml.find(f".//{{{_P}}}sp/{{{_P}}}spPr/{{{_A}}}solidFill/{{{_A}}}srgbClr")
+    first_shape = new_master_xml.find(
+        f".//{{{_P}}}sp/{{{_P}}}spPr/{{{_A}}}solidFill/{{{_A}}}srgbClr"
+    )
     if first_shape is not None:
         first_shape.set("val", "4785A8")
     parts[new_master_path] = _xml_bytes(new_master_xml)
@@ -843,7 +927,10 @@ def _add_second_master(path):
     content_types.append(
         ET.Element(
             f"{{{_CONTENT_TYPES}}}Override",
-            {"PartName": "/" + new_master_path, "ContentType": "application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"},
+            {
+                "PartName": "/" + new_master_path,
+                "ContentType": "application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml",
+            },
         )
     )
     parts["[Content_Types].xml"] = _xml_bytes(content_types)
@@ -855,7 +942,11 @@ def _add_second_master(path):
     presentation_rels.append(
         ET.Element(
             f"{{{_PKG_REL}}}Relationship",
-            {"Id": new_rel_id, "Type": _SLIDE_MASTER_REL, "Target": "slideMasters/slideMaster2.xml"},
+            {
+                "Id": new_rel_id,
+                "Type": _SLIDE_MASTER_REL,
+                "Target": "slideMasters/slideMaster2.xml",
+            },
         )
     )
     parts[presentation_rels_path] = _xml_bytes(presentation_rels)
@@ -890,36 +981,117 @@ def _build_screenshot(spec, path):
     small = ImageFont.load_default(size=max(13, scale // 34))
     if spec["kind"] == "landscape":
         draw.rectangle((0, 0, width, int(height * 0.15)), fill="#193d5c")
-        draw.text((int(width * .04), int(height * .05)), "SAMPLE DATA  •  SIMULATED SCREEN", fill="white", font=font)
+        draw.text(
+            (int(width * 0.04), int(height * 0.05)),
+            "SAMPLE DATA  •  SIMULATED SCREEN",
+            fill="white",
+            font=font,
+        )
         for index, label in enumerate(("ROUTE A", "ROUTE B", "ROUTE C")):
-            x = int(width * (.04 + index * .31))
-            draw.rounded_rectangle((x, int(height * .21), x + int(width * .27), int(height * .42)), 16, fill="white", outline="#b8c6d4", width=3)
-            draw.text((x + 20, int(height * .25)), label, fill="#41596f", font=small)
-            draw.text((x + 20, int(height * .31)), f"DEMO {18 + index * 7}", fill="#193d5c", font=font)
-        area = (int(width * .04), int(height * .49), int(width * .96), int(height * .93))
+            x = int(width * (0.04 + index * 0.31))
+            draw.rounded_rectangle(
+                (x, int(height * 0.21), x + int(width * 0.27), int(height * 0.42)),
+                16,
+                fill="white",
+                outline="#b8c6d4",
+                width=3,
+            )
+            draw.text((x + 20, int(height * 0.25)), label, fill="#41596f", font=small)
+            draw.text(
+                (x + 20, int(height * 0.31)), f"DEMO {18 + index * 7}", fill="#193d5c", font=font
+            )
+        area = (int(width * 0.04), int(height * 0.49), int(width * 0.96), int(height * 0.93))
         draw.rounded_rectangle(area, 16, fill="white", outline="#b8c6d4", width=3)
-        points = [(int(width * x), int(height * y)) for x, y in ((.09,.83),(.22,.76),(.35,.79),(.49,.68),(.64,.72),(.78,.6),(.9,.64))]
+        points = [
+            (int(width * x), int(height * y))
+            for x, y in (
+                (0.09, 0.83),
+                (0.22, 0.76),
+                (0.35, 0.79),
+                (0.49, 0.68),
+                (0.64, 0.72),
+                (0.78, 0.6),
+                (0.9, 0.64),
+            )
+        ]
         draw.line(points, fill="#c46e3c", width=max(4, scale // 170))
         for x, y in points:
-            draw.ellipse((x-7,y-7,x+7,y+7), fill="#c46e3c")
-        draw.text((int(width * .06), int(height * .51)), "DECORATIVE TREND • NOT A MEASUREMENT", fill="#596d7e", font=small)
+            draw.ellipse((x - 7, y - 7, x + 7, y + 7), fill="#c46e3c")
+        draw.text(
+            (int(width * 0.06), int(height * 0.51)),
+            "DECORATIVE TREND • NOT A MEASUREMENT",
+            fill="#596d7e",
+            font=small,
+        )
     elif spec["kind"] == "portrait":
-        draw.rectangle((0, 0, width, int(height * .11)), fill="#176c76")
-        draw.text((int(width * .06), int(height * .035)), "SAMPLE ONLY", fill="white", font=font)
-        draw.text((int(width * .06), int(height * .13)), "SIMULATED CHECKLIST", fill="#244653", font=small)
-        for index, label in enumerate(("ARRIVAL TIME", "SITE LABEL", "CHECK ITEM", "PHOTO NOTE", "SIGNATURE")):
-            top = int(height * (.22 + index * .135))
-            draw.rounded_rectangle((int(width * .06), top, int(width * .94), top + int(height * .105)), 12, fill="white", outline="#b9cbd0", width=2)
-            draw.rectangle((int(width * .1), top + int(height * .03), int(width * .17), top + int(height * .075)), outline="#176c76", width=3)
-            draw.text((int(width * .22), top + int(height * .035)), label, fill="#47616a", font=small)
-        draw.text((int(width * .06), int(height * .93)), "NOT A REAL INSPECTION", fill="#9b4f4f", font=small)
+        draw.rectangle((0, 0, width, int(height * 0.11)), fill="#176c76")
+        draw.text((int(width * 0.06), int(height * 0.035)), "SAMPLE ONLY", fill="white", font=font)
+        draw.text(
+            (int(width * 0.06), int(height * 0.13)),
+            "SIMULATED CHECKLIST",
+            fill="#244653",
+            font=small,
+        )
+        for index, label in enumerate(
+            ("ARRIVAL TIME", "SITE LABEL", "CHECK ITEM", "PHOTO NOTE", "SIGNATURE")
+        ):
+            top = int(height * (0.22 + index * 0.135))
+            draw.rounded_rectangle(
+                (int(width * 0.06), top, int(width * 0.94), top + int(height * 0.105)),
+                12,
+                fill="white",
+                outline="#b9cbd0",
+                width=2,
+            )
+            draw.rectangle(
+                (
+                    int(width * 0.1),
+                    top + int(height * 0.03),
+                    int(width * 0.17),
+                    top + int(height * 0.075),
+                ),
+                outline="#176c76",
+                width=3,
+            )
+            draw.text(
+                (int(width * 0.22), top + int(height * 0.035)), label, fill="#47616a", font=small
+            )
+        draw.text(
+            (int(width * 0.06), int(height * 0.93)),
+            "NOT A REAL INSPECTION",
+            fill="#9b4f4f",
+            font=small,
+        )
     else:
-        draw.rounded_rectangle((int(width*.06), int(height*.06), int(width*.94), int(height*.94)), 28, fill="white", outline="#b8955f", width=5)
-        draw.rounded_rectangle((int(width*.15), int(height*.14), int(width*.85), int(height*.72)), 24, fill="#eadfc9")
-        draw.text((int(width*.22), int(height*.19)), "SAMPLE", fill="#775a33", font=font)
-        draw.ellipse((int(width*.36), int(height*.31), int(width*.66), int(height*.61)), fill="#607f70")
-        draw.text((int(width*.20), int(height*.77)), "P-104 • NOT A REAL CATALOG", fill="#624d32", font=small)
-        draw.text((int(width*.24), int(height*.84)), "DECORATIVE PART TILE", fill="#816b4e", font=small)
+        draw.rounded_rectangle(
+            (int(width * 0.06), int(height * 0.06), int(width * 0.94), int(height * 0.94)),
+            28,
+            fill="white",
+            outline="#b8955f",
+            width=5,
+        )
+        draw.rounded_rectangle(
+            (int(width * 0.15), int(height * 0.14), int(width * 0.85), int(height * 0.72)),
+            24,
+            fill="#eadfc9",
+        )
+        draw.text((int(width * 0.22), int(height * 0.19)), "SAMPLE", fill="#775a33", font=font)
+        draw.ellipse(
+            (int(width * 0.36), int(height * 0.31), int(width * 0.66), int(height * 0.61)),
+            fill="#607f70",
+        )
+        draw.text(
+            (int(width * 0.20), int(height * 0.77)),
+            "P-104 • NOT A REAL CATALOG",
+            fill="#624d32",
+            font=small,
+        )
+        draw.text(
+            (int(width * 0.24), int(height * 0.84)),
+            "DECORATIVE PART TILE",
+            fill="#816b4e",
+            font=small,
+        )
     path.parent.mkdir(parents=True, exist_ok=True)
     image.save(path, format="PNG", optimize=False, compress_level=9)
 
@@ -974,9 +1146,7 @@ def _case_from_spec(spec, content, source_hash, ledger, fixture_root, revision):
         "content": content,
         "images": image_sources,
         "input_mode": "brief" if spec["id"] == "dev-short-brief" else "content",
-        "image_presentation": "device"
-        if spec["id"] == "dev-screenshot-portrait"
-        else "plain",
+        "image_presentation": "device" if spec["id"] == "dev-screenshot-portrait" else "plain",
         "slides": slide_count,
         "variants": ["executive", "analytical", "story"],
         "synthetic_template": {
@@ -1047,9 +1217,7 @@ def build_development_corpus(
             if image_spec := spec.get("image"):
                 _build_screenshot(image_spec, staged_root / "images" / image_spec["file"])
             content, source_hash, points = contents[spec["id"]]
-            cases.append(
-                _case_from_spec(spec, content, source_hash, points, staged_root, revision)
-            )
+            cases.append(_case_from_spec(spec, content, source_hash, points, staged_root, revision))
         registry = {
             "schema_version": 2,
             "reference_version": revision,
@@ -1099,11 +1267,16 @@ def build_development_corpus(
                 if target.is_file() and target.read_bytes() != staged_path.read_bytes():
                     changed = True
         manifest_target = fixture_root / "manifest.json"
-        if manifest_target.is_file() and manifest_target.read_bytes() != staged_manifest.read_bytes():
+        if (
+            manifest_target.is_file()
+            and manifest_target.read_bytes() != staged_manifest.read_bytes()
+        ):
             changed = True
         if changed:
             if not replace or not revision_was_explicit:
-                old_revision = old_registry.get("reference_version", "unknown") if old_registry else "unknown"
+                old_revision = (
+                    old_registry.get("reference_version", "unknown") if old_registry else "unknown"
+                )
                 raise ValueError(
                     f"Corpus bytes differ from revision {old_revision}; pass --replace and a new --revision"
                 )

@@ -36,9 +36,7 @@ def test_development_inputs_are_source_anchored_and_fully_native(tmp_path):
     registered_templates = set()
 
     for case in cases:
-        assert case["content_source"]["file"].startswith(
-            "audit_e2e/fixtures/development/sources/"
-        )
+        assert case["content_source"]["file"].startswith("audit_e2e/fixtures/development/sources/")
         source = AUDIT_ROOT.parent / case["content_source"]["file"]
         assert _digest(source) == case["content_source"]["sha256"]
         assert all(point["quote"] in case["content"] for point in case["reference"]["points"])
@@ -57,9 +55,7 @@ def test_development_inputs_are_source_anchored_and_fully_native(tmp_path):
         assert parsed.slide_width > 0 and parsed.slide_height > 0
 
         native_run = materialize_case(case, tmp_path / case["id"] / "native")
-        replay_run = materialize_case(
-            case, tmp_path / case["id"] / "replay", synthetic=True
-        )
+        replay_run = materialize_case(case, tmp_path / case["id"] / "replay", synthetic=True)
         assert _digest(native_run["template"]) == _digest(replay_run["template"])
         assert native_run["template_origin"] == "owned_native_synthetic"
         assert replay_run["template_origin"] == "owned_native_synthetic"

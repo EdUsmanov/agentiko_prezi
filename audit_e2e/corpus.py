@@ -190,9 +190,7 @@ def load_cases(suite="core"):
     base_cases = _resolve_cases(payload)
     if suite == "extended":
         return base_cases
-    development = _validate_registry(
-        json.loads(DEVELOPMENT_CASE_FILE.read_text(encoding="utf-8"))
-    )
+    development = _validate_registry(json.loads(DEVELOPMENT_CASE_FILE.read_text(encoding="utf-8")))
     return base_cases + _resolve_cases(development)
 
 
@@ -329,7 +327,9 @@ def materialize_case(case, directory, *, synthetic=False, corpus_root=None):
     }
     result["synthetic"] = bool(synthetic)
     result["template_fidelity_applicability"] = (
-        "owned_native_template" if owned_native else "not_applicable_synthetic_template"
+        "owned_native_template"
+        if owned_native
+        else "not_applicable_synthetic_template"
         if synthetic
         else "external_template"
     )

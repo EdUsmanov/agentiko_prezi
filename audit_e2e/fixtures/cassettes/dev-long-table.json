@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "fixture_revision": 1,
+  "fixture_revision": 2,
   "provenance": "Explicitly authored synthetic model replies at the real HTTP boundary. Not a provider recording or a quality oracle. Independent reference ledger is authored separately.",
   "image_matching": "dimensions",
   "exchanges": [
@@ -448,6 +448,7 @@
                       },
                       "group": {
                         "default": "",
+                        "description": "Source-grounded topic or participant label; empty only when no useful label is supported. Never invent sequence, dates or causality.",
                         "maxLength": 80,
                         "title": "Group",
                         "type": "string"
@@ -477,7 +478,8 @@
                     },
                     "required": [
                       "text",
-                      "evidence"
+                      "evidence",
+                      "group"
                     ],
                     "title": "Claim",
                     "type": "object"
@@ -683,7 +685,7 @@
           {
             "role": "system",
             "content": {
-              "sha256": "cf6e8c2a81401e67c025eec3fb2cf1d2bc67c23ddbfde5d6e11c422705b0e446"
+              "sha256": "12d793b23a296540f52da44d0905c9f5946f66dd3a7152ae6594fdacd5b1fa4f"
             }
           },
           {
@@ -698,7 +700,7 @@
           {
             "message": {
               "role": "assistant",
-              "content": "{\"slides\": [{\"title\": \"Community Energy Survey Extract\", \"purpose\": \"cover\", \"bullets\": [{\"text\": \"Twelve months of fictional energy survey data are supplied for table-layout testing.\", \"evidence\": [{\"fact_id\": \"f1\"}]}]}, {\"title\": \"What this extract contains\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"This fictional worksheet contains twelve monthly rows from a demonstration energy survey.\", \"evidence\": [{\"fact_id\": \"f2\"}]}, {\"text\": \"Values are supplied for table-layout testing and do not describe a real utility or customer.\", \"evidence\": [{\"fact_id\": \"f3\"}]}]}, {\"title\": \"Monthly observations\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"Monthly observations\", \"evidence\": [{\"fact_id\": \"f4\"}]}], \"source_table_id\": \"t1\", \"source_columns\": [], \"chart_type\": \"table\", \"rows\": []}, {\"title\": \"Reading the columns\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"Sites counts locations in the monthly sample.\", \"evidence\": [{\"fact_id\": \"f5\"}]}, {\"text\": \"Meter reads counts received readings.\", \"evidence\": [{\"fact_id\": \"f6\"}]}, {\"text\": \"Median kWh/site is an energy quantity per site;\", \"evidence\": [{\"fact_id\": \"f7\"}]}, {\"text\": \"late reads counts records received after the monthly close.\", \"evidence\": [{\"fact_id\": \"f8\"}]}]}, {\"title\": \"Coverage caveat\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The number of sites changes during the year, and the extract does not identify which sites enter or leave.\", \"evidence\": [{\"fact_id\": \"f9\"}]}, {\"text\": \"Month-to-month medians therefore should not be read as a fixed panel comparison.\", \"evidence\": [{\"fact_id\": \"f10\"}]}]}, {\"title\": \"Source label\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"Every row carries a DEMO batch label.\", \"evidence\": [{\"fact_id\": \"f11\"}]}, {\"text\": \"These labels identify fictional fixture rows and cannot be used to locate an external data source.\", \"evidence\": [{\"fact_id\": \"f12\"}]}]}], \"omitted\": []}"
+              "content": "{\"slides\": [{\"title\": \"Community Energy Survey Extract\", \"purpose\": \"cover\", \"bullets\": [{\"text\": \"Twelve months of fictional energy survey data are supplied for table-layout testing.\", \"group\": \"\", \"evidence\": [{\"fact_id\": \"f1\"}]}]}, {\"title\": \"What this extract contains\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"This fictional worksheet contains twelve monthly rows from a demonstration energy survey.\", \"group\": \"\", \"evidence\": [{\"fact_id\": \"f2\"}]}, {\"text\": \"Values are supplied for table-layout testing and do not describe a real utility or customer.\", \"group\": \"\", \"evidence\": [{\"fact_id\": \"f3\"}]}]}, {\"title\": \"Monthly observations\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"Monthly observations\", \"group\": \"\", \"evidence\": [{\"fact_id\": \"f4\"}]}], \"source_table_id\": \"t1\", \"source_columns\": [], \"chart_type\": \"table\", \"rows\": []}, {\"title\": \"Reading the columns\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"Sites counts locations in the monthly sample.\", \"group\": \"\", \"evidence\": [{\"fact_id\": \"f5\"}]}, {\"text\": \"Meter reads counts received readings.\", \"group\": \"\", \"evidence\": [{\"fact_id\": \"f6\"}]}, {\"text\": \"Median kWh/site is an energy quantity per site;\", \"group\": \"\", \"evidence\": [{\"fact_id\": \"f7\"}]}, {\"text\": \"late reads counts records received after the monthly close.\", \"group\": \"\", \"evidence\": [{\"fact_id\": \"f8\"}]}]}, {\"title\": \"Coverage caveat\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The number of sites changes during the year, and the extract does not identify which sites enter or leave.\", \"group\": \"\", \"evidence\": [{\"fact_id\": \"f9\"}]}, {\"text\": \"Month-to-month medians therefore should not be read as a fixed panel comparison.\", \"group\": \"\", \"evidence\": [{\"fact_id\": \"f10\"}]}]}, {\"title\": \"Source label\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"Every row carries a DEMO batch label.\", \"group\": \"\", \"evidence\": [{\"fact_id\": \"f11\"}]}, {\"text\": \"These labels identify fictional fixture rows and cannot be used to locate an external data source.\", \"group\": \"\", \"evidence\": [{\"fact_id\": \"f12\"}]}]}], \"omitted\": []}"
             },
             "finish_reason": "stop"
           }
@@ -711,6 +713,7 @@
       }
     }
   ],
+  "ineffective_editorial_repair_allowed": true,
   "authoring_execution_status": "inconclusive",
   "quality_oracle": false
 }

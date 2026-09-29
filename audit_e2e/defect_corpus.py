@@ -34,17 +34,29 @@ _COMPOSITIONS = {
     "executive": {
         "id": "decision-first-cards-v1",
         "organization": "decision first; sample size, duration and operating context together; then guardrails",
-        "groups": [["decision"], ["sample", "duration", "context"], ["compliance", "caveat", "proposal"]],
+        "groups": [
+            ["decision"],
+            ["sample", "duration", "context"],
+            ["compliance", "caveat", "proposal"],
+        ],
     },
     "analytical": {
         "id": "measure-first-evidence-board-v1",
         "organization": "measure, sample and limitation row; context and proposal row; then decision and gate",
-        "groups": [["duration", "sample", "caveat"], ["context", "proposal"], ["decision", "compliance"]],
+        "groups": [
+            ["duration", "sample", "caveat"],
+            ["context", "proposal"],
+            ["decision", "compliance"],
+        ],
     },
     "story": {
         "id": "chronology-to-implication-v1",
         "organization": "context and duration beside sample; caveat and proposal; then gate and decision",
-        "groups": [["context", "duration", "sample"], ["caveat", "proposal"], ["compliance", "decision"]],
+        "groups": [
+            ["context", "duration", "sample"],
+            ["caveat", "proposal"],
+            ["compliance", "decision"],
+        ],
     },
 }
 _LEGACY_TARGET = {
@@ -216,9 +228,17 @@ def _add_cover(prs, source):
 
 
 def _source_text(source):
-    lines = [f"# {source['title']}", "", *(fact["statement"] for fact in source["facts"]), "", "Source table:"]
+    lines = [
+        f"# {source['title']}",
+        "",
+        *(fact["statement"] for fact in source["facts"]),
+        "",
+        "Source table:",
+    ]
     headers, rows = source["table"]["headers"], source["table"]["rows"]
-    lines.extend(["| " + " | ".join(headers) + " |", "| " + " | ".join("---" for _ in headers) + " |"])
+    lines.extend(
+        ["| " + " | ".join(headers) + " |", "| " + " | ".join("---" for _ in headers) + " |"]
+    )
     lines.extend("| " + " | ".join(row) + " |" for row in rows)
     lines.extend(["", "Source figure: ![sample](sample-figure.png)"])
     return "\n".join(lines) + "\n"
@@ -257,7 +277,9 @@ def _text_for(source, mode):
 
 def _wrong_text(source, category, texts):
     result = dict(texts)
-    target = next((item["target"] for item in _read_registry()["categories"] if item["id"] == category), None)
+    target = next(
+        (item["target"] for item in _read_registry()["categories"] if item["id"] == category), None
+    )
     if category in {"pptx_pdf_mismatch", "pptx_html_mismatch"}:
         target = "duration"
     if category == "omission":
@@ -265,14 +287,18 @@ def _wrong_text(source, category, texts):
     elif category == "hidden_text":
         result.pop("compliance", None)
     elif category == "number":
-        result[target] = re.sub(r"\b(\d+)\b", lambda match: str(int(match.group(1)) + 1), result[target], count=1)
+        result[target] = re.sub(
+            r"\b(\d+)\b", lambda match: str(int(match.group(1)) + 1), result[target], count=1
+        )
     elif category == "negation":
         result[target] = re.sub(r"\bdoes not prove\b", "proves", result[target], flags=re.I)
         result[target] = re.sub(r"\bdo not prove\b", "prove", result[target], flags=re.I)
     elif category == "condition":
         result[target] = re.sub(r"\s+if\s+.+?\.?$", ".", result[target], flags=re.I)
     elif category == "provenance":
-        result[target] = re.sub(r"^(?:Model proposal|Working hypothesis):\s*", "", result[target], flags=re.I)
+        result[target] = re.sub(
+            r"^(?:Model proposal|Working hypothesis):\s*", "", result[target], flags=re.I
+        )
         result[target] = re.sub(r"\bmay\b|\bmight\b|\bcould\b", "will", result[target], flags=re.I)
     return result
 
@@ -302,7 +328,9 @@ def _add_data_table(slide, source, defect):
         row.height = Inches(0.46)
         for cell in row.cells:
             cell.fill.solid()
-            cell.fill.fore_color.rgb = RGBColor.from_string("68C5C0" if row_index == 0 else "FFFFFF")
+            cell.fill.fore_color.rgb = RGBColor.from_string(
+                "68C5C0" if row_index == 0 else "FFFFFF"
+            )
             for paragraph in cell.text_frame.paragraphs:
                 paragraph.alignment = PP_ALIGN.CENTER
                 for run in paragraph.runs:
@@ -379,7 +407,11 @@ def _add_narrative_slide(prs, variant, source, texts, defect):
     if defect == "template_fidelity":
         bg, fg, accent = "E90074", "FFFFFF", "00E5FF"
     _slide_background(slide, bg)
-    title = {"executive": "Decision first", "analytical": "Read the measures", "story": "Where it begins"}[variant]
+    title = {
+        "executive": "Decision first",
+        "analytical": "Read the measures",
+        "story": "Where it begins",
+    }[variant]
     _add_title(slide, title, foreground=fg)
     facts = {fact["id"]: fact for fact in source["facts"]}
     if variant == "executive":
@@ -502,7 +534,9 @@ def _add_conclusion_slide(prs, variant, source, texts, defect):
     if defect == "hidden_text" and "compliance" not in texts:
         hidden = slide.shapes.add_textbox(Inches(14), Inches(6.4), Inches(4), Inches(0.6))
         hidden.name = "Hidden source point"
-        hidden.text_frame.text = next(f["quote"] for f in source["facts"] if f["id"] == "compliance")
+        hidden.text_frame.text = next(
+            f["quote"] for f in source["facts"] if f["id"] == "compliance"
+        )
         hidden._element.xpath(".//p:cNvPr")[0].set("hidden", "1")
         slide.notes_slide.notes_text_frame.text = hidden.text_frame.text
     if defect == "foreign_template_content":
@@ -618,12 +652,12 @@ def _html_for_deck(pptx_path, html_path, *, mismatch_quote=None, replacement_quo
             width, height = shape.width / page_w * 100, shape.height / page_h * 100
             if left >= 100 or top >= 100:
                 continue
-            style = (
-                f"left:{left:.3f}%;top:{top:.3f}%;width:{width:.3f}%;height:{height:.3f}%;"
-            )
+            style = f"left:{left:.3f}%;top:{top:.3f}%;width:{width:.3f}%;height:{height:.3f}%;"
             if getattr(shape, "has_table", False):
                 rows = "".join(
-                    "<tr>" + "".join(f"<td>{escape(cell.text)}</td>" for cell in row.cells) + "</tr>"
+                    "<tr>"
+                    + "".join(f"<td>{escape(cell.text)}</td>" for cell in row.cells)
+                    + "</tr>"
                     for row in shape.table.rows
                 )
                 objects.append(f'<table style="{style}">{rows}</table>')
@@ -640,7 +674,11 @@ def _html_for_deck(pptx_path, html_path, *, mismatch_quote=None, replacement_quo
                         for category, value in zip(categories, series.values)
                     )
                 title = chart.chart_title.text_frame.text if chart.has_title else ""
-                axis = chart.value_axis.axis_title.text_frame.text if chart.value_axis.has_title else ""
+                axis = (
+                    chart.value_axis.axis_title.text_frame.text
+                    if chart.value_axis.has_title
+                    else ""
+                )
                 objects.append(
                     f'<figure style="{style}"><figcaption>{escape(title)} — {escape(axis)}</figcaption>'
                     f"<p>{escape('; '.join(labels))}</p></figure>"
@@ -648,7 +686,9 @@ def _html_for_deck(pptx_path, html_path, *, mismatch_quote=None, replacement_quo
             elif shape.shape_type == 13:
                 encoded = b64encode(shape.image.blob).decode("ascii")
                 mime = shape.image.content_type or "image/png"
-                objects.append(f'<img alt="Source figure" src="data:{mime};base64,{encoded}" style="{style}">')
+                objects.append(
+                    f'<img alt="Source figure" src="data:{mime};base64,{encoded}" style="{style}">'
+                )
             elif getattr(shape, "has_text_frame", False):
                 props = shape._element.xpath(".//p:cNvPr")
                 if any(item.get("hidden") in {"1", "true"} for item in props):
@@ -664,13 +704,13 @@ def _html_for_deck(pptx_path, html_path, *, mismatch_quote=None, replacement_quo
             + "</section>"
         )
     document = (
-        "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>Presentation export</title>"
+        '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Presentation export</title>'
         "<style>body{margin:0;background:#d6dde4;font:18px Arial,sans-serif}.deck{padding:24px}"
         ".slide{position:relative;overflow:hidden;width:min(1280px,96vw);aspect-ratio:16/9;margin:0 auto 24px;"
         "box-shadow:0 3px 18px #66778855;color:#fff}.slide>div,.slide>table,.slide>figure,.slide>img{"
         "position:absolute;box-sizing:border-box;padding:8px;overflow:hidden}.slide table{border-collapse:collapse;"
         "background:white;color:#173550}.slide td{border:1px solid #173550;padding:5px}figure{margin:0;"
-        "background:#fff;color:#173550}</style></head><body><main class=\"deck\">"
+        'background:#fff;color:#173550}</style></head><body><main class="deck">'
         + "".join(slide_html)
         + "</main></body></html>"
     )
@@ -683,7 +723,9 @@ def _html_for_deck(pptx_path, html_path, *, mismatch_quote=None, replacement_quo
     Path(html_path).write_text(document, encoding="utf-8")
 
 
-def _make_case(source, template_path, case_id, category, mode, case_root, *, cosmetic_style=None, validate=True):
+def _make_case(
+    source, template_path, case_id, category, mode, case_root, *, cosmetic_style=None, validate=True
+):
     case_root.mkdir(parents=True, exist_ok=False)
     input_dir = case_root / "input"
     result_dir = case_root / "result"
@@ -842,8 +884,12 @@ def _make_case(source, template_path, case_id, category, mode, case_root, *, cos
         "case_family_id": source["id"],
         "rubric_id": "source-organization-and-composition-1",
         "composition_ids": {variant: spec["id"] for variant, spec in _COMPOSITIONS.items()},
-        "organization_rules": {variant: spec["organization"] for variant, spec in _COMPOSITIONS.items()},
-        "grouped_source_points": {variant: spec["groups"] for variant, spec in _COMPOSITIONS.items()},
+        "organization_rules": {
+            variant: spec["organization"] for variant, spec in _COMPOSITIONS.items()
+        },
+        "grouped_source_points": {
+            variant: spec["groups"] for variant, spec in _COMPOSITIONS.items()
+        },
         "source_point_ids": [fact["id"] for fact in facts],
         "source_content_sha256": digest,
         "source_ledger_sha256": _sha(json.dumps(facts, sort_keys=True).encode("utf-8")),
@@ -874,7 +920,24 @@ def _make_case(source, template_path, case_id, category, mode, case_root, *, cos
 
 
 def _localizations(category, source):
-    target = next((fact["id"] for fact in source["facts"] if category in {"number", "negation", "condition", "provenance", "omission", "hidden_text"} and fact["id"] == {"number": "duration", "negation": "caveat", "condition": "decision", "provenance": "proposal", "omission": "compliance", "hidden_text": "compliance"}.get(category)), None)
+    target = next(
+        (
+            fact["id"]
+            for fact in source["facts"]
+            if category
+            in {"number", "negation", "condition", "provenance", "omission", "hidden_text"}
+            and fact["id"]
+            == {
+                "number": "duration",
+                "negation": "caveat",
+                "condition": "decision",
+                "provenance": "proposal",
+                "omission": "compliance",
+                "hidden_text": "compliance",
+            }.get(category)
+        ),
+        None,
+    )
     if category in {"table_binding", "units"}:
         return {variant: {"slide": 3, "object": "Source data table"} for variant in VARIANTS}
     if category in {"chart_value", "chart_axis"}:
@@ -884,12 +947,21 @@ def _localizations(category, source):
     if category in {"pptx_pdf_mismatch", "pptx_html_mismatch"}:
         return {variant: {"slide": 2, "source_point_id": "duration"} for variant in VARIANTS}
     if category in {"template_fidelity", "backgroundloss", "foreign_template_content"}:
-        return {variant: {"slide": 1 if category == "template_fidelity" else 4, "region": "slide background or template label"} for variant in VARIANTS}
+        return {
+            variant: {
+                "slide": 1 if category == "template_fidelity" else 4,
+                "region": "slide background or template label",
+            }
+            for variant in VARIANTS
+        }
     if category in {"readability", "clipping", "overlap", "lowcontrast"}:
         point = "caveat" if category == "overlap" else "compliance"
         return {variant: {"slide": 4, "source_point_id": point} for variant in VARIANTS}
     if category == "duplicates":
-        return {variant: {"slide": "all", "region": "whole exported presentation"} for variant in VARIANTS}
+        return {
+            variant: {"slide": "all", "region": "whole exported presentation"}
+            for variant in VARIANTS
+        }
     return {variant: {"slide": 4, "source_point_id": target} for variant in VARIANTS}
 
 
@@ -915,7 +987,9 @@ def _write_source_limited(source, template_path, case_id, case_root, *, validate
             box = (7.8, 2.0, 4.8, 2.0)
         card = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, *(Inches(v) for v in box))
         _fill(card, "21445E")
-        _add_text(slide, "Single source point", source["quote"], *box, color="FFFFFF", size=26, bold=True)
+        _add_text(
+            slide, "Single source point", source["quote"], *box, color="FFFFFF", size=26, bold=True
+        )
         deck = variant_dir / "deck.pptx"
         prs.save(deck)
         if not to_pdf(deck, variant_dir, timeout=45):
@@ -945,11 +1019,22 @@ def _write_source_limited(source, template_path, case_id, case_root, *, validate
             "points": facts,
             "requirements": [
                 {"id": "variant-presentations", **_read_registry()["diversity_requirement"]},
-                {"id": "native-export-text-agreement", "kind": "text_export_agreement", "status": "gold", "text": "Preserve required source anchors across exports."},
+                {
+                    "id": "native-export-text-agreement",
+                    "kind": "text_export_agreement",
+                    "status": "gold",
+                    "text": "Preserve required source anchors across exports.",
+                },
             ],
         },
         "template": template_path,
-        "template_source": {"source": "authored fictional control template", "format": "PPTX", "sha256": _sha(template_path.read_bytes()), "source_slides": 1, "layouts": 1},
+        "template_source": {
+            "source": "authored fictional control template",
+            "format": "PPTX",
+            "sha256": _sha(template_path.read_bytes()),
+            "source_slides": 1,
+            "layouts": 1,
+        },
         "source_hashes": {"content": digest, "images": {}},
         "images": [],
         "images_source": [],
@@ -966,7 +1051,9 @@ def _write_source_limited(source, template_path, case_id, case_root, *, validate
         "case_family_id": source["id"],
         "rubric_id": "source-organization-and-composition-1",
         "source_scope": "one measured source point; insufficient material to validate three meaningful organizations",
-        "composition_ids": {variant: f"single-point-{index + 1}" for index, variant in enumerate(VARIANTS)},
+        "composition_ids": {
+            variant: f"single-point-{index + 1}" for index, variant in enumerate(VARIANTS)
+        },
         "source_point_ids": [point["id"]],
         "source_content_sha256": digest,
         "source_ledger_sha256": _sha(json.dumps(facts, sort_keys=True).encode()),
@@ -1039,9 +1126,7 @@ def _score_validation(records, labels):
         proxy = _LEGACY_PROXY.get(expected)
         if expected == "presentation_diversity":
             target = "presentation_diversity"
-        target_findings = [
-            item for item in findings if target and item.get("category") == target
-        ]
+        target_findings = [item for item in findings if target and item.get("category") == target]
         target_severity = {item.get("severity") for item in target_findings}
         expected_variants = set(label.get("expected_localization", {}))
         located_variants = set()
@@ -1062,11 +1147,21 @@ def _score_validation(records, labels):
                 else "false_success"
             )
         elif label["expected_status"] == "passed":
-            outcome = "false_positive" if any(item["severity"] == "failed" for item in findings) else "inconclusive" if row["audit"]["status"] == "inconclusive" else "clean"
+            outcome = (
+                "false_positive"
+                if any(item["severity"] == "failed" for item in findings)
+                else "inconclusive"
+                if row["audit"]["status"] == "inconclusive"
+                else "clean"
+            )
         elif target and target in found and "failed" in target_severity and all_locations:
             if target == "presentation_diversity":
                 assessment = next(
-                    (item.get("evidence", {}).get("assessment", {}) for item in target_findings if item.get("evidence", {}).get("assessment")),
+                    (
+                        item.get("evidence", {}).get("assessment", {})
+                        for item in target_findings
+                        if item.get("evidence", {}).get("assessment")
+                    ),
                     {},
                 )
                 all_pairs_failed = len(assessment.get("pairs", [])) == 3 and all(
@@ -1100,13 +1195,23 @@ def _score_validation(records, labels):
                 "failed_target_pairs": [list(pair) for pair in sorted(failed_pairs)],
                 "all_expected_variant_localizations_present": all_locations,
                 "unrelated_failed_categories": sorted(
-                    item["category"] for item in findings if item["severity"] == "failed" and item["category"] != target
+                    item["category"]
+                    for item in findings
+                    if item["severity"] == "failed" and item["category"] != target
                 ),
             }
         )
     counts = {
         key: sum(item["outcome"] == key for item in matrix)
-        for key in ("detected", "missed", "inconclusive", "false_positive", "false_success", "clean", "not_run")
+        for key in (
+            "detected",
+            "missed",
+            "inconclusive",
+            "false_positive",
+            "false_success",
+            "clean",
+            "not_run",
+        )
     }
     return {
         "scorer": "audit_bundle-artifact-findings-1",
@@ -1192,14 +1297,22 @@ def build_defect_corpus(output, *, categories=None, include_support=True, valida
                 "composition_count": 3,
                 "composition_ids": record["composition_ids"],
                 "source_hash": record["source_hash"],
-                "expected_localization": _localizations(category["id"], source) if mode == "defect" else {},
+                "expected_localization": _localizations(category["id"], source)
+                if mode == "defect"
+                else {},
             }
             labels.append(label)
 
     if include_support:
         for control, source in zip(registry["cosmetic_controls"], sources, strict=True):
             case_id = next_id()
-            style_by_variant = dict(zip(VARIANTS, (control["style_a"], control["style_b"], control["style_c"]), strict=True))
+            style_by_variant = dict(
+                zip(
+                    VARIANTS,
+                    (control["style_a"], control["style_b"], control["style_c"]),
+                    strict=True,
+                )
+            )
             # Each delivery is styled independently while its exported facts, order and geometry match.
             # _make_case's single style parameter is expanded here into three generated native exports.
             record = _make_cosmetic_case(
@@ -1211,19 +1324,60 @@ def build_defect_corpus(output, *, categories=None, include_support=True, valida
                 validate=validate,
             )
             records.append(record)
-            labels.append({"case_id": case_id, "family_id": control["id"], "control_kind": "cosmetic_only_duplicate", "expected_status": "failed", "expected_category": "presentation_diversity", "composition_count": 1, "composition_ids": record["composition_ids"], "source_hash": record["source_hash"], "expected_localization": {variant: {"slide": "all", "region": "same content topology with cosmetic changes"} for variant in VARIANTS}})
+            labels.append(
+                {
+                    "case_id": case_id,
+                    "family_id": control["id"],
+                    "control_kind": "cosmetic_only_duplicate",
+                    "expected_status": "failed",
+                    "expected_category": "presentation_diversity",
+                    "composition_count": 1,
+                    "composition_ids": record["composition_ids"],
+                    "source_hash": record["source_hash"],
+                    "expected_localization": {
+                        variant: {
+                            "slide": "all",
+                            "region": "same content topology with cosmetic changes",
+                        }
+                        for variant in VARIANTS
+                    },
+                }
+            )
         for source in registry["source_limited"]:
             case_id = next_id()
             record = _write_source_limited(
                 source, template_path, case_id, output / case_id, validate=validate
             )
             records.append(record)
-            labels.append({"case_id": case_id, "family_id": source["id"], "control_kind": "source_limited", "expected_status": "inconclusive", "expected_category": "source_limited", "composition_count": 0, "composition_ids": record["composition_ids"], "source_hash": record["source_hash"], "expected_localization": {}})
+            labels.append(
+                {
+                    "case_id": case_id,
+                    "family_id": source["id"],
+                    "control_kind": "source_limited",
+                    "expected_status": "inconclusive",
+                    "expected_category": "source_limited",
+                    "composition_count": 0,
+                    "composition_ids": record["composition_ids"],
+                    "source_hash": record["source_hash"],
+                    "expected_localization": {},
+                }
+            )
 
     _verify_labels_labels(records, labels)
-    matrix = _score_validation(records, labels) if validate else {"scorer": "not_run", "cases": [], "counts": {}}
+    matrix = (
+        _score_validation(records, labels)
+        if validate
+        else {"scorer": "not_run", "cases": [], "counts": {}}
+    )
     label_path = output / "labels.expected.json"
-    write_json(label_path, {"schema_version": 1, "warning": "Controller-only expected labels; never copy into a judge packet.", "cases": labels})
+    write_json(
+        label_path,
+        {
+            "schema_version": 1,
+            "warning": "Controller-only expected labels; never copy into a judge packet.",
+            "cases": labels,
+        },
+    )
     validation_path = output / "validation.json"
     write_json(validation_path, matrix)
     case_manifest = [
@@ -1240,12 +1394,16 @@ def build_defect_corpus(output, *, categories=None, include_support=True, valida
     counts = {
         "defect_categories": len(requested),
         "main_cases": len(requested) * 3,
-        "cosmetic_only_duplicate_controls": min(3, len(registry["cosmetic_controls"])) if include_support else 0,
+        "cosmetic_only_duplicate_controls": min(3, len(registry["cosmetic_controls"]))
+        if include_support
+        else 0,
         "source_limited_controls": len(registry["source_limited"]) if include_support else 0,
         "total_cases": len(records),
         "native_presentations": len(records) * len(VARIANTS),
         "rendered_pdf_exports": sum(len(row["bundle"]["variants"]) for row in records),
-        "html_exports": sum(sum("html" in item for item in row["bundle"]["variants"].values()) for row in records),
+        "html_exports": sum(
+            sum("html" in item for item in row["bundle"]["variants"].values()) for row in records
+        ),
         "unique_source_families": len({row["source_hash"] for row in records}),
         "composition_profiles_per_defect_category": 3,
     }
@@ -1262,7 +1420,9 @@ def build_defect_corpus(output, *, categories=None, include_support=True, valida
             "counts": counts,
             "expected_labels_path": str(label_path),
             "validation_path": str(validation_path),
-            "historical_observations_path": str((ROOT / "audit_e2e" / "fixtures" / "historical_observations.json").resolve()),
+            "historical_observations_path": str(
+                (ROOT / "audit_e2e" / "fixtures" / "historical_observations.json").resolve()
+            ),
         },
     )
     return {
@@ -1294,11 +1454,32 @@ def _make_cosmetic_case(source, template_path, case_id, case_root, styles, *, va
     digest, image_digest = _sha(content.encode()), _sha(image_path.read_bytes())
     table = source["table"]
     requirements = [
-        {"id": "source-table", "kind": "table", "status": "gold", "headers": table["headers"], "rows": table["rows"]},
-        {"id": "source-figure", "kind": "image", "status": "gold", "text": "Retain the submitted source figure."},
-        {"id": "visual-control", "kind": "visual", "status": "gold", "minimum_image_width_inches": 4},
+        {
+            "id": "source-table",
+            "kind": "table",
+            "status": "gold",
+            "headers": table["headers"],
+            "rows": table["rows"],
+        },
+        {
+            "id": "source-figure",
+            "kind": "image",
+            "status": "gold",
+            "text": "Retain the submitted source figure.",
+        },
+        {
+            "id": "visual-control",
+            "kind": "visual",
+            "status": "gold",
+            "minimum_image_width_inches": 4,
+        },
         {"id": "variant-presentations", **_read_registry()["diversity_requirement"]},
-        {"id": "native-export-text-agreement", "kind": "text_export_agreement", "status": "gold", "text": "Preserve source anchors across exports."},
+        {
+            "id": "native-export-text-agreement",
+            "kind": "text_export_agreement",
+            "status": "gold",
+            "text": "Preserve source anchors across exports.",
+        },
     ]
     case = {
         "id": case_id,
@@ -1306,9 +1487,21 @@ def _make_cosmetic_case(source, template_path, case_id, case_root, styles, *, va
         "variants": list(VARIANTS),
         "content": content,
         "content_source": {"file": "authored-control-source", "sha256": digest},
-        "reference": {"version": "defect-corpus-1", "status": "gold", "provenance": {"method": "authored_native_control", "review_status": "approved"}, "points": deepcopy(source["facts"]), "requirements": requirements},
+        "reference": {
+            "version": "defect-corpus-1",
+            "status": "gold",
+            "provenance": {"method": "authored_native_control", "review_status": "approved"},
+            "points": deepcopy(source["facts"]),
+            "requirements": requirements,
+        },
         "template": template_path,
-        "template_source": {"source": "authored fictional control template", "format": "PPTX", "sha256": _sha(template_path.read_bytes()), "source_slides": 1, "layouts": 1},
+        "template_source": {
+            "source": "authored fictional control template",
+            "format": "PPTX",
+            "sha256": _sha(template_path.read_bytes()),
+            "source_slides": 1,
+            "layouts": 1,
+        },
         "source_hashes": {"content": digest, "images": {image_path.name: image_digest}},
         "images": [image_path],
         "images_source": [{"file": image_path.name, "sha256": image_digest}],
@@ -1337,7 +1530,9 @@ def _make_cosmetic_case(source, template_path, case_id, case_root, styles, *, va
             raise RuntimeError("LibreOffice is required to render cosmetic duplicate controls")
         html_path = variant_dir / "deck.html"
         _html_for_deck(deck, html_path)
-        asset_hashes[variant] = {key: _sha((variant_dir / f"deck.{key}").read_bytes()) for key in ("pptx", "pdf", "html")}
+        asset_hashes[variant] = {
+            key: _sha((variant_dir / f"deck.{key}").read_bytes()) for key in ("pptx", "pdf", "html")
+        }
         variants.append(variant)
     bundle_dir = case_root / "bundle"
     bundle = build_bundle(case, result_dir, bundle_dir)
@@ -1347,13 +1542,20 @@ def _make_cosmetic_case(source, template_path, case_id, case_root, styles, *, va
         "case_family_id": "cosmetic-only-duplicate",
         "rubric_id": "source-organization-and-composition-1",
         "composition_ids": {variant: "same-decision-first-cards-v1" for variant in VARIANTS},
-        "organization_rules": {variant: "identical fact groups, order and geometry; only palette/font changed" for variant in VARIANTS},
-        "grouped_source_points": {variant: _COMPOSITIONS["executive"]["groups"] for variant in VARIANTS},
+        "organization_rules": {
+            variant: "identical fact groups, order and geometry; only palette/font changed"
+            for variant in VARIANTS
+        },
+        "grouped_source_points": {
+            variant: _COMPOSITIONS["executive"]["groups"] for variant in VARIANTS
+        },
         "source_point_ids": [item["id"] for item in source["facts"]],
         "source_content_sha256": digest,
         "source_ledger_sha256": _sha(json.dumps(source["facts"], sort_keys=True).encode()),
         "artifacts": asset_hashes,
-        "localization": {variant: {"slide": "all", "region": "same content topology"} for variant in VARIANTS},
+        "localization": {
+            variant: {"slide": "all", "region": "same content topology"} for variant in VARIANTS
+        },
         "expected_label_file": "../labels.expected.json",
     }
     metadata_path = case_root / "control-metadata.json"
@@ -1386,7 +1588,15 @@ def main():
         include_support=not args.no_support_controls,
         validate=not args.no_validation,
     )
-    print(json.dumps({key: result[key] for key in ("manifest_path", "labels_path", "validation_path", "counts", "matrix")}, indent=2))
+    print(
+        json.dumps(
+            {
+                key: result[key]
+                for key in ("manifest_path", "labels_path", "validation_path", "counts", "matrix")
+            },
+            indent=2,
+        )
+    )
 
 
 if __name__ == "__main__":

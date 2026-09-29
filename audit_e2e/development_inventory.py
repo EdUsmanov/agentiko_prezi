@@ -108,7 +108,9 @@ def _template_facts(path):
     ]
     chart_types = sorted(str(shape.chart.chart_type) for shape in chart_shapes)
     embedded_workbooks = sorted(
-        name for name in names if name.startswith("ppt/embeddings/") and name.lower().endswith(".xlsx")
+        name
+        for name in names
+        if name.startswith("ppt/embeddings/") and name.lower().endswith(".xlsx")
     )
     source_notes = any(
         any(word in shape.text.casefold() for word in ("source", "unit", "notes"))
@@ -140,11 +142,7 @@ def _template_facts(path):
     for slide in prs.slides:
         rows = []
         for shape in slide.shapes:
-            if (
-                shape.has_text_frame
-                and not shape.text.strip()
-                and not shape.is_placeholder
-            ):
+            if shape.has_text_frame and not shape.text.strip() and not shape.is_placeholder:
                 continue
             if not (
                 shape.has_text_frame
@@ -167,9 +165,9 @@ def _template_facts(path):
             )
         per_slide.append(rows)
     signature = _sha(
-        json.dumps(
-            [width, height, per_slide], ensure_ascii=False, separators=(",", ":")
-        ).encode("utf-8")
+        json.dumps([width, height, per_slide], ensure_ascii=False, separators=(",", ":")).encode(
+            "utf-8"
+        )
     )
     return {
         "sha256": _sha(data),
@@ -281,10 +279,7 @@ def inventory_report():
                 }
             )
         declared = list(case["template"].get("features", []))
-        checks = {
-            name: facts["feature_checks"].get(name, False)
-            for name in declared
-        }
+        checks = {name: facts["feature_checks"].get(name, False) for name in declared}
         if "screenshot_context" in checks:
             checks["screenshot_context"] = bool(images)
         owned_rows.append(
@@ -402,10 +397,7 @@ def inventory_report():
             "target_slide_counts": sorted(row["target_slides"] for row in owned_rows),
             "cases": owned_rows,
             "identical_template_byte_groups": _grouped(
-                [
-                    {"id": row["id"], "sha256": row["template"]["sha256"]}
-                    for row in owned_rows
-                ],
+                [{"id": row["id"], "sha256": row["template"]["sha256"]} for row in owned_rows],
                 "sha256",
             ),
         },

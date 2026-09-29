@@ -89,9 +89,20 @@ def test_expected_inconclusive_labels_require_an_inconclusive_audit():
         "expected_localization": {},
     }
     labels = [label]
-    assert _score_validation([_record("limited", "inconclusive")], labels)["cases"][0]["outcome"] == "inconclusive"
-    assert _score_validation([_record("limited", "failed", [{"category": "other", "severity": "failed"}])], labels)["cases"][0]["outcome"] == "false_positive"
-    assert _score_validation([_record("limited", "passed")], labels)["cases"][0]["outcome"] == "false_success"
+    assert (
+        _score_validation([_record("limited", "inconclusive")], labels)["cases"][0]["outcome"]
+        == "inconclusive"
+    )
+    assert (
+        _score_validation(
+            [_record("limited", "failed", [{"category": "other", "severity": "failed"}])], labels
+        )["cases"][0]["outcome"]
+        == "false_positive"
+    )
+    assert (
+        _score_validation([_record("limited", "passed")], labels)["cases"][0]["outcome"]
+        == "false_success"
+    )
 
 
 def test_diversity_mapping_needs_all_three_failed_pairs():
@@ -139,5 +150,8 @@ def test_historical_observation_index_is_metadata_only():
     path = Path(__file__).parents[1] / "fixtures" / "historical_observations.json"
     index = json.loads(path.read_text(encoding="utf-8"))
     assert index["classification"] == "local_only_historical_observations_not_calibration_labels"
-    assert all("sha256" in item or "judge_description" in item for item in index["observations"][0]["artifacts"].values())
+    assert all(
+        "sha256" in item or "judge_description" in item
+        for item in index["observations"][0]["artifacts"].values()
+    )
     assert "overall_run_inconclusive" in index["observations"][0]["evidence_status"]
