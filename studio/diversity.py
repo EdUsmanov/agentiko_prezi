@@ -35,8 +35,11 @@ def error_keys(scenes, package):
 
 def preserves_quality(before, after, package):
     from .quality import candidate_regressions
+    from .background_selection import preserves_data_space
 
-    return not candidate_regressions(before, after, package, audit=audit_scenes)
+    return all(
+        preserves_data_space(a, b) for a, b in zip(before, after)
+    ) and not candidate_regressions(before, after, package, audit=audit_scenes)
 
 
 def ensure_diversity(decks, package):
@@ -139,6 +142,14 @@ def ensure_diversity(decks, package):
                     ):
                         continue
                     repair_scenes(candidate, package)
+                    from .design_balance import design_cost, improve_contrast
+
+                    improve_contrast(candidate[i], package.template)
+                    if (
+                        design_cost(candidate[i], package.template)
+                        > design_cost(scenes[i], package.template) + 16
+                    ):
+                        continue
                     signature_new = geometry_signature(candidate)
                     slide_changed = meaningful_diversity(
                         {"before": [scenes[i]], "after": [candidate[i]]}, package.template
@@ -174,10 +185,14 @@ def ensure_diversity(decks, package):
                 candidate = [s.model_copy(deep=True) for s in scenes]
                 for scene in candidate:
                     for e in scene.elements:
-                        if e.source_ids and e.kind in ("text", "table", "chart"):
+                        if e.source_ids and e.kind == "text" and e.role != "title":
                             width = e.box.w * ratio
                             e.box.x += (e.box.w - width) * anchor
                             e.box.w = width
+                from .design_balance import fit_reflow_words
+
+                for scene in candidate:
+                    fit_reflow_words(scene, package.template)
                 repair_scenes(candidate, package)
                 candidate_signature = geometry_signature(candidate)
                 if (
@@ -207,12 +222,13 @@ def ensure_diversity(decks, package):
                     for i, scene in enumerate(scenes):
                         trial = scene.model_copy(deep=True)
                         for e in trial.elements:
-                            if e.source_ids and e.kind in ("text", "table", "chart"):
+                            if e.source_ids and e.kind == "text":
                                 if e.role == "title":
                                     continue
                                 width = e.box.w * ratio
                                 e.box.x += (e.box.w - width) * anchor
                                 e.box.w = width
+                        fit_reflow_words(trial, package.template)
                         repair_scenes([trial], package)
                         if error_keys([trial], package) <= error_keys(
                             [scene], package

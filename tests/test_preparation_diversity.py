@@ -55,7 +55,7 @@ def test_identical_model_layouts_are_accepted_without_retry(prepared):
         "# Данные\n| Канал | Объём |\n|---|---|\n| A | 20 |\n| B | 30 |",
     ],
 )
-def test_single_slide_single_pattern_has_three_real_geometries(prepared, source):
+def test_single_pattern_diversity_keeps_evidence_readable(prepared, source):
     _, _, package = prepared
     package.content = parse_content(source)
     package.constraints.slides = 1
@@ -69,8 +69,24 @@ def test_single_slide_single_pattern_has_three_real_geometries(prepared, source)
     decks = {v.key: compose_variant(v, package) for v in plans.variants}
     for scenes in decks.values():
         repair_scenes(scenes, package)
+    original = deepcopy(decks)
     report = ensure_diversity(decks, package)
-    assert report["verified"] and report["distinct"] == 3
+    if package.content.tables:
+        # A single full-width data object and one authored region leave no
+        # safe alternative. Keep its dimensions and disclose the limitation,
+        # instead of manufacturing variety by shrinking charts or tables.
+        assert not report["verified"]
+        assert report["findings"]
+        assert all(f["code"] == "composition_diversity" for f in report["findings"])
+        from studio.background_selection import preserves_data_space
+
+        assert all(
+            preserves_data_space(old, new)
+            for key in decks
+            for old, new in zip(original[key], decks[key])
+        )
+    else:
+        assert report["verified"] and report["distinct"] == 3
     before = deepcopy(decks)
     assert ensure_diversity(decks, package)["adjustments"] == []
     assert decks == before

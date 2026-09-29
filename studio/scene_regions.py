@@ -3,7 +3,8 @@
 
 def unused_body_regions(scene, package):
     """Count unoccupied authored content slots, not intentional cover whitespace."""
-    pattern = next((p for p in package.template.patterns if p.id == scene.pattern_id), None)
+    pattern_id = scene.pattern_id or scene.background_pattern_id
+    pattern = next((p for p in package.template.patterns if p.id == pattern_id), None)
     if not pattern or scene.purpose in ("cover", "divider") or pattern.role in ("cover", "divider"):
         return 0
     content = [
@@ -25,11 +26,15 @@ def unused_body_regions(scene, package):
                 return True
         return False
 
-    zones = list(pattern.body_zones)
+    from .content_panels import empty_content_panels
+
+    # A background donor lends only its artwork, not its original text slots.
+    zones = list(pattern.body_zones) if scene.pattern_id else []
+    zones.extend(empty_content_panels(scene, package.template, pattern))
     # A large source text field removed as 'unused' can leave a conspicuous
     # panel (e.g. an Education code sample). Do not select it for variety alone.
     canvas = getattr(package.template, "width", 0) * getattr(package.template, "height", 0)
-    if canvas > 0:
+    if canvas > 0 and scene.pattern_id:
         from .models import Box
 
         removed = [
@@ -41,7 +46,16 @@ def unused_body_regions(scene, package):
         # text field occupies less than 8% of the canvas. Ignore tiny metadata.
         substantial = [zone for zone in removed if zone.w * zone.h >= canvas * 0.015]
         collective = sum(zone.w * zone.h for zone in substantial) >= canvas * 0.08
-        zones.extend(zone for zone in substantial if collective or zone.w * zone.h >= canvas * 0.08)
+        zones.extend(
+            zone
+            for zone in substantial
+            if collective
+            or zone.w * zone.h >= canvas * 0.08
+            or zone.w * zone.h >= canvas * 0.025
+            and any(
+                zone.w >= body.w * 0.7 and zone.h >= body.h * 0.4 for body in pattern.body_zones
+            )
+        )
     empty = []
     for zone in zones:
         if occupied(zone):

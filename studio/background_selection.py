@@ -102,7 +102,11 @@ def apply_background(scene, package, pattern_id):
             return None
         e.background_hint = background
         if e.kind in ("text", "chart", "table"):
-            required = minimum_text_contrast(e.size, e.bold) if e.kind == "text" else 4.5
+            required = (
+                minimum_text_contrast(e.size, e.bold)
+                if e.kind == "text" and e.role not in ("body", "subheading")
+                else 4.5
+            )
             candidates = [
                 c for c in [e.color, *colors] if c and contrast(c, background) >= required
             ]

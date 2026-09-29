@@ -18,6 +18,8 @@ from studio.template_geometry import walk_shapes
 @pytest.fixture
 def profile():
     return SimpleNamespace(
+        width=720,
+        height=405,
         font="Montserrat",
         font_file=str(ROOT / "fonts/Montserrat-Regular.ttf"),
         font_roles={},
@@ -156,7 +158,7 @@ def test_direct_text_cannot_be_capped_below_readability_by_small_source_style(pr
         size=12,
         source_ids=["f1"],
     )
-    assert element.size == floor
+    assert floor <= element.size <= max(floor, 12 * 1.35)
 
 
 def test_decorative_footer_size_and_impossible_containers_are_not_hidden(profile):

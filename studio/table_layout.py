@@ -37,11 +37,11 @@ def adapt_table_layout(scene, package):
     width, height = right - left, bottom - top
     gap = package.template.width * 0.025
 
-    def text_boxes(x, y, available_width):
+    def text_boxes(x, y, available_width, compact=False):
         boxes = []
         for i in body:
             e = scene.elements[i]
-            size = max(16, e.size)
+            size = 16 if compact else max(16, e.size)
             measure_width = (available_width - (size * 1.4 if e.bullet else 0)) * (
                 0.94 if e.bold or e.bold_prefix else 1
             )
@@ -57,21 +57,26 @@ def adapt_table_layout(scene, package):
         return boxes, y - gap
 
     options = []
-    for fraction in (0.70, 0.76, 0.82, 0.88):
-        tw = width * fraction
-        boxes, end = text_boxes(left + tw + gap, top, width - tw - gap)
-        if end <= bottom:
-            options.append((Box(x=left, y=top, w=tw, h=height), boxes))
-    boxes, end = text_boxes(left, top, width)
-    if end + gap < bottom:
-        options.append((Box(x=left, y=end + gap, w=width, h=bottom - end - gap), boxes))
-    for box, boxes in options:
+    # Larger prose is a preference, not a reason to make a previously fitting
+    # table fail. Try the measured large text first, then the readable 16pt floor.
+    for compact in (False, True):
+        for fraction in (0.70, 0.76, 0.82, 0.88):
+            tw = width * fraction
+            boxes, end = text_boxes(left + tw + gap, top, width - tw - gap, compact)
+            if end <= bottom:
+                options.append((Box(x=left, y=top, w=tw, h=height), boxes, compact))
+        boxes, end = text_boxes(left, top, width, compact)
+        if end + gap < bottom:
+            options.append(
+                (Box(x=left, y=end + gap, w=width, h=bottom - end - gap), boxes, compact)
+            )
+    for box, boxes, compact in options:
         candidate = scene.model_copy(deep=True)
         candidate.elements[table_index].box = box
         candidate.elements[table_index].size = max(16, table.size)
         for i, text_box in zip(body, boxes):
             candidate.elements[i].box = text_box
-            candidate.elements[i].size = max(16, scene.elements[i].size)
+            candidate.elements[i].size = 16 if compact else max(16, scene.elements[i].size)
         repair_scenes([candidate], package)
         if any(f.code in FIT_CODES for f in audit_scenes([candidate], package)):
             continue

@@ -399,6 +399,10 @@ def _compose_slide(variant, package, index, image_groups=None):
     from .stacked_adaptation import adapt_stacked_scene
 
     scene = adapt_stacked_scene(adapt_table_layout(scene, package), package)
+    from .design_balance import improve_contrast
+    from .chart_space import expand_chart_space
+
+    scene = improve_contrast(expand_chart_space(scene, package), package.template)
     if slide.background_pattern_id:
         from .background_selection import apply_background
 
@@ -877,6 +881,9 @@ def compose_native(slide, package, index, variant):
             purpose=slide.purpose,
             pattern_id=pattern.id,
         )
+        from .design_balance import design_cost, improve_contrast
+
+        improve_contrast(probe, p)
         # Table fitting can lower the font after composition. Score the same
         # repaired geometry that the preparation/generation audits will see,
         # otherwise a cramped 16pt table wins and later becomes unreadable.
@@ -895,7 +902,8 @@ def compose_native(slide, package, index, variant):
             for f in policy_findings
         )
         score = (
-            policy_penalty
+            design_cost(probe, p)
+            + policy_penalty
             + contrast_penalty
             + overflow * 100
             + chart_penalty

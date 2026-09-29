@@ -16,7 +16,19 @@ def fixture_scene():
         body_zones=zones[:2],
         role="content",
     )
-    package = SimpleNamespace(template=SimpleNamespace(patterns=[pattern], width=960, height=540))
+    from studio.config import ROOT
+
+    package = SimpleNamespace(
+        template=SimpleNamespace(
+            patterns=[pattern],
+            width=960,
+            height=540,
+            font_roles={},
+            font_assets=[],
+            font="Play",
+            font_file=str(ROOT / "fonts/Play-Regular.ttf"),
+        )
+    )
     scene = SlideScene(
         title="Results",
         background="#ffffff",
@@ -122,11 +134,11 @@ def test_grouped_fact_aliases_cannot_hide_smaller_type(monkeypatch):
     assert not diversity.preserves_quality([scene], [candidate], package)
 
 
-def test_safe_in_zone_reflow_allowed(monkeypatch):
+def test_safe_text_in_zone_reflow_allowed(monkeypatch):
     package, scene, _ = fixture_scene()
     monkeypatch.setattr(diversity, "audit_scenes", lambda *_: [])
     candidate = scene.model_copy(deep=True)
-    candidate.elements[0].box.w *= 0.84
+    candidate.elements[1].box.w *= 0.84
     assert diversity.preserves_quality([scene], [candidate], package)
 
 

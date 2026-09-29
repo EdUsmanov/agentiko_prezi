@@ -6,6 +6,23 @@ from studio.quality import candidate_regressions, quality_report, meaningful_div
 from studio.models import Box, Element, SlideScene
 
 
+def quality_profile(patterns=None):
+    from studio.config import ROOT
+
+    return SimpleNamespace(
+        patterns=patterns or [],
+        width=960,
+        height=540,
+        body_size=20,
+        font="Play",
+        font_file=str(ROOT / "fonts/Play-Regular.ttf"),
+        font_roles={},
+        font_assets=[],
+        foreground="#222222",
+        colors=["#222222", "#FFFFFF"],
+    )
+
+
 def manifest():
     return {
         "variants": [{"key": "executive", "findings": []}],
@@ -63,7 +80,7 @@ def test_title_without_fact_id_and_data_area_are_protected():
     new = old.model_copy(deep=True)
     new.elements[0].size = 12
     new.elements[1].box.h = 100
-    package = SimpleNamespace(template=SimpleNamespace(patterns=[]))
+    package = SimpleNamespace(template=quality_profile())
     codes = {f["code"] for f in candidate_regressions([old], [new], package, audit=lambda *_: [])}
     assert codes == {"readability_regression", "data_area_regression"}
 
@@ -211,7 +228,7 @@ def test_diversity_accumulates_safe_layout_changes_across_slides(monkeypatch):
         for i in range(2)
     ]
     package = SimpleNamespace(
-        template=SimpleNamespace(patterns=patterns, width=960, height=540),
+        template=quality_profile(patterns),
         content=SimpleNamespace(
             tables=[], facts=[Fact(id=f"f{i}", text=f"Evidence {i}") for i in range(2)]
         ),

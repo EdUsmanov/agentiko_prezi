@@ -266,7 +266,9 @@ def render_chart(slide, e, profile):
         chart.legend.position = XL_LEGEND_POSITION.BOTTOM
         chart.legend.include_in_layout = False
         apply_ooxml_font(chart.legend.font, font_file)
-        chart.legend.font.size = Pt(min(16, e.size))
+        from .chart_layout import legend_font_size
+
+        chart.legend.font.size = Pt(legend_font_size(e))
         chart.legend.font.color.rgb = rgb(e.color)
     palette = list(dict.fromkeys([profile.accent] + profile.colors))
     from .template_geometry import contrast
