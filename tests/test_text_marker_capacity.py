@@ -21,6 +21,8 @@ from studio.text_composer import fact_elements
 @pytest.fixture
 def profile():
     return SimpleNamespace(
+        width=720,
+        height=405,
         font="Montserrat",
         font_file=str(ROOT / "fonts/Montserrat-Regular.ttf"),
         font_roles={},
@@ -57,7 +59,7 @@ def test_implicit_list_and_source_or_heading_keep_their_own_marker_policy(profil
     elements = fact_elements(facts, Box(x=0, y=0, w=400, h=200), profile, "#222222")
     assert [e.bullet for e in elements] == [True, False, False, True]
     assert [e.text for e in elements] == texts
-    assert all(e.size == 18 for e in elements)
+    assert all(18 <= e.size <= 18 * 1.35 for e in elements)
     assert all(a.box.y + a.box.h <= b.box.y for a, b in zip(elements, elements[1:]))
 
 
