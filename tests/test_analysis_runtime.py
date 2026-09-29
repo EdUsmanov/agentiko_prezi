@@ -3,7 +3,7 @@ from types import SimpleNamespace
 
 import httpx
 import pytest
-from studio.analysis import analyze_meaning
+from studio.templates.template_analysis import analyze_meaning
 
 
 def result(payload):
@@ -63,7 +63,7 @@ def test_classifier_response_budget_and_truncation_metadata(tmp_path):
     import json
     from dataclasses import replace
     from tests.test_gateway import settings
-    from studio.gateway import ModelGateway
+    from studio.providers.gateway import ModelGateway
 
     def handler(request):
         body = json.loads(request.content)
@@ -186,7 +186,7 @@ def test_image_free_layout_batches_are_small():
 
 
 def test_truncated_batch_splits_without_identical_retry():
-    from studio.gateway import ModelResponseTruncated
+    from studio.providers.gateway import ModelResponseTruncated
 
     class Gateway:
         settings = SimpleNamespace(mode="api")

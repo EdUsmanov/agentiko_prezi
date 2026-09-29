@@ -13,14 +13,14 @@ import tempfile
 import time
 from studio.config import ROOT, Settings
 from studio.models import PreparedPackage
-from studio.template import analyze_template
-from studio.native_template import compile_backgrounds
-from studio.analysis import reference_images
-from studio.contracts import apply_meanings
-from studio.storyboard import prepare_storyboard
-from studio.planner import extractive_plans, assign_compositions, validate_plans
+from studio.templates.parsing import analyze_template
+from studio.templates.native_template import compile_backgrounds
+from studio.templates.template_analysis import reference_images
+from studio.composition.contracts import apply_meanings
+from studio.contents.storyboard import prepare_storyboard
+from studio.contents.planner import extractive_plans, assign_compositions, validate_plans
 from studio.pipeline import generate, versions
-from studio.store import Store
+from studio.jobs.store import Store
 from studio.security import digest
 
 
@@ -31,7 +31,7 @@ def main():
     original = Path(args.prepared_package).resolve()
     p = PreparedPackage.model_validate_json(original.read_text())
     root = Path(tempfile.mkdtemp(prefix="semantic-replay-", dir=ROOT / "test-results"))
-    settings = replace(Settings.from_env(), data_dir=root / "data")
+    settings = replace(Settings.from_env(), data_dir=root / "data", execution_kind="replay")
 
     class ProgressStore(Store):
         def update(self, jid, state=None, **fields):

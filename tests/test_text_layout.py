@@ -6,12 +6,12 @@ from pptx import Presentation
 from pypdf import PdfReader
 from reportlab.pdfbase import pdfmetrics
 from studio.config import ROOT, Settings
-from studio.fonts import check_glyphs, wrap_text, pdf_font
-from studio.text_layout import layout_words, without_word_joiners
-from studio.content import parse_content
+from studio.templates.fonts import check_glyphs, wrap_text, pdf_font
+from studio.composition.text_layout import layout_words, without_word_joiners
+from studio.contents.parsing import parse_content
 from studio.pipeline import prepare, load_package, generate
 from studio.security import InputRejected
-from studio.store import Store
+from studio.jobs.store import Store
 
 FONT = str(ROOT / "fonts/Play-Regular.ttf")
 

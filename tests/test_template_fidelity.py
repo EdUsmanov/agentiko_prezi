@@ -4,14 +4,14 @@ import pytest
 from pptx import Presentation
 from pptx.util import Pt, Inches
 from pptx.dml.color import RGBColor
-from studio.native_style import native_styles
-from studio.native_template import native_patterns
-from studio.content import parse_content
+from studio.templates.native_style import native_styles
+from studio.templates.native_template import native_patterns
+from studio.contents.parsing import parse_content
 from studio.models import Pattern, Box
-from studio.sections import prepare_sections, add_dividers
-from studio.planner import extractive_plans, assign_compositions, validate_plans
-from studio.composer import compose_variant
-from studio.audit import audit_scenes
+from studio.contents.sections import prepare_sections, add_dividers
+from studio.contents.planner import extractive_plans, assign_compositions, validate_plans
+from studio.composition.composer import compose_variant
+from studio.checks.audit import audit_scenes
 
 
 def test_effective_shape_colors_and_empty_layout(template, tmp_path):
@@ -74,7 +74,7 @@ def test_single_native_zone_not_split_and_colors_preserved(prepared):
 
 def test_bullet_uses_text_color_and_size(prepared):
     from studio.models import Element
-    from studio.render import set_text
+    from studio.composition.render import set_text
 
     _, _, p = prepared
     prs = Presentation()

@@ -4,10 +4,10 @@ import asyncio
 from copy import deepcopy
 from types import SimpleNamespace
 import pytest
-from studio.content import parse_content
-from studio.editorial import validate_plan, apply_plan, EditorialPlan
-from studio.editorial_repair import prepare_with_targeted_repairs, plan_signature
-from studio.models import Constraints
+from studio.contents.parsing import parse_content
+from studio.contents.editorial import validate_plan, apply_plan, EditorialPlan
+from studio.contents.editorial_repair import prepare_with_targeted_repairs, plan_signature
+from studio.models import Constraints, PreparationControl, SlideBudget
 
 
 def table_case():
@@ -64,12 +64,12 @@ def test_patch_signature_ignores_only_resolved_quotes():
 
 
 def test_unchanged_patch_is_rejected_then_corrected_with_feedback(monkeypatch, tmp_path):
-    from studio import narrative_layout as narrative
+    from studio.contents import narrative_layout as narrative
 
     monkeypatch.setattr(
         narrative,
         "narrative_storyboard",
-        lambda p: p.analysis.update(slide_budget={"status": "adjusted"}),
+        lambda p: setattr(p.control, "slide_budget", SlideBudget(status="adjusted")),
     )
     source = parse_content("Пилот ускоряет обработку. Экономия не гарантирована.")
     initial = {
@@ -87,6 +87,7 @@ def test_unchanged_patch_is_rejected_then_corrected_with_feedback(monkeypatch, t
         template=SimpleNamespace(patterns=[]),
         constraints=Constraints(slides=1, count_mode="exact", summarize=True),
         analysis={},
+        control=PreparationControl(),
     )
 
     class Gateway:
@@ -124,8 +125,8 @@ def test_unchanged_patch_is_rejected_then_corrected_with_feedback(monkeypatch, t
 
 
 def test_cached_patch_is_revalidated_against_current_rejected_state(tmp_path):
-    from studio.induction import validated_request
-    from studio.editorial_repair import apply_replacements, EditorialPatch
+    from studio.providers.induction import validated_request
+    from studio.contents.editorial_repair import apply_replacements, EditorialPatch
 
     _, _, raw = table_case()
     raw = EditorialPlan.model_validate(raw).model_dump()
@@ -183,8 +184,8 @@ def test_fixing_a_forged_quote_counts_as_a_real_repair():
 
 
 def test_displayed_table_cannot_remain_in_omissions_after_targeted_patch():
-    from studio.editorial_repair import apply_replacements
-    from studio.editorial import review_payload
+    from studio.contents.editorial_repair import apply_replacements
+    from studio.contents.editorial import review_payload
 
     source, table, raw = table_case()
     owner = next(f.id for f in source.facts if f.source == table.id)

@@ -11,7 +11,7 @@ from zipfile import ZipFile
 from studio.config import ROOT, Settings
 from studio.pipeline import prepare, load_package, generate
 from studio.security import digest
-from studio.store import Store
+from studio.jobs.store import Store
 
 
 def main():

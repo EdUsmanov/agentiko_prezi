@@ -6,8 +6,8 @@ from types import SimpleNamespace
 from PIL import Image, ImageDraw
 from pptx import Presentation
 
-from studio.portable_templates import extract_backgrounds
-from studio.raster_review import review_template_rasters
+from studio.templates.portable_templates import extract_backgrounds
+from studio.checks.raster_review import review_template_rasters
 
 
 def test_vl_raster_regions_reach_background_extractor(tmp_path):

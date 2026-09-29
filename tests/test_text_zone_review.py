@@ -2,7 +2,7 @@ import asyncio
 from types import SimpleNamespace
 import pytest
 from PIL import Image
-from studio.text_zone_review import recognize_cells, check_fields
+from studio.checks.text_zone_review import recognize_cells, check_fields
 from studio.models import Box, Pattern
 
 
@@ -97,7 +97,7 @@ def test_field_geometry_keeps_cards_separate_and_reports_unknown():
 
 def test_unknown_authored_field_triggers_vl_even_on_simple_canvas(tmp_path, monkeypatch):
     import json
-    from studio.text_zone_review import review_text_zones
+    from studio.checks.text_zone_review import review_text_zones
 
     path = tmp_path / "simple.png"
     Image.new("RGB", (1280, 720), "white").save(path)
@@ -113,13 +113,15 @@ def test_unknown_authored_field_triggers_vl_even_on_simple_canvas(tmp_path, monk
     profile = SimpleNamespace(patterns=[pattern], width=1280, height=720)
     (tmp_path / "background-model.json").write_text(json.dumps({"slides": [{}]}))
     monkeypatch.setattr(
-        "studio.text_zone_review.analyze_image",
+        "studio.checks.text_zone_review.analyze_image",
         lambda *args: {"recognition_mode": "flat_pixel_mask"},
     )
-    monkeypatch.setattr("studio.portable_templates.zone_metadata", lambda *args: {})
-    monkeypatch.setattr("studio.portable_templates.inspect_text_zone", lambda *args, **kwargs: {})
+    monkeypatch.setattr("studio.templates.portable_templates.zone_metadata", lambda *args: {})
     monkeypatch.setattr(
-        "studio.text_zone_review.check_fields",
+        "studio.templates.portable_templates.inspect_text_zone", lambda *args, **kwargs: {}
+    )
+    monkeypatch.setattr(
+        "studio.checks.text_zone_review.check_fields",
         lambda *args: [{"role": "title", "index": 0, "status": "safe" if args[-1] else "unknown"}],
     )
     calls = []
@@ -144,7 +146,7 @@ def test_unknown_authored_field_triggers_vl_even_on_simple_canvas(tmp_path, monk
 def test_vl_failure_is_explicit_and_stops_request_cascade(tmp_path, monkeypatch):
     import json
     import numpy as np
-    from studio.text_zone_review import review_text_zones
+    from studio.checks.text_zone_review import review_text_zones
 
     pixels = np.indices((720, 1280)).sum(axis=0) // 8 % 2 * 180
     path = tmp_path / "complex.png"
@@ -185,7 +187,7 @@ def test_vl_failure_is_explicit_and_stops_request_cascade(tmp_path, monkeypatch)
     assert [p["vl_status"] for p in report["patterns"]] == ["failed", "not_run"]
     assert all(c["status"] == "unknown" for p in report["patterns"] for c in p["field_checks"])
     monkeypatch.setattr(
-        "studio.text_zone_review.check_fields",
+        "studio.checks.text_zone_review.check_fields",
         lambda *args: [{"role": "title", "index": 0, "status": "safe"}],
     )
     report = asyncio.run(review_text_zones(profile, tmp_path, gateway))

@@ -10,7 +10,7 @@ from studio.security_gate import (
     check_package,
 )
 from studio.pipeline import prepare
-from studio.store import Store
+from studio.jobs.store import Store
 
 
 @pytest.mark.parametrize("field", ["text", "audience", "instructions"])

@@ -5,8 +5,8 @@ import pytest
 from pptx import Presentation
 from pptx.util import Pt
 from studio.config import ROOT
-from studio.export_audit import geometry
-from studio.fonts import text_width
+from studio.checks.export_audit import geometry
+from studio.templates.fonts import text_width
 
 
 @pytest.fixture

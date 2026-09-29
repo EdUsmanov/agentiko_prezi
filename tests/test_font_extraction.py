@@ -17,10 +17,14 @@ from fontTools import subset
 from fontTools.ttLib import TTFont
 
 from studio.config import ROOT
-from studio.font_coverage import ensure_text_coverage
-from studio.font_extraction import _apply_missing_font_fallbacks, _kit, extract_template_fonts
-from studio.fonts import check_glyphs, role_font
-from studio.template import analyze_template
+from studio.templates.font_coverage import ensure_text_coverage
+from studio.templates.font_extraction import (
+    _apply_missing_font_fallbacks,
+    _kit,
+    extract_template_fonts,
+)
+from studio.templates.fonts import check_glyphs, role_font
+from studio.templates.parsing import analyze_template
 
 
 def test_bundle_model_and_role_adapter(template, tmp_path):
@@ -46,7 +50,7 @@ def test_bundle_model_and_role_adapter(template, tmp_path):
 
 
 def test_missing_face_is_downloaded_or_substituted_without_blocking(tmp_path, monkeypatch):
-    from studio import font_extraction
+    from studio.templates import font_extraction
 
     monkeypatch.setattr(font_extraction, "ROOT", tmp_path)
     bundled = tmp_path / "fonts"
@@ -129,7 +133,7 @@ def test_exact_local_font_is_used_without_network(template, tmp_path):
 
 
 def test_custom_data_directory_font_is_found(template, tmp_path, monkeypatch):
-    from studio import font_extraction
+    from studio.templates import font_extraction
 
     monkeypatch.setattr(font_extraction, "ROOT", tmp_path / "empty")
     local = tmp_path / "data/local-fonts"

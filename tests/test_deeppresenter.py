@@ -6,7 +6,7 @@ from dataclasses import replace
 import pytest
 
 pytest.importorskip("openai")
-from studio.deeppresenter import (
+from studio.providers.deeppresenter import (
     Assignment,
     Action,
     CompositionEnvironment,
@@ -14,8 +14,8 @@ from studio.deeppresenter import (
     design,
     COMMIT,
 )
-from studio.planner import extractive_plans, assign_compositions
-from studio.composer import compose_variant
+from studio.contents.planner import extractive_plans, assign_compositions
+from studio.composition.composer import compose_variant
 
 
 def environment(prepared):

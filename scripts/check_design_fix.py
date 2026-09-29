@@ -3,14 +3,14 @@
 import argparse
 import json
 from studio.config import Settings, ROOT
-from studio.store import Store
+from studio.jobs.store import Store
 from studio.pipeline import load_package
-from studio.template import analyze_template
-from studio.native_template import compile_backgrounds
-from studio.planner import extractive_plans, assign_compositions
-from studio.composer import compose_variant
-from studio.audit import audit_scenes, repair_scenes
-from studio.render import render_variant
+from studio.templates.parsing import analyze_template
+from studio.templates.native_template import compile_backgrounds
+from studio.contents.planner import extractive_plans, assign_compositions
+from studio.composition.composer import compose_variant
+from studio.checks.audit import audit_scenes, repair_scenes
+from studio.composition.render import render_variant
 
 
 def main():

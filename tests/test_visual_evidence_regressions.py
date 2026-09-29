@@ -5,8 +5,8 @@ from pptx.dml.color import RGBColor
 from pptx.enum.shapes import MSO_SHAPE
 from pptx.enum.chart import XL_CHART_TYPE
 from pptx.chart.data import CategoryChartData
-from studio.native_template import title_bounds, native_patterns
-from studio.export_audit import slide_text, inspect_content
+from studio.templates.native_template import title_bounds, native_patterns
+from studio.checks.export_audit import slide_text, inspect_content
 from studio.models import Box, Element, SlideScene, TableData, VariantPlan, SlidePlan
 
 
@@ -81,7 +81,7 @@ def test_exported_native_chart_values_reach_text_review(prepared):
 
 
 def test_table_header_fit_measures_bold_face():
-    from studio.fonts import resolve_font, text_width, table_cell_fits
+    from studio.templates.fonts import resolve_font, text_width, table_cell_fits
 
     regular = resolve_font("Montserrat")
     bold = resolve_font("Montserrat Bold")
@@ -97,7 +97,7 @@ def test_table_header_fit_measures_bold_face():
 
 
 def test_native_table_padding_is_applied_once(prepared, tmp_path):
-    from studio.render import render_pptx
+    from studio.composition.render import render_pptx
 
     _, store, package = prepared
     element = Element(

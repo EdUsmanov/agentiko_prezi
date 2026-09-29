@@ -1,6 +1,6 @@
 from pptx import Presentation
 from pptx.util import Pt
-from studio.native_template import native_patterns
+from studio.templates.native_template import native_patterns
 
 
 def test_labeled_illustration_is_a_physical_evidence_field_not_body_text():
@@ -96,7 +96,7 @@ def test_scaled_group_fields_use_absolute_slide_coordinates():
 
 
 def test_verified_graphic_path_reorders_all_field_bindings():
-    from studio.contracts import apply_meanings
+    from studio.composition.contracts import apply_meanings
     from types import SimpleNamespace
     from studio.models import Pattern, Box
 
@@ -128,8 +128,8 @@ def test_verified_graphic_path_reorders_all_field_bindings():
 
 
 def test_vector_paths_survive_cleaning_without_sample_labels(tmp_path):
-    from studio.portable_templates import extract_backgrounds
-    from studio.powerpoint import open_presentation
+    from studio.templates.portable_templates import extract_backgrounds
+    from studio.composition.powerpoint import open_presentation
     from types import SimpleNamespace
     from pptx.enum.shapes import MSO_SHAPE
 

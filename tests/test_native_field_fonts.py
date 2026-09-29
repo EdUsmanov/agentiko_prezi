@@ -1,6 +1,6 @@
 from pptx import Presentation
 from pptx.util import Pt
-from studio.native_template import native_patterns
+from studio.templates.native_template import native_patterns
 
 
 def test_field_font_inherits_from_its_own_layout():

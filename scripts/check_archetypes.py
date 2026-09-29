@@ -9,10 +9,10 @@ from types import SimpleNamespace
 import tempfile
 import time
 
-from studio.archetypes import analyze_content_archetypes
+from studio.contents.archetypes import analyze_content_archetypes
 from studio.config import Settings, ROOT
-from studio.content import parse_content
-from studio.gateway import ModelGateway
+from studio.contents.parsing import parse_content
+from studio.providers.gateway import ModelGateway
 
 CASES = {
     "speaker": """# Спикер

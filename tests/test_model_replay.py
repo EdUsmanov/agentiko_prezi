@@ -12,8 +12,8 @@ from PIL import Image
 import pytest
 
 from studio.config import Settings
-from studio.gateway import ModelGateway, ModelResponseTruncated
-from studio.induction import InductionFailure, validated_request
+from studio.providers.gateway import ModelGateway, ModelResponseTruncated
+from studio.providers.induction import InductionFailure, validated_request
 from test_support.replay import Replay, request_contract
 
 FIXTURES = Path(__file__).parent / "fixtures/model_responses"

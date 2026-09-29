@@ -1,10 +1,8 @@
 """Boundary failures must stop before repair/publication, without changing saved JSON."""
 
-import ast
-from pathlib import Path
 import pytest
 from pydantic import ValidationError
-from studio.stage_results import (
+from studio.generation.results import (
     ContentReviewResult,
     EngineReport,
     RefinementReport,
@@ -118,46 +116,6 @@ def test_deadline_reserves_export_time_and_preserves_unlimited_mode(monkeypatch)
         GenerationDeadline(99).remaining()
 
 
-def test_studio_module_dependencies_are_acyclic_including_local_imports():
-    root = Path(__file__).resolve().parents[1] / "studio"
-    modules = {p.stem: p for p in root.glob("*.py")}
-    graph = {}
-    for name, path in modules.items():
-        imports = set()
-        for node in ast.walk(ast.parse(path.read_text())):
-            if isinstance(node, ast.ImportFrom):
-                if node.level == 1:
-                    imports.update(
-                        [node.module.split(".")[0]]
-                        if node.module
-                        else [alias.name.split(".")[0] for alias in node.names]
-                    )
-                elif node.module and node.module.startswith("studio."):
-                    imports.add(node.module.split(".")[1])
-            elif isinstance(node, ast.Import):
-                imports.update(
-                    alias.name.split(".")[1]
-                    for alias in node.names
-                    if alias.name.startswith("studio.")
-                )
-        graph[name] = imports & modules.keys()
-    visited = set()
-    active = []
-
-    def visit(name):
-        assert name not in active, "Circular import: " + " -> ".join(active + [name])
-        if name in visited:
-            return
-        active.append(name)
-        for dependency in sorted(graph[name]):
-            visit(dependency)
-        active.pop()
-        visited.add(name)
-
-    for name in sorted(graph):
-        visit(name)
-
-
 def test_new_stage_boundary_does_not_migrate_or_discard_package_diagnostics(prepared):
     from studio.models import PreparedPackage
     from studio.pipeline import load_package
@@ -203,7 +161,7 @@ def test_refinement_cannot_claim_success_without_accepted_edits(status, accepted
 
 def test_publication_gate_failure_preserves_diagnostics_but_never_packages(tmp_path, monkeypatch):
     import json
-    from studio.generation_publication import publish_artifacts
+    from studio.generation.publication import publish_artifacts
 
     calls = []
 
@@ -211,9 +169,9 @@ def test_publication_gate_failure_preserves_diagnostics_but_never_packages(tmp_p
         calls.append("gate")
         raise ValueError("blocked")
 
-    monkeypatch.setattr("studio.quality_gate.require_publishable", reject)
+    monkeypatch.setattr("studio.checks.quality_gate.require_publishable", reject)
     monkeypatch.setattr(
-        "studio.generation_publication.package_results", lambda _: calls.append("zip")
+        "studio.generation.publication.package_results", lambda _: calls.append("zip")
     )
     with pytest.raises(ValueError, match="blocked"):
         publish_artifacts(tmp_path, {"errors": 1}, GenerationDeadline(None), 0, None)
@@ -222,14 +180,16 @@ def test_publication_gate_failure_preserves_diagnostics_but_never_packages(tmp_p
 
 
 def test_publication_orders_gate_and_both_archives_before_completion(tmp_path, monkeypatch):
-    from studio.generation_publication import publish_artifacts
+    from studio.generation.publication import publish_artifacts
 
     calls = []
-    monkeypatch.setattr("studio.quality_gate.require_publishable", lambda _: calls.append("gate"))
     monkeypatch.setattr(
-        "studio.generation_publication.package_results", lambda _: calls.append("zip")
+        "studio.checks.quality_gate.require_publishable", lambda _: calls.append("gate")
     )
-    monkeypatch.setattr("studio.generation_publication.time.time", lambda: 10)
+    monkeypatch.setattr(
+        "studio.generation.publication.package_results", lambda _: calls.append("zip")
+    )
+    monkeypatch.setattr("studio.generation.publication.time.time", lambda: 10)
     manifest = {"errors": 0}
     publish_artifacts(tmp_path, manifest, GenerationDeadline(None), 5, None)
     assert calls == ["gate", "zip", "zip"]

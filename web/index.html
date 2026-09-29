@@ -14,9 +14,11 @@
           <label class="field-label" for="reference">Шаблон презентации <span>01</span></label>
           <select id="reference" name="reference_id"><option value="">Загрузить свой PPTX или POTX</option></select>
           <p id="runtime-status" class="profile-detail" role="status" aria-live="polite"></p>
-          <p class="profile-detail">Анализируется только выбранный шаблон. Примеры необязательны и не обрабатываются в фоне.</p>
+          <p class="profile-detail">Сразу после выбора изучаем только этот шаблон. Примеры организаторов необязательны.</p>
           <label class="dropzone" id="dropzone" for="template"><span class="upload-icon">↥</span><strong id="file-label">Перетащите PPTX / POTX или выберите файл</strong><small>До 60 МБ. Анализируем и макеты, и обычные слайды.</small><input id="template" type="file" accept=".pptx,.potx" name="template"></label>
+          <p class="under-button" id="model-disclosure">Анализ начинается сразу после выбора. При подключённой модели образцы текста и изображения слайдов могут быть отправлены провайдеру.</p>
           <label class="field-label" for="content">Текст и данные <span>02</span></label>
+          <label class="field-label" for="input-mode">Режим материала</label><select id="input-mode" name="input_mode"><option value="content" selected>Готовый материал</option><option value="brief">Короткий бриф — сначала утвержу план и текст</option></select>
           <textarea id="content" name="text" rows="11" required maxlength="120000" placeholder="О чём презентация? Добавьте факты, выводы и данные. Таблицы можно вставить в Markdown."></textarea>
           <div class="helper"><span id="char-count">0 символов</span><span>Факты сохраняются со ссылками на источник</span></div>
           <label class="field-label" for="images">Иллюстрации к материалу <span>03</span></label>
@@ -24,10 +26,10 @@
           <small id="images-help">До 12 PNG/JPEG/WebP, по 8 МБ, всего 24 МБ. Для привязки к разделу: ![Описание](имя-файла.png). Без ссылки — распределим по слайдам. Картинки не передаются планировщику.</small>
           <div id="images-list" aria-live="polite"></div>
           <div class="two-fields"><div><label class="field-label" for="audience">Аудитория</label><input id="audience" name="audience" placeholder="Например, руководители проекта" maxlength="2000"></div><div><label class="field-label" for="slides">Объём презентации</label><select id="slides" name="size_preset"><option value="mini">Мини-преза · 3–5 слайдов</option><option value="standard" selected>Стандартная · 6–10 слайдов</option><option value="large">Большая · 11–20 слайдов</option></select></div></div>
+          <p id="source-volume-warning" class="notice warning" role="status" hidden></p>
           <label class="field-label" for="instructions">Особые указания</label><input id="instructions" name="instructions" placeholder="Например: не более 5 слайдов" maxlength="5000">
           <button class="primary" id="prepare-button" type="submit">Проанализировать материалы <span>→</span></button>
           <p class="under-button">Анализ и генерация без общего лимита времени. Через 60 секунд после анализа генерация начнётся автоматически. Исходные файлы не изменяются.</p>
-          <p class="under-button" id="model-disclosure">Проверяем режим обработки материалов…</p>
         </form>
       </section>
       <section class="right-column">
@@ -42,7 +44,7 @@
     <footer>VK FORMA / OPEN-SOURCE PRESENTATION STUDIO <span>Редактируемые PPTX · HTML · PDF</span></footer>
   </main>
 <dialog id="diagnostics-dialog"><div class="preview-heading"><strong id="diagnostics-title">Журнал</strong><a id="download-diagnostics" class="text-button" download>Скачать JSON</a><button id="close-diagnostics" aria-label="Закрыть журнал">×</button></div><pre id="diagnostics-output" aria-live="off"></pre></dialog>
-  <dialog id="preview-dialog"><div class="preview-heading"><strong id="preview-title">Предпросмотр</strong><button id="close-preview" aria-label="Закрыть">×</button></div><div class="preview-content"><img id="preview-image" alt="Слайд презентации"><div class="preview-controls"><button id="prev-slide">←</button><span id="slide-counter"></span><button id="next-slide">→</button></div></div></dialog>
+  <dialog id="preview-dialog"><div class="preview-heading"><strong id="preview-title">Предпросмотр</strong><button id="close-preview" aria-label="Закрыть">×</button></div><div class="preview-content"><div class="preview-image-wrap"><img id="preview-image" alt="Слайд презентации"><span id="preview-mark" hidden aria-hidden="true"></span></div><div class="preview-controls"><button id="prev-slide">←</button><span id="slide-counter"></span><button id="next-slide">→</button></div></div></dialog>
   <dialog id="security-dialog" role="alertdialog" aria-labelledby="security-title" aria-describedby="security-explanation">
     <img src="/static/assets/security-block.jpg" alt="Стоп: обработка материалов заблокирована" width="590" height="589">
     <h2 id="security-title">Промпт-инъекция? Не сегодня.</h2>

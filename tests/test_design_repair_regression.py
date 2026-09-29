@@ -6,10 +6,10 @@ from types import SimpleNamespace
 import json
 import pytest
 
-from studio.content import parse_content, parse_constraints
-from studio.editorial import EditorialPlan
-from studio.editorial_repair import prepare_with_targeted_repairs
-from studio.editorial_patch_validation import (
+from studio.contents.parsing import parse_content, parse_constraints
+from studio.contents.editorial import EditorialPlan
+from studio.contents.editorial_repair import prepare_with_targeted_repairs
+from studio.contents.editorial_patch_validation import (
     shortening_contracts,
     validate_contracts,
     validate_repaired_plan,
@@ -79,12 +79,13 @@ def test_shortening_cannot_switch_subject_or_drop_an_event():
 
 
 def test_bad_replacement_is_retried_before_caching_or_semantic_review(monkeypatch, tmp_path):
-    from studio import narrative_layout as narrative
+    from studio.contents import narrative_layout as narrative
+    from studio.models import PreparationControl, SlideBudget
 
     monkeypatch.setattr(
         narrative,
         "narrative_storyboard",
-        lambda p: p.analysis.update(slide_budget={"status": "adjusted"}),
+        lambda p: setattr(p.control, "slide_budget", SlideBudget(status="adjusted")),
     )
     source, raw = timeline_case()
     package = SimpleNamespace(
@@ -93,6 +94,7 @@ def test_bad_replacement_is_retried_before_caching_or_semantic_review(monkeypatc
         template=SimpleNamespace(patterns=[]),
         constraints=Constraints(slides=2, count_mode="exact", summarize=True),
         analysis={},
+        control=PreparationControl(),
     )
 
     class Gateway:
@@ -178,7 +180,7 @@ def test_minimum_slide_count_is_parsed(instruction):
 
 
 def test_minimum_is_part_of_the_editorial_contract_before_requests(monkeypatch):
-    from studio import editorial_repair
+    from studio.contents import editorial_repair
 
     package = SimpleNamespace(
         content=parse_content("Source material."),
@@ -204,14 +206,15 @@ def test_minimum_is_part_of_the_editorial_contract_before_requests(monkeypatch):
 
 
 def test_adjusted_plan_cannot_bypass_minimum():
-    from studio.storyboard import planned_slide_count
+    from studio.contents.storyboard import planned_slide_count
+    from studio.models import PreparationControl, SlideBudget
 
     package = SimpleNamespace(
         constraints=parse_constraints(None, "", "не менее 5 слайдов", "mini"),
-        analysis={
-            "slide_budget": {"status": "adjusted", "requested": 5, "planned": 4},
-            "storyboard": [{}, {}, {}, {}],
-        },
+        analysis={"storyboard": [{}, {}, {}, {}]},
+        control=PreparationControl(
+            slide_budget=SlideBudget(status="adjusted", requested=5, planned=4)
+        ),
     )
     with pytest.raises(ValueError, match="количества слайдов"):
         planned_slide_count(package)

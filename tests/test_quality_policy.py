@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 import pytest
-from studio.quality import candidate_regressions, quality_report, meaningful_diversity
+from studio.checks.quality import candidate_regressions, quality_report, meaningful_diversity
 from studio.models import Box, Element, SlideScene
 
 
@@ -112,7 +112,7 @@ def saved_european():
 
 
 def test_european_repair_rejects_real_20_to_12_candidate(saved_european):
-    from studio.refinement import apply_edits, LayoutEdit
+    from studio.checks.refinement import apply_edits, LayoutEdit
 
     package, plans, decks = saved_european
     with pytest.raises(ValueError, match="quality"):
@@ -127,7 +127,7 @@ def test_european_repair_rejects_real_20_to_12_candidate(saved_european):
 
 
 def test_european_design_reverts_same_real_candidate(saved_european):
-    from studio.deeppresenter import CompositionEnvironment, Assignment
+    from studio.providers.deeppresenter import CompositionEnvironment, Assignment
 
     package, plans, _ = saved_european
     env = CompositionEnvironment(package, plans)
@@ -143,7 +143,7 @@ def test_exported_geometry_ignores_titles_and_rejects_one_point_motion():
     from pptx import Presentation
     from pptx.util import Pt
     from studio.models import Fact, SlidePlan, VariantPlan
-    from studio.export_audit import content_scenes
+    from studio.checks.export_audit import content_scenes
 
     facts = [Fact(id=f"f{i}", text=f"Evidence {i}") for i in range(3)]
     package = SimpleNamespace(
@@ -177,7 +177,8 @@ def test_exported_geometry_ignores_titles_and_rejects_one_point_motion():
 
 def test_diversity_accumulates_safe_layout_changes_across_slides(monkeypatch):
     from studio.models import Pattern, Fact
-    from studio import diversity, composer
+    from studio.checks import diversity
+    from studio.composition import composer
 
     title = Box(x=20, y=10, w=800, h=60)
     left = Box(x=20, y=120, w=350, h=200)

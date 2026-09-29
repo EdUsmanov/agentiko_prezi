@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "provenance": "Hand-authored synthetic responses captured at the real HTTP gateway boundary. Not a real model quality benchmark.",
+  "provenance": "Hand-authored synthetic responses captured at the real HTTP gateway boundary. Not a real model quality benchmark. Two terminal 401 responses: template preanalysis on selection, then explicit material submission. The failed preanalysis is not cached.",
   "image_matching": "dimensions",
   "exchanges": [
     {

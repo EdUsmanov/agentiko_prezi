@@ -3,11 +3,11 @@ from copy import deepcopy
 import pytest
 from pptx import Presentation
 
-from studio.chart_layout import bar_layout
-from studio.charts import make_chart, render_chart
+from studio.composition.chart_layout import bar_layout
+from studio.composition.charts import make_chart, render_chart
 from studio.models import Box, Fact, Plans, SlidePlan, TableData, VariantPlan
-from studio.render import chart_fits
-from studio.template import analyze_template
+from studio.composition.render import chart_fits
+from studio.templates.parsing import analyze_template
 
 
 @pytest.fixture
@@ -88,9 +88,9 @@ def test_count_and_font_size_affect_capacity_without_losing_labels(profile):
 
 
 def test_repair_reselects_roomier_layout_without_changing_story(prepared, monkeypatch):
-    from studio.composer import compose_slide
-    from studio.refinement import apply_edits
-    from studio.layout_edits import LayoutEdit
+    from studio.composition.composer import compose_slide
+    from studio.checks.refinement import apply_edits
+    from studio.composition.layout_edits import LayoutEdit
 
     _, _, package = prepared
     package.template.width = 720
@@ -145,8 +145,8 @@ def test_repair_reselects_roomier_layout_without_changing_story(prepared, monkey
     )
     decks = {v.key: [compose_slide(v, package, 0)] for v in plans.variants}
     # A repeated narrow assignment from Design must also be repaired before export.
-    from studio.deeppresenter import CompositionEnvironment, Assignment
-    from studio.planner import assign_compositions
+    from studio.providers.deeppresenter import CompositionEnvironment, Assignment
+    from studio.contents.planner import assign_compositions
 
     environment = CompositionEnvironment(package, assign_compositions(plans, package))
     environment.compose(
@@ -175,7 +175,7 @@ def test_repair_reselects_roomier_layout_without_changing_story(prepared, monkey
     assert plans.model_dump() == old
     assert trial.variants[0].slides[0].chart_style == "readable"
 
-    from studio import composer
+    from studio.composition import composer
 
     original_compose = composer._compose_slide
 

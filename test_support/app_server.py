@@ -1,7 +1,7 @@
 """Real isolated HTTP server and optional cassette provider, including child workers."""
 
 from contextlib import contextmanager
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
@@ -26,8 +26,27 @@ def free_port():
 
 
 @contextmanager
-def application(directory: Path, *, cassette: Path | None = None):
+def application(
+    directory: Path,
+    *,
+    cassette: Path | None = None,
+    settings: Settings | None = None,
+    live_provider=None,
+):
     directory.mkdir(parents=True, exist_ok=True)
+    if cassette is not None and (settings is not None or live_provider is not None):
+        raise ValueError("Replay and live provider settings cannot be combined")
+    if live_provider is not None and (
+        settings is None or settings.mode != "api" or settings.execution_kind != "live"
+    ):
+        raise ValueError("Live provider use requires explicit live API settings")
+    if (
+        settings is not None
+        and settings.mode == "api"
+        and live_provider is None
+        and cassette is None
+    ):
+        raise ValueError("API settings require an explicit bounded provider or replay cassette")
     replay = Replay(cassette) if cassette else None
     provider = None
     if replay:
@@ -56,13 +75,13 @@ def application(directory: Path, *, cassette: Path | None = None):
 
         provider = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
         Thread(target=provider.serve_forever, daemon=True).start()
-    settings = Settings(data_dir=directory / "data")
+    settings = settings or Settings(data_dir=directory / "data")
+    settings = replace(settings, data_dir=directory / "data")
     if provider:
-        from dataclasses import replace
-
         settings = replace(
             settings,
             mode="api",
+            execution_kind="replay",
             base_url=f"http://127.0.0.1:{provider.server_port}/v1",
             model_id="fixture-27b",
             parameters_b=27,
@@ -75,76 +94,114 @@ def application(directory: Path, *, cassette: Path | None = None):
     values = asdict(settings)
     values["data_dir"] = str(settings.data_dir)
     config = directory / "settings.json"
-    config.write_text(json.dumps(values))
-    config.chmod(0o600)
-    env = {
-        key: value
-        for key, value in os.environ.items()
-        if not key.startswith(("STUDIO_", "LLM_", "OPENROUTER_"))
-    }
-    env["PYTHONPATH"] = str(ROOT)
-    port = free_port()
-    url = f"http://127.0.0.1:{port}"
-    with (directory / "server.log").open("w") as log:
-        process = subprocess.Popen(
-            [
-                sys.executable,
-                "-m",
-                "test_support.serve",
-                "--settings",
-                str(config),
-                "--port",
-                str(port),
-            ],
-            cwd=ROOT,
-            env=env,
-            stdout=log,
-            stderr=subprocess.STDOUT,
-            start_new_session=True,
-        )
-        try:
-            with httpx.Client(trust_env=False, timeout=1) as client:
-                for _ in range(200):
-                    if process.poll() is not None:
-                        raise AssertionError((directory / "server.log").read_text())
-                    try:
-                        if client.get(url + "/api/health").status_code == 200:
-                            break
-                    except httpx.HTTPError:
-                        pass
-                    time.sleep(0.1)
-                else:
-                    raise TimeoutError("Isolated browser server did not start")
-            yield url, replay, settings
-        finally:
-            if process.poll() is None:
-                # Collect API diagnostics before stopping only our server, including failures.
-                try:
-                    with httpx.Client(trust_env=False, timeout=2) as client:
-                        jobs = client.get(url + "/api/jobs").raise_for_status().json()
-                        for job in jobs:
-                            response = client.get(url + "/api/jobs/" + job["id"] + "/diagnostics")
-                            response.raise_for_status()
-                            (directory / (job["id"] + "-diagnostics.json")).write_text(
-                                json.dumps(response.json(), ensure_ascii=False, indent=2)
-                            )
-                except (httpx.HTTPError, ValueError):
-                    pass  # Startup failures still have server.log; don't hide the test error.
-            if process.poll() is None:
-                os.killpg(process.pid, signal.SIGTERM)
-                try:
-                    process.wait(timeout=15)
-                except subprocess.TimeoutExpired:
-                    os.killpg(process.pid, signal.SIGKILL)
-                    process.wait(timeout=5)
-            if provider:
-                provider.shutdown()
-                provider.server_close()
-            if replay:
-                (directory / "replay-report.json").write_text(
-                    json.dumps(
-                        {"calls": replay.calls, "mismatches": replay.mismatches},
-                        ensure_ascii=False,
-                        indent=2,
-                    )
+    config_created = False
+    process = None
+    deadline_exception = None
+    try:
+        descriptor = os.open(config, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        config_created = True
+        with os.fdopen(descriptor, "w") as stream:
+            json.dump(values, stream)
+        config.chmod(0o600)
+        env = {
+            key: value
+            for key, value in os.environ.items()
+            if not key.startswith(("STUDIO_", "LLM_", "OPENROUTER_"))
+        }
+        env["PYTHONPATH"] = str(ROOT)
+        if live_provider is not None:
+            env["PYTHONPATH"] = os.pathsep.join((str(ROOT / "audit_e2e" / "bootstrap"), str(ROOT)))
+            env["STUDIO_TEST_LIVE_PROXY_URL"] = live_provider.proxy_url
+        port = free_port()
+        url = f"http://127.0.0.1:{port}"
+        with (directory / "server.log").open("w") as log:
+            process = subprocess.Popen(
+                [
+                    sys.executable,
+                    "-m",
+                    "test_support.serve",
+                    "--settings",
+                    str(config),
+                    "--port",
+                    str(port),
+                ],
+                cwd=ROOT,
+                env=env,
+                stdout=log,
+                stderr=subprocess.STDOUT,
+                start_new_session=True,
+            )
+            try:
+                with httpx.Client(trust_env=False, timeout=1) as client:
+                    for _ in range(200):
+                        if process.poll() is not None:
+                            raise AssertionError((directory / "server.log").read_text())
+                        try:
+                            if client.get(url + "/api/health").status_code == 200:
+                                break
+                        except httpx.HTTPError:
+                            pass
+                        time.sleep(0.1)
+                    else:
+                        raise TimeoutError("Isolated browser server did not start")
+                yield url, replay, settings
+            finally:
+                active_exception = __import__("sys").exc_info()[0]
+                deadline_expired = bool(
+                    active_exception and active_exception.__name__ == "EvaluationDeadline"
                 )
+                diagnostics_error = None
+                if process.poll() is None and not deadline_expired:
+                    try:
+                        with httpx.Client(trust_env=False, timeout=2) as client:
+                            jobs = client.get(url + "/api/jobs").raise_for_status().json()
+                            for job in jobs:
+                                response = client.get(
+                                    url + "/api/jobs/" + job["id"] + "/diagnostics"
+                                )
+                                response.raise_for_status()
+                                (directory / (job["id"] + "-diagnostics.json")).write_text(
+                                    json.dumps(response.json(), ensure_ascii=False, indent=2)
+                                )
+                    except BaseException as exc:
+                        if type(exc).__name__ == "EvaluationDeadline":
+                            deadline_exception = exc
+                            deadline_expired = True
+                        elif not isinstance(exc, (httpx.HTTPError, ValueError)):
+                            diagnostics_error = exc
+                if process.poll() is None:
+                    os.killpg(process.pid, signal.SIGTERM)
+                    try:
+                        process.wait(timeout=1 if deadline_expired else 15)
+                    except BaseException as exc:
+                        if type(exc).__name__ == "EvaluationDeadline":
+                            deadline_exception = exc
+                        elif not isinstance(exc, subprocess.TimeoutExpired):
+                            raise
+                        if process.poll() is None:
+                            os.killpg(process.pid, signal.SIGKILL)
+                            process.wait(timeout=5)
+                if replay:
+                    (directory / "replay-report.json").write_text(
+                        json.dumps(
+                            {"calls": replay.calls, "mismatches": replay.mismatches},
+                            ensure_ascii=False,
+                            indent=2,
+                        )
+                    )
+                if diagnostics_error is not None and active_exception is None:
+                    raise diagnostics_error
+    finally:
+        try:
+            if config_created:
+                config.unlink(missing_ok=True)
+        finally:
+            try:
+                if provider:
+                    provider.shutdown()
+                    provider.server_close()
+            finally:
+                if live_provider is not None:
+                    live_provider.shutdown()
+    if deadline_exception is not None:
+        raise deadline_exception

@@ -1,8 +1,8 @@
 from types import SimpleNamespace
 import pytest
 from studio.models import Pattern, Box, Fact, ContentModel, SlidePlan
-from studio.contracts import compatible, candidates, apply_meanings
-from studio.semantic_bindings import bind_groups
+from studio.composition.contracts import compatible, candidates, apply_meanings
+from studio.contents.semantic_bindings import bind_groups
 
 
 def pattern(kind="cards"):
@@ -93,7 +93,7 @@ def test_ambiguous_content_cannot_fill_verified_graphics():
 
 
 def test_hierarchy_edges_must_match_new_content_relationships():
-    from studio.semantic_bindings import structure_matches
+    from studio.contents.semantic_bindings import structure_matches
 
     p = pattern("hierarchy")
     p.graphic_edges = [(10, 11), (10, 12)]

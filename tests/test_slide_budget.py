@@ -4,9 +4,14 @@ import time
 
 import pytest
 
-from studio.content import parse_content
-from studio.storyboard import prepare_storyboard, planned_slide_count
-from studio.planner import extractive_plans, validate_plans, planning_schema, assign_compositions
+from studio.contents.parsing import parse_content
+from studio.contents.storyboard import prepare_storyboard, planned_slide_count
+from studio.contents.planner import (
+    extractive_plans,
+    validate_plans,
+    planning_schema,
+    assign_compositions,
+)
 
 
 def table_text(count=4):
@@ -19,7 +24,9 @@ def conflicting_package(package, count=4, mode="exact"):
     package.content = parse_content(table_text(count))
     package.constraints.slides = 4
     package.constraints.count_mode = mode
-    package.analysis = {"warnings": [], "model_mode": "extractive", "planning_source": "extractive"}
+    package.analysis = {"warnings": []}
+    package.control.model_mode = package.control.planning_source = "extractive"
+    package.control.slide_budget = None
     # A real structural role with valid geometry, independent of classifier output.
     cover = package.template.patterns[0].model_copy(deep=True)
     cover.id = "budget-cover"
@@ -30,14 +37,14 @@ def conflicting_package(package, count=4, mode="exact"):
 
 @pytest.mark.parametrize("mode", ["exact", "maximum", "default"])
 def test_conflict_is_warning_and_all_facts_tables_survive(prepared, mode):
-    from studio.composer import compose_variant
-    from studio.audit import audit_scenes
+    from studio.composition.composer import compose_variant
+    from studio.checks.audit import audit_scenes
 
     _, _, package = prepared
     conflicting_package(package, mode=mode)
     before = package.constraints.model_dump()
     prepare_storyboard(package)
-    budget = package.analysis["slide_budget"]
+    budget = package.control.slide_budget.model_dump()
     assert budget["status"] == "adjusted"
     assert budget["requested"] == 4 and budget["planned"] == 6
     assert package.constraints.model_dump() == before
@@ -61,8 +68,8 @@ def test_conflict_is_warning_and_all_facts_tables_survive(prepared, mode):
 
 
 def test_adjusted_budget_does_not_disable_image_coverage(prepared):
-    from studio.composer import compose_variant
-    from studio.audit import audit_scenes
+    from studio.composition.composer import compose_variant
+    from studio.checks.audit import audit_scenes
     from studio.models import UploadedImage
 
     _, _, p = prepared
@@ -87,7 +94,7 @@ def test_unheaded_tables_do_not_fall_back_to_lossy_splitter(prepared, requested)
         fact.section = ""
     prepare_storyboard(p)
     plans = validate_plans(extractive_plans(p), p)
-    assert p.analysis["slide_budget"]["status"] == "adjusted"
+    assert p.control.slide_budget.status == "adjusted"
     assert all(len({s.table_id for s in v.slides if s.table_id}) == 6 for v in plans.variants)
     assert all(
         [f for s in v.slides for f in s.fact_ids] == [f.id for f in p.content.facts]
@@ -99,8 +106,8 @@ def test_over_runtime_cap_keeps_analysis_without_unsafe_plan(prepared):
     _, _, p = prepared
     conflicting_package(p, count=31)
     prepare_storyboard(p)
-    assert p.analysis["slide_budget"]["status"] == "needs_input"
-    assert p.analysis["slide_budget"]["required"] > 30
+    assert p.control.slide_budget.status == "needs_input"
+    assert p.control.slide_budget.required > 30
     assert not p.analysis.get("storyboard")
     assert len(p.content.tables) == 31
 
@@ -114,16 +121,14 @@ def test_preparation_saves_package_and_warning_instead_of_failing(prepared, monk
     async def intelligence(package, *args):
         conflicting_package(package, count)
         prepare_storyboard(package)
-        blocked = package.analysis["slide_budget"]["status"] == "needs_input"
+        blocked = package.control.slide_budget.status == "needs_input"
         package.prepared_plans = (
             None
             if blocked
             else assign_compositions(validate_plans(extractive_plans(package), package), package)
         )
-        package.analysis.update(
-            planning_status="needs_input" if blocked else "completed",
-            planned_slides=None if blocked else planned_slide_count(package),
-        )
+        package.control.planning_status = "needs_input" if blocked else "completed"
+        package.control.planned_slides = None if blocked else planned_slide_count(package)
         return package
 
     monkeypatch.setattr(pipeline, "prepare_intelligence", intelligence)
@@ -156,7 +161,7 @@ def test_api_requires_explicit_count_acceptance(prepared, monkeypatch):
     settings, _, p = prepared
     conflicting_package(p)
     prepare_storyboard(p)
-    monkeypatch.setattr(app_module, "load_package", lambda *_: p)
+    monkeypatch.setattr("studio.presentation_service.load_package", lambda *_: p)
     with TestClient(app_module.create_app(settings)) as client:
         reply = client.post("/api/generate", json={"package_id": p.id})
         assert reply.status_code == 409
@@ -167,12 +172,12 @@ def test_api_requires_explicit_count_acceptance(prepared, monkeypatch):
         async def no_worker(*args, **kwargs):
             raise RuntimeError("test: OS worker disabled")
 
-        monkeypatch.setattr(app_module.asyncio, "create_subprocess_exec", no_worker)
+        monkeypatch.setattr("studio.jobs.runtime.asyncio.create_subprocess_exec", no_worker)
         accepted = client.post(
             "/api/generate", json={"package_id": p.id, "accept_adjusted_slide_count": True}
         )
         assert accepted.status_code == 202, accepted.text
-        p.analysis["slide_budget"]["status"] = "needs_input"
+        p.control.slide_budget.status = "needs_input"
         reply = client.post(
             "/api/generate", json={"package_id": p.id, "accept_adjusted_slide_count": True}
         )

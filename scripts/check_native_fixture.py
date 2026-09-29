@@ -12,11 +12,11 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from studio.models import PreparedPackage
-from studio.composer import compose_variant
-from studio.audit import audit_scenes, repair_scenes
-from studio.render import render_variant
-from studio.powerpoint import open_presentation
-from studio.export_audit import evidence, geometry
+from studio.composition.composer import compose_variant
+from studio.checks.audit import audit_scenes, repair_scenes
+from studio.composition.render import render_variant
+from studio.composition.powerpoint import open_presentation
+from studio.checks.export_audit import evidence, geometry
 
 
 def check(fixture):

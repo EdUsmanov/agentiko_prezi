@@ -1,0 +1,234 @@
+{
+  "schema_version": 2,
+  "reference_version": "2026-09-29.1",
+  "reference_provenance": {"method": "source_anchored_agent_authored", "review_status": "pending"},
+  "cases": [
+    {
+      "id": "binghamton-content",
+      "suite": "core",
+      "interface": "http",
+      "template_preview_slides": [1, 2],
+      "template": {
+        "file": "binghamton-c.potx",
+        "sha256": "56d0a039e20180fcf6d54d298e0949e6d9688064278961538a4c510e290396fa",
+        "source": "https://www.binghamton.edu/communications-and-marketing/branding/branding-toolkit.html",
+        "format": "POTX",
+        "aspect_ratio": "16:9",
+        "source_slides": 5,
+        "layouts": 11
+      },
+      "content_source": {"file": "scripts/check_external_templates.py::CONTENT", "sha256": "08975929af86e3e2d165c82a3ce3f958ac7646bb3c4316665ebb2ed0d3182a0e"},
+      "content": "# Обзор проекта\n## Контекст\nКоманда готовит единый сервис для обработки заявок.\n## Процесс\nСотрудник регистрирует заявку и назначает ответственного.\n## Проверка\nПилот длится 12 недель; команда проверяет 40 заявок.\n## Результат\nРуководитель сравнивает время обработки до и после пилота.\n## Решение\nПосле проверки команда решает, расширять ли сервис.\n",
+      "images": [],
+      "input_mode": "content",
+      "image_presentation": "plain",
+      "slides": 5,
+      "variants": ["executive", "analytical", "story"],
+      "synthetic_template": {"seed": 17, "aspect": "wide", "columns": 1, "dark": false},
+      "reference": {
+        "version": "2026-09-29.1",
+        "status": "silver",
+        "points": [
+          {"id": "context", "statement": "A unified service handles incoming requests.", "quote": "Команда готовит единый сервис для обработки заявок.", "required": true, "origin": "user_text"},
+          {"id": "process", "statement": "Staff register a request and assign an owner.", "quote": "Сотрудник регистрирует заявку и назначает ответственного.", "required": true, "origin": "user_text"},
+          {"id": "pilot-duration", "statement": "The pilot lasts 12 weeks.", "quote": "Пилот длится 12 недель", "required": true, "origin": "user_text", "numbers": [{"value": "12", "unit": "weeks"}]},
+          {"id": "sample-size", "statement": "The team checks 40 requests.", "quote": "команда проверяет 40 заявок", "required": true, "origin": "user_text", "numbers": [{"value": "40", "unit": "requests"}]},
+          {"id": "evaluation", "statement": "The manager compares processing time before and after the pilot.", "quote": "Руководитель сравнивает время обработки до и после пилота.", "required": true, "origin": "user_text"},
+          {"id": "decision", "statement": "The team decides whether to expand after checking the result.", "quote": "После проверки команда решает, расширять ли сервис.", "required": true, "origin": "user_text", "condition": "after checking the result"}
+        ],
+        "requirements": [
+          {"id": "output-shape", "kind": "export", "status": "gold", "text": "Export all three variants as editable PPTX and valid PDF with five slides each."},
+          {"id": "variant-diversity", "kind": "diversity", "status": "gold", "text": "The three exported decks must not be pixel-identical to one another."},
+          {"id": "template-fidelity", "kind": "template-fidelity", "status": "silver", "applicability": "real_external_template_only", "text": "Preserve recognizable Binghamton colors and logo; do not claim the source photographic cover was retained if it is absent."}
+        ]
+      }
+    },
+    {
+      "id": "binghamton-brief",
+      "suite": "core",
+      "interface": "browser",
+      "slide_contract": {
+        "target": 5,
+        "minimum": 3,
+        "maximum": 5,
+        "request_kind": "browser_preset",
+        "preset": "mini"
+      },
+      "template_preview_slides": [1, 2],
+      "template": {
+        "file": "binghamton-c.potx",
+        "sha256": "56d0a039e20180fcf6d54d298e0949e6d9688064278961538a4c510e290396fa",
+        "source": "https://www.binghamton.edu/communications-and-marketing/branding/branding-toolkit.html",
+        "format": "POTX",
+        "aspect_ratio": "16:9",
+        "source_slides": 5,
+        "layouts": 11
+      },
+      "content_source": {"file": "test-results/external-template-runs/inputs/brief.md", "sha256": "038c29f2af5b51013831f60b948e37e954a3440828847b60bbda499ec87caea5"},
+      "content": "Команда хочет ускорить обработку заявок через единый сервис. Пилот длится 12 недель, после него руководитель оценивает результат и решает, расширять ли сервис.\n",
+      "images": [],
+      "input_mode": "brief",
+      "image_presentation": "plain",
+      "slides": 5,
+      "variants": ["executive", "analytical", "story"],
+      "synthetic_template": {"seed": 19, "aspect": "wide", "columns": 1, "dark": false},
+      "reference": {
+        "version": "2026-09-29.1",
+        "status": "silver",
+        "points": [
+          {"id": "goal", "statement": "The team wants to accelerate request processing with one service.", "quote": "Команда хочет ускорить обработку заявок через единый сервис.", "required": true, "origin": "user_text"},
+          {"id": "pilot-duration", "statement": "The pilot lasts 12 weeks.", "quote": "Пилот длится 12 недель", "required": true, "origin": "user_text", "numbers": [{"value": "12", "unit": "weeks"}]},
+          {"id": "review-and-decision", "statement": "After the pilot, the manager evaluates the result and decides whether to expand.", "quote": "после него руководитель оценивает результат и решает, расширять ли сервис", "required": true, "origin": "user_text", "condition": "after the pilot"}
+        ],
+        "requirements": [
+          {"id": "approval-gate", "kind": "workflow", "status": "gold", "text": "Generation stays blocked until the user approves the brief draft and its text."},
+          {"id": "proposal-provenance", "kind": "provenance", "status": "gold", "text": "Any added model idea remains marked as a model proposal and is not presented as a source fact."},
+          {"id": "variant-diversity", "kind": "diversity", "status": "gold", "text": "All three exported variants contain the approved text and are not pixel-identical."}
+        ]
+      }
+    },
+    {
+      "id": "astate-dark-mixed",
+      "suite": "core",
+      "interface": "browser",
+      "slide_contract": {
+        "target": 5,
+        "minimum": 3,
+        "maximum": 5,
+        "request_kind": "browser_preset",
+        "preset": "mini"
+      },
+      "template_preview_slides": [1, 13],
+      "template": {
+        "file": "astate-dark.pptx",
+        "sha256": "71a3c8ec385f4d77a580efb9b4569387a5374a1e93b363f7bf842b85127bbec5",
+        "source": "https://kb.astate.edu/books/university-templates/page/powerpoint-templates",
+        "format": "PPTX",
+        "aspect_ratio": "16:9",
+        "source_slides": 21,
+        "layouts": 8
+      },
+      "content_source": {"file": "test-results/external-template-runs/inputs/mixed-table-image.md", "sha256": "4986dd0ae5881297500085285d39f5f959971414651ca5220ba7829c1c2ff83a"},
+      "content": "# Service delivery / Обработка заявок\n\n## Контекст / Context\nКоманда ведёт пилот единой очереди заявок. The same queue is visible to reviewers in both offices.\n\n## Экран / Dashboard\nНа демонстрационном скриншоте показаны карточки статуса и график по неделям. The image contains sample values only.\n![Панель заявок](dashboard-screenshot.png)\n\n## Данные / Data\nТаблица показывает три команды и четыре поля; это наблюдения за первыми 12 неделями, не прогноз.\n\n| Команда / Team | Заявки / Requests | Выполнено / Closed | Среднее время, ч / Hours |\n|---|---:|---:|---:|\n| Север / North | 40 | 34 | 18 |\n| Центр / Central | 36 | 33 | 15 |\n| Юг / South | 28 | 24 | 21 |\n\n## Ограничение / Caveat\nРазница по времени не доказывает эффект сервиса: состав команд менялся во время пилота.\n\n## Решение / Decision\nРуководитель сравнит долю закрытых заявок и решит, продолжать ли пилот ещё 8 недель.\n",
+      "images": [{"file": "dashboard-screenshot.png", "sha256": "210392af0ae28937bd6545334ea6dcd2e93801c55eeef77f50286f789ff43aa3"}],
+      "input_mode": "content",
+      "image_presentation": "plain",
+      "slides": 5,
+      "variants": ["executive", "analytical", "story"],
+      "synthetic_template": {"seed": 23, "aspect": "wide", "columns": 2, "dark": true},
+      "reference": {
+        "version": "2026-09-29.1",
+        "status": "silver",
+        "points": [
+          {"id": "sample-only", "statement": "Dashboard values are illustrative samples, not source data.", "quote": "The image contains sample values only.", "required": true, "origin": "user_text"},
+          {"id": "observation-period", "statement": "The table describes observations from the first 12 weeks and is not a forecast.", "quote": "это наблюдения за первыми 12 неделями, не прогноз", "required": true, "origin": "user_text", "numbers": [{"value": "12", "unit": "weeks"}], "negation": "not a forecast"},
+          {"id": "causality-caveat", "statement": "Changing team composition means the time difference does not prove service impact.", "quote": "Разница по времени не доказывает эффект сервиса: состав команд менялся во время пилота.", "required": true, "origin": "user_text", "negation": "does not prove", "condition": "team composition changed during the pilot"},
+          {"id": "decision", "statement": "The manager compares closure share and decides whether to continue for 8 more weeks.", "quote": "Руководитель сравнит долю закрытых заявок и решит, продолжать ли пилот ещё 8 недель.", "required": true, "origin": "user_text", "numbers": [{"value": "8", "unit": "weeks"}], "condition": "after comparing closure share"}
+        ],
+        "requirements": [
+          {"id": "source-table", "kind": "table", "status": "gold", "headers": ["Команда / Team", "Заявки / Requests", "Выполнено / Closed", "Среднее время, ч / Hours"], "rows": [["Север / North", "40", "34", "18"], ["Центр / Central", "36", "33", "15"], ["Юг / South", "28", "24", "21"]], "text": "Keep all source labels, values, and row associations; request counts and hours must not share one unlabeled chart axis."},
+          {"id": "separate-image", "kind": "image", "status": "gold", "text": "Keep the uploaded screenshot as a separate image and preserve its pixels; do not treat sample screenshot values as table data."},
+          {"id": "readability", "kind": "visual", "status": "silver", "text": "Check whether dashboard labels remain readable at their exported size."}
+        ]
+      }
+    },
+    {
+      "id": "adelphi-dense",
+      "suite": "core",
+      "interface": "http",
+      "template_preview_slides": [1, 2],
+      "template": {
+        "file": "adelphi-gold-standard-4x3.pptx",
+        "sha256": "90120bc0e10cca2b48ed77dac82f446757d34f350538f0cb8c3c578209e6b660",
+        "source": "https://www.adelphi.edu/brand/design/assets-and-templates/powerpoint-google-slides/",
+        "format": "PPTX",
+        "aspect_ratio": "4:3",
+        "source_slides": 7,
+        "layouts": 5
+      },
+      "content_source": {"file": "test-results/external-template-runs/inputs/mixed-table-image.md", "sha256": "4986dd0ae5881297500085285d39f5f959971414651ca5220ba7829c1c2ff83a"},
+      "content": "# Service delivery / Обработка заявок\n\n## Контекст / Context\nКоманда ведёт пилот единой очереди заявок. The same queue is visible to reviewers in both offices.\n\n## Экран / Dashboard\nНа демонстрационном скриншоте показаны карточки статуса и график по неделям. The image contains sample values only.\n![Панель заявок](dashboard-screenshot.png)\n\n## Данные / Data\nТаблица показывает три команды и четыре поля; это наблюдения за первыми 12 неделями, не прогноз.\n\n| Команда / Team | Заявки / Requests | Выполнено / Closed | Среднее время, ч / Hours |\n|---|---:|---:|---:|\n| Север / North | 40 | 34 | 18 |\n| Центр / Central | 36 | 33 | 15 |\n| Юг / South | 28 | 24 | 21 |\n\n## Ограничение / Caveat\nРазница по времени не доказывает эффект сервиса: состав команд менялся во время пилота.\n\n## Решение / Decision\nРуководитель сравнит долю закрытых заявок и решит, продолжать ли пилот ещё 8 недель.\n",
+      "images": [{"file": "dashboard-screenshot.png", "sha256": "210392af0ae28937bd6545334ea6dcd2e93801c55eeef77f50286f789ff43aa3"}],
+      "input_mode": "content",
+      "image_presentation": "plain",
+      "slides": 5,
+      "variants": ["executive", "analytical", "story"],
+      "synthetic_template": {"seed": 31, "aspect": "4:3", "columns": 2, "dark": false},
+      "reference_case": "astate-dark-mixed",
+      "reference_requirements": [
+        {"id": "narrow-media", "kind": "visual", "status": "silver", "text": "The 4:3 two-column template may make the dashboard image too small; report actual exported readability rather than image preservation alone."}
+      ]
+    },
+    {
+      "id": "astate-light",
+      "suite": "extended",
+      "interface": "http",
+      "template_preview_slides": [1, 13],
+      "template": {"file": "astate-light.pptx", "sha256": "f9a99ac3d0f5bbc9be6f59a139688eada3a7097b5c5bb439cf393f5ffb8bcc40", "source": "https://kb.astate.edu/books/university-templates/page/powerpoint-templates", "format": "PPTX", "aspect_ratio": "16:9", "source_slides": 21, "layouts": 8},
+      "content_source": {"file": "test-results/external-template-runs/inputs/mixed-table-image.md", "sha256": "4986dd0ae5881297500085285d39f5f959971414651ca5220ba7829c1c2ff83a"},
+      "content": "# Service delivery / Обработка заявок\n\n## Контекст / Context\nКоманда ведёт пилот единой очереди заявок. The same queue is visible to reviewers in both offices.\n\n## Экран / Dashboard\nНа демонстрационном скриншоте показаны карточки статуса и график по неделям. The image contains sample values only.\n![Панель заявок](dashboard-screenshot.png)\n\n## Данные / Data\nТаблица показывает три команды и четыре поля; это наблюдения за первыми 12 неделями, не прогноз.\n\n| Команда / Team | Заявки / Requests | Выполнено / Closed | Среднее время, ч / Hours |\n|---|---:|---:|---:|\n| Север / North | 40 | 34 | 18 |\n| Центр / Central | 36 | 33 | 15 |\n| Юг / South | 28 | 24 | 21 |\n\n## Ограничение / Caveat\nРазница по времени не доказывает эффект сервиса: состав команд менялся во время пилота.\n\n## Решение / Decision\nРуководитель сравнит долю закрытых заявок и решит, продолжать ли пилот ещё 8 недель.\n",
+      "images": [{"file": "dashboard-screenshot.png", "sha256": "210392af0ae28937bd6545334ea6dcd2e93801c55eeef77f50286f789ff43aa3"}],
+      "input_mode": "content",
+      "image_presentation": "plain",
+      "slides": 5,
+      "variants": ["executive", "analytical", "story"],
+      "synthetic_template": {"seed": 37, "aspect": "wide", "columns": 2, "dark": false},
+      "reference_case": "astate-dark-mixed"
+    },
+    {
+      "id": "mcmurry-brand",
+      "suite": "extended",
+      "interface": "http",
+      "template_preview_slides": [1, 2],
+      "template": {"file": "mcmurry-brand.pptx", "sha256": "f891db71d89e013f1783d235874cf67745eda2d9b5a3f6181fb3452b7111d35c", "source": "https://mcm.edu/brand-resources/", "format": "PPTX", "aspect_ratio": "16:9", "source_slides": 2, "layouts": 10},
+      "content_source": {"file": "scripts/check_external_templates.py::CONTENT", "sha256": "08975929af86e3e2d165c82a3ce3f958ac7646bb3c4316665ebb2ed0d3182a0e"},
+      "content": "# Обзор проекта\n## Контекст\nКоманда готовит единый сервис для обработки заявок.\n## Процесс\nСотрудник регистрирует заявку и назначает ответственного.\n## Проверка\nПилот длится 12 недель; команда проверяет 40 заявок.\n## Результат\nРуководитель сравнивает время обработки до и после пилота.\n## Решение\nПосле проверки команда решает, расширять ли сервис.\n",
+      "images": [], "input_mode": "content", "image_presentation": "plain", "slides": 5,
+      "variants": ["executive", "analytical", "story"],
+      "synthetic_template": {"seed": 41, "aspect": "wide", "columns": 2, "dark": false},
+      "reference_case": "binghamton-content"
+    },
+    {
+      "id": "usi-device-fallback",
+      "suite": "extended",
+      "interface": "http",
+      "template_preview_slides": [2, 8],
+      "template": {"file": "usi-brand.pptx", "sha256": "f24de5fd57a55f3bc6c8b8d734e2235a442f6555523c90cfd86f1e9e492fce2a", "source": "https://www.usi.edu/brand/resources-and-downloads", "format": "PPTX", "aspect_ratio": "16:9", "source_slides": 18, "layouts": 19},
+      "content_source": {"file": "test-results/external-template-runs/inputs/mixed-table-image.md", "sha256": "4986dd0ae5881297500085285d39f5f959971414651ca5220ba7829c1c2ff83a"},
+      "content": "# Service delivery / Обработка заявок\n\n## Контекст / Context\nКоманда ведёт пилот единой очереди заявок. The same queue is visible to reviewers in both offices.\n\n## Экран / Dashboard\nНа демонстрационном скриншоте показаны карточки статуса и график по неделям. The image contains sample values only.\n![Панель заявок](dashboard-screenshot.png)\n\n## Данные / Data\nТаблица показывает три команды и четыре поля; это наблюдения за первыми 12 неделями, не прогноз.\n\n| Команда / Team | Заявки / Requests | Выполнено / Closed | Среднее время, ч / Hours |\n|---|---:|---:|---:|\n| Север / North | 40 | 34 | 18 |\n| Центр / Central | 36 | 33 | 15 |\n| Юг / South | 28 | 24 | 21 |\n\n## Ограничение / Caveat\nРазница по времени не доказывает эффект сервиса: состав команд менялся во время пилота.\n\n## Решение / Decision\nРуководитель сравнит долю закрытых заявок и решит, продолжать ли пилот ещё 8 недель.\n",
+      "images": [{"file": "dashboard-screenshot.png", "sha256": "210392af0ae28937bd6545334ea6dcd2e93801c55eeef77f50286f789ff43aa3"}],
+      "input_mode": "content", "image_presentation": "device", "slides": 5,
+      "variants": ["executive", "analytical", "story"],
+      "synthetic_template": {"seed": 43, "aspect": "wide", "columns": 2, "dark": false},
+      "reference_case": "astate-dark-mixed",
+      "reference_requirements": [{"id": "device-fallback", "kind": "resource", "status": "gold", "text": "If no detachable device frame exists, use a plain image and disclose the fallback."}]
+    },
+    {
+      "id": "wpi-reference-pages",
+      "suite": "extended",
+      "interface": "http",
+      "template_preview_slides": [1, 19, 20],
+      "template": {"file": "wpi-widescreen.pptx", "sha256": "02334700fbb2f8349d7a566c2d4811b6a004c0a8ef6de3b2c6fa2d7b27cd1c6b", "source": "https://www.wpi.edu/offices/marketing-communications/resources", "format": "PPTX", "aspect_ratio": "16:9", "source_slides": 22, "layouts": 16},
+      "content_source": {"file": "scripts/check_external_templates.py::CONTENT", "sha256": "08975929af86e3e2d165c82a3ce3f958ac7646bb3c4316665ebb2ed0d3182a0e"},
+      "content": "# Обзор проекта\n## Контекст\nКоманда готовит единый сервис для обработки заявок.\n## Процесс\nСотрудник регистрирует заявку и назначает ответственного.\n## Проверка\nПилот длится 12 недель; команда проверяет 40 заявок.\n## Результат\nРуководитель сравнивает время обработки до и после пилота.\n## Решение\nПосле проверки команда решает, расширять ли сервис.\n",
+      "images": [], "input_mode": "content", "image_presentation": "plain", "slides": 5,
+      "variants": ["executive", "analytical", "story"],
+      "synthetic_template": {"seed": 47, "aspect": "wide", "columns": 2, "dark": false},
+      "reference_case": "binghamton-content",
+      "reference_requirements": [{"id": "reference-pages", "kind": "template-fidelity", "status": "gold", "text": "Do not use WPI's authored sample-shape and color-swatch pages (source slides 19–20) as content slides."}]
+    },
+    {
+      "id": "wssu-option3",
+      "suite": "extended",
+      "interface": "http",
+      "template_preview_slides": [1],
+      "template": {"file": "wssu-option3.pptx", "sha256": "8ee23e5c57c94484ff8326e1c1c13e796255e065812f9f5fde38690e7207a196", "source": "https://www.wssu.edu/about/chancellors-office/division-of-strategic-communications/oimc/university-branding/branded-powerpoint-templates.html", "format": "PPTX", "aspect_ratio": "16:9", "source_slides": 1, "layouts": 11},
+      "content_source": {"file": "scripts/check_external_templates.py::CONTENT", "sha256": "08975929af86e3e2d165c82a3ce3f958ac7646bb3c4316665ebb2ed0d3182a0e"},
+      "content": "# Обзор проекта\n## Контекст\nКоманда готовит единый сервис для обработки заявок.\n## Процесс\nСотрудник регистрирует заявку и назначает ответственного.\n## Проверка\nПилот длится 12 недель; команда проверяет 40 заявок.\n## Результат\nРуководитель сравнивает время обработки до и после пилота.\n## Решение\nПосле проверки команда решает, расширять ли сервис.\n",
+      "images": [], "input_mode": "content", "image_presentation": "plain", "slides": 5,
+      "variants": ["executive", "analytical", "story"],
+      "synthetic_template": {"seed": 53, "aspect": "wide", "columns": 1, "dark": false},
+      "reference_case": "binghamton-content"
+    }
+  ]
+}

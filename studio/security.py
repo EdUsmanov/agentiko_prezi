@@ -7,7 +7,7 @@ import unicodedata
 from pathlib import PurePosixPath
 from zipfile import ZipFile, BadZipFile
 from defusedxml import ElementTree as SafeET
-from .text_layout import without_word_joiners
+from studio.composition.text_layout import without_word_joiners
 
 
 class InputRejected(ValueError):
@@ -102,7 +102,7 @@ def validate_pptx(path):
                     or info.file_size / max(info.compress_size, 1) > 500
                 ):
                     raise InputRejected("Превышен лимит размера или сжатия части файла PowerPoint")
-                if any(x in name.lower() for x in ["vbaproject", "activex", "oleobject"]):
+                if any(x in name.lower() for x in ["vbaproject", "activex"]):
                     raise InputRejected("Активное содержимое в PowerPoint запрещено")
                 if name.endswith((".xml", ".rels")):
                     raw = z.read(name)

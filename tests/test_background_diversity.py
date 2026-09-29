@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 from studio.models import Pattern, Box, SlidePlan, SlideScene, VariantPlan
-from studio.background_diversity import artwork_family, sequence_cost, diversify_backgrounds
+from studio.checks.background_diversity import artwork_family, sequence_cost, diversify_backgrounds
 
 
 def test_same_artwork_is_one_family_despite_different_ids_and_paths(tmp_path):
@@ -26,7 +26,10 @@ def test_same_artwork_is_one_family_despite_different_ids_and_paths(tmp_path):
 
 
 def test_selector_keeps_content_and_rejects_unsafe_alternatives(monkeypatch, tmp_path):
-    from studio import composer, contracts, audit, quality
+    from studio.checks import audit
+    from studio.checks import quality
+    from studio.composition import composer
+    from studio.composition import contracts
 
     patterns = []
     for i in range(4):
@@ -111,7 +114,7 @@ def test_selector_keeps_content_and_rejects_unsafe_alternatives(monkeypatch, tmp
 
 def test_roomy_fields_preserve_title_and_stop_at_artwork(tmp_path):
     from PIL import Image, ImageDraw
-    from studio.template_adaptation import derive_roomy_text_patterns, uniform_region
+    from studio.templates.template_adaptation import derive_roomy_text_patterns, uniform_region
 
     path = tmp_path / "art.png"
     im = Image.new("RGB", (720, 405), "blue")

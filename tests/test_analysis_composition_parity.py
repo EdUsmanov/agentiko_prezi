@@ -6,14 +6,14 @@ import random
 
 import pytest
 from studio.config import ROOT
-from studio.content import parse_content
-from studio.editorial import apply_plan, validate_plan, EditorialPlan
-from studio.editorial_repair import EditorialPatch, apply_replacements
-from studio.models import Constraints, VariantPlan
-from studio.narrative import narrative_storyboard
-from studio.template import analyze_template
-from studio.composer import compose_slide
-from studio.audit import repair_scenes
+from studio.contents.parsing import parse_content
+from studio.contents.editorial import apply_plan, validate_plan, EditorialPlan
+from studio.contents.editorial_repair import EditorialPatch, apply_replacements
+from studio.models import Constraints, PreparationControl, VariantPlan
+from studio.contents.narrative import narrative_storyboard
+from studio.templates.parsing import analyze_template
+from studio.composition.composer import compose_slide
+from studio.checks.audit import repair_scenes
 
 
 def package_with_data(template, tmp_path, seed):
@@ -58,6 +58,7 @@ def package_with_data(template, tmp_path, seed):
         images=[],
         constraints=Constraints(slides=1, count_mode="exact", summarize=True, include_cover=False),
         analysis={},
+        control=PreparationControl(),
     )
     apply_plan(package, raw, {}, (1, 1))
     return package
@@ -68,9 +69,7 @@ def test_mixed_units_chart_probe_matches_export_on_varied_templates(template, tm
     package = package_with_data(template, tmp_path, seed)
     cells = deepcopy(package.content.tables[0].rows)
     narrative_storyboard(package)
-    assert package.analysis["slide_budget"]["status"] == "adjusted", package.analysis[
-        "slide_budget"
-    ]
+    assert package.control.slide_budget.status == "adjusted", package.control.slide_budget
     variant = VariantPlan(key="executive", title="Output", slides=package.analysis["storyboard"])
     scene = compose_slide(variant, package, 0)
     repair_scenes([scene], package)
@@ -79,7 +78,7 @@ def test_mixed_units_chart_probe_matches_export_on_varied_templates(template, tm
     assert chart.series_values == [[30, 40, 50], [18, 36, 50]]
     assert chart.rows[1:] == cells  # Percentage series retained for visible captions.
     assert not any(e.kind == "table" for e in scene.elements)
-    from studio.charts import render_chart
+    from studio.composition.charts import render_chart
     from pptx import Presentation
 
     prs = Presentation()
@@ -97,8 +96,8 @@ def test_real_data_capacity_failure_remains_blocking(template, tmp_path):
     package.template.width = 400
     package.template.height = 240
     narrative_storyboard(package)
-    assert package.analysis["slide_budget"]["status"] == "needs_input"
-    assert package.analysis["slide_budget"]["fit_issues"]
+    assert package.control.slide_budget.status == "needs_input"
+    assert package.control.slide_budget.fit_issues
 
 
 def patch_case():
@@ -148,7 +147,7 @@ def test_array_normalization_cannot_bypass_patch_contract(case):
 
 
 def test_numeric_repair_hints_find_sources_without_silencing_validation():
-    from studio.editorial_patch_validation import numeric_evidence_hints
+    from studio.contents.editorial_patch_validation import numeric_evidence_hints
 
     source = parse_content(
         "The pilot lasted 11 weeks.\nThe team had 7 people.\nSeven unrelated devices lasted 7 days."

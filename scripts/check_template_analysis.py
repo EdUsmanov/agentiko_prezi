@@ -27,10 +27,14 @@ def main():
 
         os.environ.update(experiment_environment(ROOT.parent / "presentation-studio/.env"))
     from studio.config import Settings
-    from studio.template import analyze_template
-    from studio.analysis import template_inventory, reference_images, analyze_meaning
-    from studio.gateway import ModelGateway
-    from studio.store import Store
+    from studio.templates.parsing import analyze_template
+    from studio.templates.template_analysis import (
+        template_inventory,
+        reference_images,
+        analyze_meaning,
+    )
+    from studio.providers.gateway import ModelGateway
+    from studio.jobs.store import Store
     from studio.diagnostics import configure, scope
     from studio.cache_version import atomic_json
 

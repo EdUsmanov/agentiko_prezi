@@ -26,8 +26,8 @@ async def run(args):
         os.environ.update(experiment_environment(ROOT.parent / "presentation-studio/.env"))
     from studio.config import Settings
     from studio.models import PreparedPackage, Fact
-    from studio.store import Store
-    from studio.gateway import ModelGateway
+    from studio.jobs.store import Store
+    from studio.providers.gateway import ModelGateway
     from studio.security import digest
     from studio.diagnostics import configure, scope
 
@@ -63,7 +63,7 @@ async def run(args):
 
     package = PreparedPackage.model_validate(relocate(raw))
     package.id = job["id"]
-    from studio.content import plain_inline
+    from studio.contents.parsing import plain_inline
 
     for table in package.content.tables:
         table.headers = [plain_inline(c) for c in table.headers]
@@ -74,10 +74,10 @@ async def run(args):
         package.content.facts = [Fact.model_validate(f) for f in original]
         package.content.headings = []
         package.content.directives = []
-    from studio.powerpoint import open_presentation
-    from studio.native_template import native_patterns, compile_backgrounds
-    from studio.native_style import native_styles
-    from studio.contracts import apply_meanings
+    from studio.composition.powerpoint import open_presentation
+    from studio.templates.native_template import native_patterns, compile_backgrounds
+    from studio.templates.native_style import native_styles
+    from studio.composition.contracts import apply_meanings
 
     source = target / "input.pptx"
     previous = {p.id: p for p in package.template.patterns}
@@ -114,12 +114,12 @@ async def run(args):
         "test_scope": "saved_authorized_case; refreshed geometry and content analysis",
     }
     gateway = ModelGateway(settings)
-    from studio.document import structure_document
-    from studio.sections import prepare_sections
-    from studio.archetypes import analyze_content_archetypes
-    from studio.storyboard import prepare_storyboard
-    from studio.planner import plan
-    from studio.semantic_bindings import canonicalize_storyboard
+    from studio.contents.document import structure_document
+    from studio.contents.sections import prepare_sections
+    from studio.contents.archetypes import analyze_content_archetypes
+    from studio.contents.storyboard import prepare_storyboard
+    from studio.contents.planner import plan
+    from studio.contents.semantic_bindings import canonicalize_storyboard
 
     started = time.monotonic()
     with scope(store, job["id"]):

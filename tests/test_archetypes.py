@@ -4,12 +4,12 @@ from types import SimpleNamespace
 
 import pytest
 
-from studio.archetypes import validate_units, analyze_content_archetypes
-from studio.archetype_catalog import Archetype, CATALOG, catalog_payload
+from studio.contents.archetypes import validate_units, analyze_content_archetypes
+from studio.templates.archetype_catalog import Archetype, CATALOG, catalog_payload
 from studio.models import Fact, SlidePlan, TableData
-from studio.contracts import compatible, apply_meanings
-from studio.storyboard import prepare_storyboard
-from studio.planner import extractive_plans, validate_plans
+from studio.composition.contracts import compatible, apply_meanings
+from studio.contents.storyboard import prepare_storyboard
+from studio.contents.planner import extractive_plans, validate_plans
 
 
 def unit(ids, purpose, *slots):
@@ -97,7 +97,7 @@ def test_comparison_needs_entities_and_shared_criterion():
 
 
 def test_comparison_can_ground_criterion_in_its_table_header():
-    from studio.content import parse_content
+    from studio.contents.parsing import parse_content
 
     content = parse_content("# Тарифы\n| Вариант | Цена |\n|---|---|\n| А | 10 |\n| Б | 20 |")
     item = unit(
@@ -117,7 +117,7 @@ def test_comparison_can_ground_criterion_in_its_table_header():
 
 
 def test_identical_facts_for_different_entities_are_not_deleted():
-    from studio.content import parse_content
+    from studio.contents.parsing import parse_content
 
     content = parse_content(
         "# Сравнение\n## Продукт А\nЦена 100 рублей.\n## Продукт Б\nЦена 100 рублей."
@@ -144,13 +144,14 @@ def test_speaker_name_can_come_from_its_heading():
 
 
 def test_comparison_crosses_product_headings_not_real_chapters(prepared):
-    from studio.content import parse_content
+    from studio.contents.parsing import parse_content
 
     _, _, p = prepared
     p.content = parse_content(
         "# Сравнение\n## Продукт А\nЦена 100 рублей.\n## Продукт Б\nЦена 100 рублей."
     )
     p.analysis = {}
+    p.control.slide_budget = None
     item = unit(
         ["f1", "f2"],
         "comparison",
@@ -181,7 +182,7 @@ def test_atomic_units_not_split_or_forced_back_to_content(prepared, process_fact
     package.constraints.slides = 2
     package.analysis = {"archetypes": {"units": [unit(["f1", "f2"], "process")]}}
     prepare_storyboard(package)
-    assert package.analysis["slide_budget"]["planned"] == 1
+    assert package.control.slide_budget.planned == 1
     assert package.constraints.slides == 2  # The user's original choice is not overwritten.
     plans = validate_plans(extractive_plans(package), package)
     for variant in plans.variants:
@@ -212,8 +213,9 @@ def test_special_units_not_merged_into_unrelated_slide(prepared):
     p.analysis = {
         "archetypes": {"units": [unit(["f1"], "problem"), unit(["f2"], "recommendations")]}
     }
+    p.control.slide_budget = None
     prepare_storyboard(p)
-    assert p.analysis["slide_budget"]["planned"] == 2
+    assert p.control.slide_budget.planned == 2
     assert [s["purpose"] for s in p.analysis["storyboard"]] == ["problem", "recommendations"]
     validate_plans(extractive_plans(p), p)
 
@@ -245,6 +247,7 @@ def test_failed_classification_keeps_all_facts(prepared, process_facts):
     _, _, p = prepared
     p.content.facts = process_facts
     p.analysis = {}
+    p.control.slide_budget = None
 
     class Gateway:
         settings = SimpleNamespace(mode="api")
@@ -264,6 +267,7 @@ def test_model_induction_receives_catalog_and_grounded_inputs(prepared, process_
     _, _, p = prepared
     p.content.facts = process_facts
     p.analysis = {}
+    p.control.slide_budget = None
 
     class Gateway:
         settings = SimpleNamespace(mode="api")
@@ -289,9 +293,9 @@ def test_model_induction_receives_catalog_and_grounded_inputs(prepared, process_
 
 
 def test_composition_and_diversity_preserve_semantic_type(prepared, process_facts):
-    from studio.composer import compose_variant
-    from studio.diversity import ensure_diversity
-    from studio.audit import audit_scenes
+    from studio.composition.composer import compose_variant
+    from studio.checks.diversity import ensure_diversity
+    from studio.checks.audit import audit_scenes
 
     _, _, p = prepared
     p.content.facts = process_facts

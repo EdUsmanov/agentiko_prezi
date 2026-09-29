@@ -1,5 +1,5 @@
 import asyncio
-from studio.content_review import review
+from studio.checks.content_review import review
 from studio.models import Plans, VariantPlan, SlidePlan
 
 

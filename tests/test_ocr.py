@@ -1,8 +1,8 @@
 import asyncio
 import httpx
 import pytest
-from studio.ocr import NeuralDeepOcr, OcrError
-from studio.content import parse_content
+from studio.providers.ocr import NeuralDeepOcr, OcrError
+from studio.contents.parsing import parse_content
 
 
 def adapter(handler):

@@ -3,21 +3,21 @@ from PIL import Image
 from pptx import Presentation
 from pptx.util import Inches
 from pptx.dml.color import RGBColor
-from studio.colors import (
+from studio.templates.colors import (
     agent_color_context,
     color_schemes,
     extract_colors,
     resolve_rendered_schemes,
 )
-from studio.template import analyze_template
+from studio.templates.parsing import analyze_template
 from studio.models import Box, Pattern, Element, SlideScene
-from studio.artwork import safe_body_zone
-from studio.planner import extractive_plans, validate_plans, assign_compositions
-from studio.sections import add_dividers
-from studio.composer import compose_variant
-from studio.content import parse_content
-from studio.render import render_pptx, render_html
-from studio.audit import audit_scenes, repair_scenes
+from studio.templates.artwork import safe_body_zone
+from studio.contents.planner import extractive_plans, validate_plans, assign_compositions
+from studio.contents.sections import add_dividers
+from studio.composition.composer import compose_variant
+from studio.contents.parsing import parse_content
+from studio.composition.render import render_pptx, render_html
+from studio.checks.audit import audit_scenes, repair_scenes
 
 
 def test_color_roles_table_evidence_and_potx(template, potx, tmp_path):
@@ -84,7 +84,7 @@ def test_color_schemes_keep_text_with_its_source_background():
 
 
 def test_large_authored_white_text_stays_white_on_brand_red(template, tmp_path):
-    from studio.template_adaptation import adapt_native_text_fields
+    from studio.templates.template_adaptation import adapt_native_text_fields
 
     profile = analyze_template(template, tmp_path / "profile")
     pattern = profile.patterns[0]
@@ -219,14 +219,14 @@ def test_sections_keep_budget_facts_and_native_artwork(prepared):
         assert {f for s in variant.slides for f in s.fact_ids} == {f.id for f in p.content.facts}
         scenes = compose_variant(variant, p)
         assert not [f for f in audit_scenes(scenes, p) if f.severity == "error"]
-    from studio.deeppresenter import CompositionEnvironment
+    from studio.providers.deeppresenter import CompositionEnvironment
 
     env = CompositionEnvironment(p, plans)
     assert "divider" in env.allowed
 
 
 def test_native_title_only_layout_retained(template):
-    from studio.native_template import native_patterns
+    from studio.templates.native_template import native_patterns
 
     prs = Presentation(template)
     divider = prs.slides.add_slide(prs.slide_layouts[5])
@@ -244,7 +244,7 @@ def test_safe_area_avoids_bottom_decoration():
 
 
 def test_table_repair_does_not_split_long_header_word(prepared):
-    from studio.fonts import table_cell_fits, element_font
+    from studio.templates.fonts import table_cell_fits, element_font
 
     _, _, p = prepared
     e = Element(

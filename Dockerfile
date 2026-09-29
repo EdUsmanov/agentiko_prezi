@@ -7,7 +7,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     LANG=C.UTF-8 \
     LC_ALL=C.UTF-8 \
-    STUDIO_DATA_DIR=/app/data \
+    STUDIO_DATA_DIR=/app/data/v2 \
     STUDIO_PORT=8765
 
 RUN apt-get update \

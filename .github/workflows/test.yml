@@ -9,8 +9,8 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m pip install -r requirements-dev.txt
-      - run: ruff format --check studio tests scripts test_support e2e
-      - run: ruff check studio tests scripts test_support e2e
+      - run: ruff format --check studio tests scripts test_support e2e audit_e2e
+      - run: ruff check studio tests scripts test_support e2e audit_e2e
   test:
     runs-on: ubuntu-latest
     steps:
@@ -52,3 +52,17 @@ jobs:
           name: browser-evidence
           path: test-results/
           retention-days: 7
+
+  hermetic-evaluation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run replay and real-browser evaluation offline
+        run: audit_e2e/test_hermetic.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hermetic-evaluation-evidence
+          path: audit_e2e/results/hermetic/
+          retention-days: 14
