@@ -102,13 +102,13 @@ def extractive_plans(package):
     return Plans(variants=variants)
 
 
-def validate_plans(plans, package):
+def validate_plans(plans, package, *, expected_keys=None):
     from .sections import divider_members
     from .background_selection import background_candidates
 
     backgrounds = {p.id for p in background_candidates(package)}
     chapters = divider_members(package)
-    if [v.key for v in plans.variants] != list(NAMES):
+    if [v.key for v in plans.variants] != list(NAMES if expected_keys is None else expected_keys):
         raise ValueError("Нужны три уникальных варианта в заданном порядке")
     facts = {f.id: f for f in package.content.facts}
     tables = {t.id: t for t in package.content.tables}

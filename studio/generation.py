@@ -31,7 +31,13 @@ async def run_generation(
             "Обновлён анализ шаблонов: повторите анализ материалов перед новой генерацией. Старые результаты сохранены; новый анализ определяет смысловые блоки и архетипы по общему каталогу."
         )
     deadline = GenerationDeadline(job["deadline_at"])
-    store.update(job_id, "running", phase="Планирование трёх вариантов", progress=8)
+    count = job.get("variant_count", 3)
+    store.update(
+        job_id,
+        "running",
+        phase="Планирование одного варианта" if count == 1 else "Планирование трёх вариантов",
+        progress=8,
+    )
     planning = await plan_generation(package, settings, gateway, directory, store, job_id, deadline)
     clock.checkpoint("planning_and_design_seconds")
     (directory / "generation-content.json").write_text(package.content.model_dump_json(indent=2))
@@ -39,9 +45,7 @@ async def run_generation(
     store.update(job_id, phase="Вёрстка, аудит и экспорт", progress=35)
     source = store.directory(package.id) / "input.pptx"
     composition = compose_generation(planning.plans, package, directory)
-    store.update(
-        job_id, phase="Создаём файлы PPTX, PDF и предпросмотр трёх презентаций", progress=50
-    )
+    store.update(job_id, phase="Создаём файлы PPTX, PDF и предпросмотр", progress=50)
     clock.checkpoint("composition_and_local_audit_seconds")
     variants = await export_variants(composition, package, source, directory, deadline)
     clock.checkpoint("render_and_export_seconds")

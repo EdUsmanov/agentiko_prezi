@@ -58,10 +58,10 @@ def test_startup_never_builds_or_reads_old_library(tmp_path, monkeypatch):
     app = app_module.create_app(settings)
     with TestClient(app) as client:
         assert client.get("/api/references").json() == rows
-        assert client.get("/api/health").json()["features"]["organizer_preanalysis"] is False
+        assert client.get("/api/health").json()["features"]["organizer_preanalysis"] is True
         assert client.get("/api/runtime").json() == {
             "restart_required": False,
-            "organizer_preanalysis": False,
+            "organizer_preanalysis": True,
         }
         assert client.post("/api/reference-library/rebuild").status_code == 404
         assert client.get("/api/reference-library").status_code == 404
@@ -203,3 +203,10 @@ def test_pipeline_hash_covers_adapter(monkeypatch, tmp_path):
     before = cache_version.pipeline_version()
     module.write_text("version2")
     assert cache_version.pipeline_version() != before
+
+
+def test_reference_can_recommend_one_variant_without_filename_rules(tmp_path, template):
+    settings = Settings(data_dir=tmp_path / "data")
+    rows = index_examples([template], settings, single_variant_paths=[template])
+    assert rows[0]["variant_count"] == 1
+    assert sources(settings) == rows

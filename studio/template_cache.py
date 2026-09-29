@@ -102,6 +102,42 @@ class TemplateCache:
         identity = self.identity(sha)
         return self.root / hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
 
+    def inspect(self, source):
+        """Read a fully verified snapshot without copying artifacts or running analysis."""
+        if self.root is None:
+            return None
+        try:
+            sha = digest_file(source)
+            entry = self.location(sha)
+            manifest = json.loads((entry / "snapshot.json").read_text())
+            if manifest["identity"] != json.loads(json.dumps(self.identity(sha))):
+                return None
+            files = manifest["files"]
+            for relative, expected in files.items():
+                path = (entry / "files" / relative).resolve()
+                if (
+                    not path.is_relative_to((entry / "files").resolve())
+                    or digest_file(path) != expected
+                ):
+                    return None
+            for path, expected in manifest["external_files"].items():
+                if digest_file(path) != expected:
+                    return None
+
+            def validate_reference(value):
+                if value.startswith("@template/") and value[len("@template/") :] not in files:
+                    raise ValueError("Missing cached artifact")
+                return value
+
+            profile = TemplateProfile.model_validate(
+                map_strings(manifest["profile"], validate_reference)
+            )
+            if profile.sha256 != sha:
+                return None
+            return profile, deepcopy(manifest["analysis"])
+        except (OSError, ValueError, KeyError, TypeError):
+            return None
+
     def restore(self, source, directory):
         if self.root is None:
             return None

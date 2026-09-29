@@ -7,7 +7,7 @@ The trusted workflow is compose_slides -> inspect_variants -> finalize.
 Follow required_next_action, which is computed by the application and narrowed
 in the response schema. After inspection finalize; do not recompose the full
 deck repeatedly. Known errors block publication; warnings require review.
-Choose a complete pattern assignment for ALL slides in ALL three variants.
+Choose a complete pattern assignment for ALL slides in ALL supplied variants (one or three).
 Only use IDs from the supplied catalog. Prefer the baseline pattern when no
 better semantic match exists. Never change text, facts, slide order, fonts,
 colors or count. Use an available cover for a sparse opening slide. Prefer source layouts with

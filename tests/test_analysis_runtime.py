@@ -205,3 +205,41 @@ def test_truncated_batch_splits_without_identical_retry():
     report = asyncio.run(analyze_meaning(inventory(3), gateway))
     assert gateway.seen == [["p0", "p1", "p2"], ["p0"], ["p1"], ["p2"]]
     assert report["status"] == "completed"
+
+
+@pytest.mark.parametrize("confirmed", [False, True])
+def test_unconfirmed_graphic_observations_do_not_invalidate_semantic_analysis(confirmed):
+    sample = inventory(1)
+    sample["patterns"][0].update(
+        body_fields=[{"shape_id": 40}, {"shape_id": 41}], graphic_candidates=[{"id": 50}]
+    )
+
+    class Gateway:
+        settings = SimpleNamespace(mode="api")
+
+        async def json_request(self, stage, payload, **kwargs):
+            return {
+                "pattern_id": "p0",
+                "roles": ["context"],
+                "density": "medium",
+                "purpose": "content",
+                "graphic_flow_confirmed": confirmed,
+                "graphic_kind": "radial",
+                "graphic_shape_ids": [50],
+                "body_order": [0, 1],
+                "graphic_edges": [],
+            }
+
+    report = asyncio.run(analyze_meaning(sample, Gateway()))
+    if confirmed:
+        assert (
+            report["status"] == "failed"
+        )  # A claimed relation still requires exact field IDs and edges.
+    else:
+        assert report["status"] == "completed"
+        pattern = report["patterns"][0]
+        assert pattern["purpose"] == "content" and pattern["graphic_kind"] == "none"
+        assert not pattern["graphic_flow_confirmed"]
+        assert (
+            pattern["body_order"] == pattern["graphic_edges"] == pattern["graphic_shape_ids"] == []
+        )

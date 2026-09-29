@@ -13,7 +13,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from typing import Literal
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 from .config import Settings, ROOT
 from .store import Store
 from .pipeline import prepare, load_package
@@ -34,6 +34,14 @@ class GenerateRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     package_id: str
     accept_adjusted_slide_count: bool = False
+    variant_count: Literal[1, 3] = 3
+
+    @field_validator("variant_count", mode="before")
+    @classmethod
+    def strict_variant_count(cls, value):
+        if type(value) is not int or value not in (1, 3):
+            raise ValueError("Выберите одну или три презентации")
+        return value
 
 
 class ReviseRequest(BaseModel):
@@ -412,7 +420,7 @@ def create_app(settings=None):
                 "t2i": False,
                 "semantic_preparation": True,
                 "deterministic_compositions": True,
-                "organizer_preanalysis": False,
+                "organizer_preanalysis": True,
                 "font_roles": True,
                 "download_fonts": settings.download_fonts,
                 "image_uploads": True,
@@ -423,11 +431,20 @@ def create_app(settings=None):
     def references():
         return sources(settings)
 
+    @app.get("/api/references/{reference_id}/profile")
+    def saved_reference_profile(reference_id: str):
+        from .reference_analysis import reference_profile
+
+        try:
+            return reference_profile(settings, reference_id)
+        except KeyError as exc:
+            raise HTTPException(404, "Неизвестный шаблон") from exc
+
     @app.get("/api/runtime")
     def runtime_status():
         return {
             "restart_required": pipeline_version() != loaded_pipeline_version,
-            "organizer_preanalysis": False,
+            "organizer_preanalysis": True,
         }
 
     @app.get("/api/jobs")
@@ -544,7 +561,9 @@ def create_app(settings=None):
                     budget.get("message", "План подготовлен.")
                     + " Подтвердите генерацию с предложенным количеством слайдов."
                 )
-            job, created = store.generation_for(body.package_id, automatic=automatic)
+            job, created = store.generation_for(
+                body.package_id, automatic=automatic, variant_count=body.variant_count
+            )
             if not created:
                 return job or store.get(body.package_id)
             deadline = (

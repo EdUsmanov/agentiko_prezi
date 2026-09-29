@@ -1,5 +1,5 @@
 from typing import Literal
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from .archetype_catalog import Archetype
 
 
@@ -172,7 +172,15 @@ class VariantPlan(StrictModel):
 
 
 class Plans(StrictModel):
-    variants: list[VariantPlan] = Field(min_length=3, max_length=3)
+    variants: list[VariantPlan] = Field(min_length=1, max_length=3)
+
+    @field_validator("variants")
+    @classmethod
+    def complete_variant_selection(cls, variants):
+        keys = [v.key for v in variants]
+        if keys not in (["executive"], ["executive", "analytical", "story"]):
+            raise ValueError("Expected one executive variant or all three ordered variants")
+        return variants
 
 
 class PreparedPackage(StrictModel):

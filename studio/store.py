@@ -174,8 +174,10 @@ class Store:
             for r in rows
         ]
 
-    def generation_for(self, pid, automatic=False):
+    def generation_for(self, pid, automatic=False, variant_count=3):
         """Claim once per immutable package, atomically across concurrent requests."""
+        if type(variant_count) is not int or variant_count not in (1, 3):
+            raise ValueError("Выберите одну или три презентации")
         jid = uuid.uuid4().hex
         with self.connect() as c:
             c.execute("BEGIN IMMEDIATE")
@@ -188,6 +190,10 @@ class Store:
             if data.get("generation_id"):
                 previous = self.get(data["generation_id"])
                 if automatic or previous["state"] not in ("failed", "cancelled", "timed_out"):
+                    if not automatic and previous.get("variant_count", 3) != variant_count:
+                        raise ValueError(
+                            "Для этого пакета уже запущено другое количество презентаций"
+                        )
                     return previous, False
             if automatic and data.get("auto_generation") != "scheduled":
                 return None, False
@@ -204,10 +210,17 @@ class Store:
                     "generation",
                     "accepted",
                     time.time(),
-                    json.dumps({"package_id": pid, "progress": 0, "phase": "Запуск"}),
+                    json.dumps(
+                        {
+                            "package_id": pid,
+                            "variant_count": variant_count,
+                            "progress": 0,
+                            "phase": "Запуск",
+                        }
+                    ),
                 ),
             )
-            data.update(generation_id=jid, auto_generation="started")
+            data.update(generation_id=jid, auto_generation="started", variant_count=variant_count)
             c.execute(
                 "UPDATE jobs SET data=? WHERE id=?", (json.dumps(data, ensure_ascii=False), pid)
             )

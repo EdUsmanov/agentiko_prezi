@@ -344,14 +344,7 @@ def seal_preparation(store: Store, job_id: str, package: PreparedPackage) -> Non
         phase="Готово к генерации",
         progress=100,
         package_hash=digest(raw.encode()),
-        auto_generation="needs_confirmation"
-        if (report.get("slide_budget") or {}).get("status") == "needs_input"
-        or (
-            not constraints.confirm_plan
-            and (report.get("slide_budget") or {}).get("status") == "adjusted"
-        )
-        else "scheduled",
-        auto_generate_at=time.time() + 60,
+        auto_generation="manual",
         template=template.model_dump(
             exclude={"font_file", "assets", "font_assets", "background_source"}
         )

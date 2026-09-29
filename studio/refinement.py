@@ -50,7 +50,7 @@ def apply_edits(package, plans, decks, edits, allowed, composition_cache=None):
             mapping[edit.variant].slides[edit.slide - 1].chart_style = "readable"
             # Re-evaluate physical capacity, including a larger compatible layout.
             mapping[edit.variant].slides[edit.slide - 1].pattern_id = None
-    validate_plans(trial, package)
+    validate_plans(trial, package, expected_keys=[v.key for v in plans.variants])
     changed = {}
     for key in {e.variant for e in edits}:
         # Preserve the actual exported state of untouched slides, including diversity repairs.

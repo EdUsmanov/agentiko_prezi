@@ -1,6 +1,8 @@
 const $ = selector => document.querySelector(selector);
 let packageId = null, resultPackageId = null, busy = false, preview = null, toastTimeout = null;
 let slideBudget = null;
+let savedDesign = null, designRequest = 0;
+const referenceDefaults = new Map();
 let securityLocked = false;
 function lockForInjection() {
   if (securityLocked) return;
@@ -64,6 +66,7 @@ function setBusy(value) {
   if (value) { clearTimeout(toastTimeout); $('#toast').hidden = true; }
   for (const form of ['#prepare-form','#revise-form']) $(form).querySelectorAll('input,textarea,select,button').forEach(n => n.disabled = value);
   $('#demo').disabled = value; $('#nav-history').disabled = value;
+  $('#variant-count').disabled = value;
   $('#generate-button').disabled = value || !packageId || slideBudget?.status === 'needs_input';
   $('#prepare-form').setAttribute('aria-busy',String(value));
 }
@@ -73,7 +76,9 @@ function dirty() {
   $("#auto-generation-status").textContent = ""; $("#cancel-auto-generation").hidden = true;
   packageId = null; slideBudget = null; $('#generate-button').disabled = true;
   $('#step-2').classList.remove('active'); $('#step-3').classList.remove('active');
-  if (!$('#profile').hidden) {
+  if (savedDesign && savedDesign.id === $('#reference').value) {
+    renderSavedDesign(savedDesign);
+  } else if (!$('#profile').hidden) {
     $('#prep-state').textContent = 'Нужен новый анализ'; $('#prep-state').className = 'pill neutral'; $('#profile').classList.add('stale');
   }
 }
@@ -134,12 +139,15 @@ function generationError(message) {
 }
 function beginPreparation(label) {
   stopLoaders(); clearGenerationError();
-  $('#results').hidden = true; $('#profile').hidden = true; $('#profile-empty').hidden = true;
+  $('#results').hidden = true; $('#profile').hidden = true; $('#profile-empty').hidden = true; $('#saved-design').hidden = true; designRequest++;
   $('#prep-loader').hidden = false; setPreparationPhase(label);
 }
 function selectedFile() {
   const file = $('#template').files[0];
+  savedDesign = null; designRequest++; $('#saved-design').hidden = true;
   dirty();
+  $('#profile').hidden = true; $('#profile-empty').hidden = false;
+  $('#prep-state').textContent = 'Ожидает анализа'; $('#prep-state').className = 'pill neutral';
   if (file && (!/\.(pptx|potx)$/i.test(file.name) || file.size > 60*1024*1024)) {
     $('#template').value = ''; $('#file-label').textContent = 'Перетащите PPTX / POTX или выберите файл';
     return toast('Выберите файл PPTX или POTX размером до 60 МБ.');
@@ -150,8 +158,12 @@ function selectedFile() {
 $('#prepare-form').addEventListener('input',dirty);
 $('#content').addEventListener('input',() => $('#char-count').textContent = $('#content').value.length.toLocaleString('ru')+' символов');
 $('#reference').addEventListener('change',() => {
+  savedDesign = null;
   dirty(); $('#dropzone').hidden = !!$('#reference').value; $('#template').value = '';
   $('#file-label').textContent = 'Перетащите PPTX / POTX или выберите файл';
+  $('#variant-count').value = String(referenceDefaults.get($('#reference').value) || 3);
+  updateGenerationLabel();
+  loadSavedDesign();
 });
 $('#template').addEventListener('change',selectedFile);
 for (const type of ['dragover','dragleave','drop']) $('#dropzone').addEventListener(type,event => {
@@ -162,6 +174,50 @@ for (const type of ['dragover','dragleave','drop']) $('#dropzone').addEventListe
     $('#template').files = event.dataTransfer.files; selectedFile();
   }
 });
+function updateGenerationLabel() {
+  const one = $('#variant-count').value === '1';
+  document.querySelectorAll('.variant-description').forEach((item,index) => item.hidden = one && index > 0);
+  $('.loader-generation strong').textContent = one ? 'Собираем презентацию' : 'Собираем три презентации';
+  $('#generate-button').textContent = (one ? 'Создать презентацию' : 'Создать три презентации') +
+    (slideBudget?.status === 'adjusted' ? ` · ${slideBudget.planned} слайдов` : '') + ' ↗';
+}
+$('#variant-count').addEventListener('change', updateGenerationLabel);
+function renderSavedDesign(report) {
+  const target = $('#saved-design'); target.replaceChildren(); target.hidden = false;
+  $('#profile').hidden = true; $('#profile-empty').hidden = true;
+  const ready = report.status === 'completed';
+  $('#prep-state').textContent = ready ? 'Шаблон проанализирован' : 'Нужен анализ шаблона';
+  $('#prep-state').className = 'pill neutral';
+  target.append(el('div','profile-name',report.name));
+  if (!report.template) {
+    target.append(el('p','profile-detail','Готовый анализ отсутствует или требует обновления. Он выполнится при анализе материалов.'));
+    return;
+  }
+  const t = report.template, swatches = el('div','swatches');
+  t.colors.slice(0,7).forEach(color => {
+    if (!/^#[0-9a-f]{6}$/i.test(color)) return;
+    const swatch = el('span','swatch'); swatch.style.backgroundColor = color; swatch.title = color; swatches.append(swatch);
+  });
+  target.append(swatches,
+    el('p','profile-detail',`${t.slide_count} слайдов разобрано · ${t.pattern_count} композиций · ${t.layout_count} макетов`),
+    el('p','profile-detail',`Шрифт: ${t.font}. Заголовки: ${t.title_size} pt, основной текст: ${t.body_size} pt.`),
+    el('p','profile-detail',ready ? 'Смысловой анализ шаблона завершён. Используем сохранённый профиль VK Forma.' : 'Технический профиль готов. Смысловой анализ ещё не завершён.'),
+    el('p','profile-detail','Добавьте текст и нажмите «Проанализировать материалы». Генерация запускается отдельной кнопкой.'));
+  for (const warning of report.analysis?.warnings || []) target.append(el('p','profile-detail',warning));
+}
+async function loadSavedDesign() {
+  const id = $('#reference').value, request = ++designRequest;
+  $('#profile').hidden = true; $('#saved-design').hidden = true; $('#profile-empty').hidden = false;
+  if (!id) { $('#prep-state').textContent = 'Ожидает материалы'; return; }
+  $('#prep-state').textContent = 'Проверяем сохранённый анализ';
+  try {
+    const report = await api(`/api/references/${encodeURIComponent(id)}/profile`);
+    if (request !== designRequest || id !== $('#reference').value || busy) return;
+    savedDesign = report; renderSavedDesign(report);
+  } catch (error) {
+    if (request === designRequest) $('#prep-state').textContent = 'Не удалось загрузить профиль';
+  }
+}
 function archetypeSummary(analysis) {
   const report = analysis.archetypes;
   if (report?.method === 'reviewed_editorial_groups') {
@@ -182,11 +238,12 @@ function archetypeSummary(analysis) {
 }
 function displayProfile(job) {
   packageId = job.id;
+  if ([1,3].includes(job.variant_count)) $('#variant-count').value = String(job.variant_count);
   armAutoGeneration(job);
   slideBudget = job.analysis?.slide_budget || null;
   if (job.constraints?.confirm_plan) slideBudget = {...slideBudget, confirm_plan:true};
-  $('#generate-button').textContent = slideBudget?.status === 'adjusted'
-    ? `Создать три презентации по ${slideBudget.planned} слайдов ↗` : 'Создать три презентации ↗';
+  $('#saved-design').hidden = true;
+  updateGenerationLabel();
   $('#profile-empty').hidden = true; $('#prep-loader').hidden = true; $('#profile').hidden = false;
   $('#profile').classList.remove('stale'); $('#profile').replaceChildren();
   const t = job.template;
@@ -347,7 +404,7 @@ async function startGeneration(nested = false) {
   clearGenerationError();
   setGenerationPhase('Передаём подготовленные материалы на генерацию');
   try {
-    const job = await jsonPost('/api/generate',{package_id:packageId,
+    const job = await jsonPost('/api/generate',{package_id:packageId, variant_count:Number($('#variant-count').value),
       accept_adjusted_slide_count:slideBudget?.status === 'adjusted' || !!slideBudget?.confirm_plan});
     const done = await watchJob(job.id,state => {
       setGenerationPhase((state.slide_count_decision?.mode==='automatic' ? state.slide_count_decision.message+' ('+state.slide_count_decision.count+'). ' : '')+(state.phase || 'Готовим запуск генерации'));
@@ -365,7 +422,7 @@ async function showTimings(job) {
   target.dataset.jobId = job.id;
   const analysis = el('dd','',duration(job.analysis_seconds));
   const preparation = el('div'); preparation.append(el('dt','','Анализ материалов'),analysis);
-  const generation = el('div'); generation.append(el('dt','','Генерация трёх презентаций'),el('dd','',duration(job.elapsed_seconds)));
+  const generation = el('div'); generation.append(el('dt','',job.variants?.length === 1 ? 'Генерация одной презентации' : 'Генерация трёх презентаций'),el('dd','',duration(job.elapsed_seconds)));
   target.replaceChildren(preparation,generation);
   // Older results did not copy preparation timing; resolve their own package, not the editor's.
   if (job.analysis_seconds == null && job.package_id) {
@@ -379,6 +436,7 @@ function showResults(job) {
   // History results and the current editor have separate package identities.
   resultPackageId = job.package_id; diagnosticJob = job.id;
   clearTimeout(toastTimeout); $('#toast').hidden = true;
+  $('#results-title').textContent = job.variants.length === 1 ? 'Ваша презентация' : 'Один стиль. Три варианта.';
   $('#results').hidden = false; $('#step-3').classList.add('active');
   stopLoaders(); clearGenerationError(); showTimings(job);
   $('#result-summary').textContent = `${states[job.state] || job.state} · ${job.variants.reduce((sum,v) => sum+v.slides,0)} слайдов${job.model_mode === 'extractive' ? ' · без LLM' : ''}`;
@@ -524,7 +582,7 @@ function armAutoGeneration(job) {
       } else if (['cancelled','blocked'].includes(current.auto_generation)) {
         status.textContent = current.auto_generation === 'cancelled' ? 'Автозапуск отменён. Можно запустить вручную.' : 'Автозапуск не выполнен. Подробности — в журнале задания.';
         return;
-      } else if (!current.auto_generation) {
+      } else if (!current.auto_generation || current.auto_generation === 'manual') {
         status.textContent = 'Сохранённый пакет. Для генерации нажмите кнопку запуска.';
         return;
       }
@@ -584,7 +642,7 @@ async function init() {
     if (health.model_mode==='api' && !health.features?.vlm) $('#model-disclosure').textContent += ' Проверка изображений сейчас отключена; её включение требует разрешения на передачу PNG.';
     if (health.features?.vlm) $('#model-disclosure').textContent += ' Загруженные вами картинки также будут видны провайдеру в составе слайдов, но не передаются планировщику.';
     if (health.features?.download_fonts) $('#model-disclosure').textContent += ' Недостающие начертания ищем в Google Fonts, Fontsource и официальном пакете Aptos: передаётся только название шрифта.';
-    for (const reference of references) { const option = el('option','',reference.name); option.value = reference.id; $('#reference').append(option); }
+    for (const reference of references) { referenceDefaults.set(reference.id, reference.variant_count || 3); const option = el('option','',reference.name); option.value = reference.id; $('#reference').append(option); }
     const jobs = await api("/api/jobs");
     const active = jobs.find(job => ["accepted","running"].includes(job.state));
     const pending = jobs.find(job => job.state === "ready" && job.auto_generation === "scheduled");

@@ -114,9 +114,11 @@ def meaningful_diversity(decks, profile):
             }
         )
     return {
-        "verified": bool(pairs) and all(p["verified"] for p in pairs),
+        "verified": len(decks) == 1 or bool(pairs) and all(p["verified"] for p in pairs),
         "pairs": pairs,
-        "method": "substantial_source_linked_content_changes",
+        "method": "single_variant"
+        if len(decks) == 1
+        else "substantial_source_linked_content_changes",
     }
 
 

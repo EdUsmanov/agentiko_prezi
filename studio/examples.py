@@ -36,14 +36,18 @@ def sources(settings):
             continue
         if not (path.parent / rid / "input.pptx").is_file():
             continue
-        result.append({"id": rid, "name": name})
+        item = {"id": rid, "name": name}
+        if type(row.get("variant_count")) is int and row["variant_count"] in (1, 3):
+            item["variant_count"] = row["variant_count"]
+        result.append(item)
         seen.add(rid)
     return result
 
 
-def index_examples(paths, settings):
+def index_examples(paths, settings, *, single_variant_paths=()):
     """Register raw demos; analyze one only after explicit user selection."""
     root = settings.data_dir / "references"
+    single = {Path(p).resolve() for p in single_variant_paths}
     results, seen = [], set()
     for source in map(Path, paths):
         validate_pptx(source)
@@ -55,7 +59,10 @@ def index_examples(paths, settings):
         target = folder / "input.pptx"
         if source.resolve() != target.resolve():
             shutil.copyfile(source, target)
-        results.append({"id": rid, "name": source.name})
+        item = {"id": rid, "name": source.name}
+        if source.resolve() in single:
+            item["variant_count"] = 1
+        results.append(item)
         seen.add(rid)
     atomic_json(root / "index.json", results)
     return results

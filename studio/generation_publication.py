@@ -69,6 +69,7 @@ def publish_generation(
         "font_substitutions": font_substitutions,
         "started_at": job["created"],
         "deadline_at": deadline.deadline_at,
+        "variant_count": len(results),
         "variants": results,
         "contextual_audit": contextual,
         "visual_audit": visual,
@@ -102,7 +103,9 @@ def publish_generation(
     store.update(
         job_id,
         "needs_review" if needs_review else "completed",
-        phase="Требуется проверка" if needs_review else "Три презентации готовы",
+        phase="Требуется проверка"
+        if needs_review
+        else ("Презентация готова" if len(results) == 1 else "Три презентации готовы"),
         progress=100,
         elapsed_seconds=round(time.time() - job["created"], 3),
         analysis_seconds=package.manifest.get("analysis_seconds"),
