@@ -5,6 +5,7 @@ from studio.composition.text_composer import (
     words_fit as words_fit,
 )
 from studio.models import Box, Element, SlideScene
+from studio.composition.variant_body import compose_variant_body
 from studio.templates.fonts import wrap_text, role_font, element_font, table_cell_fits
 from studio.contents.parsing import numeric_column
 from studio.templates.template_geometry import contrast, minimum_text_contrast
@@ -12,153 +13,6 @@ from studio.composition.contracts import candidates as semantic_candidates
 from studio.contents.content_sources import package_sources
 from studio.templates.field_style import field_style, styled_profile
 from studio.composition.table_style import column_widths, row_heights
-
-
-def _variant_body(
-    slide, package, variant, body, box, profile, color, style=None, table_pattern=None
-):
-    """Use source-backed structure inside one ordinary template body field."""
-    if len(body) < 2 or slide.table_id or slide.purpose in ("cover", "divider"):
-        return None
-    from studio.contents.semantic_bindings import content_groups, labeled_facts
-
-    body = labeled_facts(body, package)
-    binding = content_groups(slide, package)
-    groups = binding["groups"] if binding["status"] == "specialized" else []
-    ordered = [f.id for group in groups for f in group["facts"]] == [f.id for f in body]
-    if (
-        variant == "analytical"
-        and ordered
-        and len(groups) >= 2
-        and slide.purpose not in ("process", "timeline")
-    ):
-        # Each column is a reviewed participant; every cell retains full source wording.
-        rows = [
-            [g["label"] for g in groups],
-            ["\n".join(f.text for f in g["facts"]) for g in groups],
-        ]
-        native_table = getattr(table_pattern, "table_template", None)
-        target = (
-            native_table.box
-            if native_table and len(native_table.column_widths) == len(rows[0])
-            else box
-        )
-        if all(rows[0]):
-            from studio.checks.audit import table_fits
-            from studio.composition.table_style import apply_table_style
-
-            for size in body_size_candidates(profile, profile.body_size, minimum=16):
-                candidate = Element(
-                    kind="table",
-                    box=target,
-                    rows=rows,
-                    role="grounded_comparison",
-                    font=profile.font,
-                    size=size,
-                    color=color,
-                    fill=profile.accent,
-                    source_ids=[f.id for f in body],
-                )
-                apply_table_style(candidate, table_pattern)
-                if candidate.table_template and any(
-                    0 < cell.font_size < 16
-                    for row in candidate.table_template.cells
-                    for cell in row
-                ):
-                    continue
-                if table_fits(candidate, profile):
-                    return [candidate]
-    if variant == "executive":
-        gap = 10
-        lead_box = Box(x=box.x, y=box.y, w=box.w, h=box.h * 0.34)
-        detail_box = Box(
-            x=box.x, y=lead_box.y + lead_box.h + gap, w=box.w, h=box.h - lead_box.h - gap
-        )
-        lead = text_element(
-            body[0].text,
-            lead_box,
-            profile,
-            "body",
-            profile.body_size * 1.2,
-            color,
-            [body[0].id],
-            style,
-            body_fallback=16,
-        )
-        lead.bold = True
-        detail = fact_elements(body[1:], detail_box, profile, color, field_style=style)
-        result = [lead, *detail]
-    elif variant == "analytical":
-        columns = min(len(body), 3)
-        gap = max(14, box.w * 0.025)
-        width = (box.w - gap * (columns - 1)) / columns
-        result = []
-        for i in range(columns):
-            facts = body[i * len(body) // columns : (i + 1) * len(body) // columns]
-            column = Box(x=box.x + i * (width + gap), y=box.y, w=width, h=box.h)
-            result.extend(fact_elements(facts, column, profile, color, field_style=style))
-    elif (
-        variant == "story"
-        and slide.purpose in ("process", "timeline")
-        and ordered
-        and len(groups) >= 2
-    ):
-        from studio.contents.semantic_bindings import inline_group_text
-
-        paragraphs = [
-            inline_group_text(
-                group["label"]
-                if slide.purpose == "timeline"
-                and group["label"].casefold()
-                not in " ".join(f.text for f in group["facts"]).casefold()
-                else "",
-                [f.text for f in labeled_facts(group["facts"], package)],
-            )
-            for group in groups
-        ]
-        result = [
-            text_element(
-                "\n".join(paragraphs),
-                box,
-                profile,
-                "body",
-                color=color,
-                source_ids=[f.id for f in body],
-                field_style=style,
-                body_fallback=16,
-            )
-        ]
-    elif variant == "story":
-        result = [
-            text_element(
-                "\n".join(f.text for f in body),
-                box,
-                profile,
-                "body",
-                color=color,
-                source_ids=[f.id for f in body],
-                field_style=style,
-                body_fallback=16,
-            )
-        ]
-    else:
-        return None
-    if any(
-        e.size < 16
-        or not words_fit(
-            e.text,
-            element_font(profile, e)[1],
-            e.size,
-            (e.box.w - (e.size * 1.4 if e.bullet else 0))
-            * (0.94 if e.bold or e.bold_prefix else 1),
-        )
-        or len(wrap_text(e.text, element_font(profile, e)[1], e.size, e.box.w)) * e.size * 1.25
-        > e.box.h + 1
-        for e in result
-        if e.kind == "text"
-    ):
-        return None
-    return result
 
 
 def compose(slide, package, index, variant):
@@ -325,7 +179,7 @@ def compose(slide, package, index, variant):
                 fact_elements(body, Box(x=x, y=y, w=w - m - x, h=content_h), p, p.foreground)
             )
     elif (
-        variant_body := _variant_body(
+        variant_body := compose_variant_body(
             slide,
             package,
             variant,
@@ -760,6 +614,7 @@ def compose_native(slide, package, index, variant):
         title.background_hint = pattern.title_background
         elements = [title]
         zones = zones_for(pattern)
+        variant_body = None
         from studio.contents.semantic_bindings import content_groups
 
         if len(zones) == len(pattern.body_zones) and binding["status"] != "specialized":
@@ -933,7 +788,7 @@ def compose_native(slide, package, index, variant):
             and len(zones) == 1
             and not any(pattern.number_zones)
         ):
-            variant_body = _variant_body(
+            variant_body = compose_variant_body(
                 slide,
                 package,
                 variant,
@@ -972,7 +827,7 @@ def compose_native(slide, package, index, variant):
                 e.background_hint = pattern.zone_backgrounds[zone_index]
             if zone_index < len(pattern.zone_foregrounds) and pattern.zone_foregrounds[zone_index]:
                 e.color = pattern.zone_foregrounds[zone_index]
-        return elements
+        return elements, variant_body is not None
 
     options = []
     meanings = {
@@ -980,9 +835,10 @@ def compose_native(slide, package, index, variant):
         for item in package.analysis.get("template_semantics", {}).get("patterns", [])
     }
     for pattern in patterns:
-        elements = elements_for(pattern)
-        if elements is None:
+        composed = elements_for(pattern)
+        if composed is None:
             continue
+        elements, variant_body_applied = composed
         scoring_elements = []
         chart_penalty = 0
         for e in elements:
@@ -1161,23 +1017,9 @@ def compose_native(slide, package, index, variant):
         # readability regression: overflow still dominates this bounded penalty.
         if slide.purpose not in ("auto", "content") and pattern.purpose != slide.purpose:
             score += 60
-        story_single_safe = (
-            variant == "story"
+        variant_body_safe = (
+            variant_body_applied
             and slide.pattern_id is None
-            and not slide.table_id
-            and pattern.graphic_kind == "none"
-            and len(pattern.body_zones) == 1
-            and not any(pattern.number_zones)
-            and len(body) >= 2
-            and len([e for e in elements if e.kind == "text" and e.role == "body" and e.source_ids])
-            == 1
-            and any(
-                e.kind == "text"
-                and e.role == "body"
-                and e.source_ids == [f.id for f in body]
-                and e.size >= 16
-                for e in elements
-            )
             and overflow <= 0.01
             and contrast_penalty == 0
             and not any(
@@ -1185,12 +1027,14 @@ def compose_native(slide, package, index, variant):
                 for f in policy_findings
             )
         )
-        options.append((score, pattern, elements, story_single_safe))
+        options.append((score, pattern, elements, variant_body_safe))
     if not options:
         if slide.pattern_id is not None:
             raise ValueError("Выбранная композиция несовместима с содержимым")
         return None
-    if variant == "story" and any(item[3] for item in options):
+    # Preserve the requested evidence structure whenever a safe native field fits it.
+    # Larger type in identical columns is not a substitute for that composition.
+    if any(item[3] for item in options):
         options = [item for item in options if item[3]]
     options.sort(key=lambda item: item[0])
     best = options[0][0]

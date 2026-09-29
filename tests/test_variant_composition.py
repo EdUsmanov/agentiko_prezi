@@ -1,7 +1,9 @@
 from pathlib import Path
 from types import SimpleNamespace
 
-from studio.composition.composer import _variant_body
+import pytest
+
+from studio.composition.variant_body import compose_variant_body
 from studio.models import Box, ContentModel, Fact, SlidePlan, Pattern, VariantPlan
 
 
@@ -44,8 +46,8 @@ def test_executive_lead_and_grounded_analytical_comparison():
     }
     p = package(facts, [unit])
     slide = SlidePlan(title="Price", fact_ids=["a", "b"], purpose="comparison")
-    lead = _variant_body(slide, p, "executive", facts, BOX, PROFILE, PROFILE.foreground)
-    table = _variant_body(slide, p, "analytical", facts, BOX, PROFILE, PROFILE.foreground)
+    lead = compose_variant_body(slide, p, "executive", facts, BOX, PROFILE, PROFILE.foreground)
+    table = compose_variant_body(slide, p, "analytical", facts, BOX, PROFILE, PROFILE.foreground)
     assert lead and [e.kind for e in lead] == ["text", "text"]
     assert lead[0].box.y < lead[1].box.y
     assert [e.source_ids for e in lead] == [["a"], ["b"]]
@@ -58,12 +60,31 @@ def test_no_unreviewed_comparison_table_or_unearned_sequence():
     facts = [Fact(id="a", text="Alpha costs 100."), Fact(id="b", text="Beta costs 120.")]
     p = package(facts)
     slide = SlidePlan(title="Price", fact_ids=["a", "b"], purpose="comparison")
-    columns = _variant_body(slide, p, "analytical", facts, BOX, PROFILE, PROFILE.foreground)
-    story = _variant_body(slide, p, "story", facts, BOX, PROFILE, PROFILE.foreground)
+    columns = compose_variant_body(slide, p, "analytical", facts, BOX, PROFILE, PROFILE.foreground)
+    story = compose_variant_body(slide, p, "story", facts, BOX, PROFILE, PROFILE.foreground)
     assert columns and [e.kind for e in columns] == ["text", "text"]
     assert columns[0].box.x < columns[1].box.x
     assert story and len(story) == 1 and story[0].source_ids == ["a", "b"]
     assert all(e.kind != "table" for e in columns + story)
+
+
+def test_fitted_executive_lead_stays_at_least_as_large_as_its_details():
+    facts = [
+        Fact(id="lead", text="The team reviews every incoming request before assigning an owner."),
+        Fact(id="detail", text="Owners receive a daily summary."),
+    ]
+    elements = compose_variant_body(
+        SlidePlan(title="Requests", fact_ids=[f.id for f in facts]),
+        package(facts),
+        "executive",
+        facts,
+        Box(x=50, y=120, w=300, h=260),
+        PROFILE,
+        PROFILE.foreground,
+    )
+    assert elements and elements[0].bold
+    assert all(16 <= e.size <= elements[0].size for e in elements)
+    assert [e.text for e in elements] == [f.text for f in facts]
 
 
 def test_story_uses_only_source_reviewed_steps():
@@ -78,9 +99,11 @@ def test_story_uses_only_source_reviewed_steps():
     }
     p = package(facts, [unit])
     slide = SlidePlan(title="Workflow", fact_ids=["a", "b"], purpose="process")
-    executive = _variant_body(slide, p, "executive", facts, BOX, PROFILE, PROFILE.foreground)
-    analytical = _variant_body(slide, p, "analytical", facts, BOX, PROFILE, PROFILE.foreground)
-    story = _variant_body(slide, p, "story", facts, BOX, PROFILE, PROFILE.foreground)
+    executive = compose_variant_body(slide, p, "executive", facts, BOX, PROFILE, PROFILE.foreground)
+    analytical = compose_variant_body(
+        slide, p, "analytical", facts, BOX, PROFILE, PROFILE.foreground
+    )
+    story = compose_variant_body(slide, p, "story", facts, BOX, PROFILE, PROFILE.foreground)
     assert executive and analytical and story
     assert [e.source_ids for e in executive] == [["a"], ["b"]]
     assert [e.source_ids for e in analytical] == [["a"], ["b"]]
@@ -101,7 +124,7 @@ def test_story_retains_reviewed_timeline_label():
         ],
     }
     slide = SlidePlan(title="Milestones", fact_ids=["a", "b"], purpose="timeline")
-    story = _variant_body(
+    story = compose_variant_body(
         slide, package(facts, [unit]), "story", facts, BOX, PROFILE, PROFILE.foreground
     )
     assert story and len(story) == 1
@@ -298,7 +321,10 @@ def test_oversized_sample_fonts_keep_three_real_exported_structures(prepared, te
     assert analytical[0].box.x < analytical[1].box.x
 
 
-def test_story_prefers_safe_one_field_among_authored_patterns(prepared, template, tmp_path):
+@pytest.mark.parametrize("key", ["executive", "analytical", "story"])
+def test_variant_prefers_safe_evidence_structure_among_authored_patterns(
+    prepared, template, tmp_path, key
+):
     from studio.composition.composer import compose_native
     from studio.composition.render import render_pptx
     from pptx import Presentation
@@ -336,16 +362,22 @@ def test_story_prefers_safe_one_field_among_authored_patterns(prepared, template
     )
     p.template.patterns = [two, one]
     plan = SlidePlan(title="Overview", fact_ids=["a", "b", "c"], purpose="content", layout="split")
-    scene = compose_native(plan, p, 0, "story")
+    scene = compose_native(plan, p, 0, key)
     assert scene.pattern_id == "one-field"
-    assert [e.source_ids for e in scene.elements if e.kind == "text" and e.role == "body"] == [
-        ["a", "b", "c"]
-    ]
+    body = [e for e in scene.elements if e.kind == "text" and e.role == "body"]
+    if key == "story":
+        assert [e.source_ids for e in body] == [["a", "b", "c"]]
+    else:
+        assert [e.source_ids for e in body] == [["a"], ["b"], ["c"]]
+        if key == "executive":
+            assert body[0].box.y < body[1].box.y and body[0].bold
+        else:
+            assert body[0].box.x < body[1].box.x < body[2].box.x
     decorated = Presentation(template)
     decorated.slides[0].shapes.add_shape(
         MSO_SHAPE.RECTANGLE, Inches(0.1), Inches(0.1), Inches(0.3), Inches(0.3)
     )
-    source, output = tmp_path / "decorated.pptx", tmp_path / "story.pptx"
+    source, output = tmp_path / "decorated.pptx", tmp_path / f"{key}.pptx"
     decorated.save(source)
     p.template.background_source = ""
     render_pptx([scene], p.template, source, output, verify_text=False)
@@ -355,7 +387,7 @@ def test_story_prefers_safe_one_field_among_authored_patterns(prepared, template
         for shape in exported.slides[0].shapes
     )
     one.safe_text_zone = {"field_checks": [{"status": "unknown"}]}
-    scene = compose_native(plan, p, 0, "story")
+    scene = compose_native(plan, p, 0, key)
     assert scene.pattern_id == "two-fields"
 
 

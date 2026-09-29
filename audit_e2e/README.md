@@ -179,7 +179,7 @@ uncalibrated live judge is diagnostic even if its raw judgments are favorable.
 ```bash
 python -m audit_e2e.build_cassettes --case binghamton-content
 # Replacing an existing fixture is an explicit authoring action:
-python -m audit_e2e.build_cassettes --case binghamton-content --replace --revision 2
+python -m audit_e2e.build_cassettes --case binghamton-content --replace --revision 4
 # The separate real-UI selected repair scenario:
 python -m audit_e2e.build_cassettes --case binghamton-content --selected-repair
 ```
@@ -193,11 +193,15 @@ to a stage name or derive expected facts from the candidate output.
 ## Integration with modular backend and current main
 
 The integration branch retains the independent case ledgers, judge prompts and
-oracles from `demo/audit-e2e` at `40d98f3`. Cassette revision 2 matches the current
+oracles from `demo/audit-e2e` at `40d98f3`. Cassette revision 3 matches the current
 prompts, required claim labels and composition/visual-review requests. The
 author, editorial and editorial-review responses are unchanged from revision 1,
 except for explicitly empty `group` fields required by the new request schema.
+Revision 3 preserves revision 2 content responses; only composition requests,
+deterministic baseline assignments and visual-review batches were refreshed after
+the variant selection fix. Input cases and independent verdict rules are unchanged.
 The browser opens the current additional-settings panel and uses the download
 link's accessible name. See the [integration report](../docs/AUDIT_MERGE_2026-09-29.md)
 for actual verification results; the older validation report describes its own
-recorded source revision.
+recorded source revision. The [variant selection follow-up](../docs/VARIANT_SELECTION_FIX_2026-09-29.md)
+records the subsequent fix and its checks.

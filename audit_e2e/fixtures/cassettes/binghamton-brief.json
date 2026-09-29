@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "fixture_revision": 2,
+  "fixture_revision": 3,
   "provenance": "Explicitly authored synthetic model replies at the real HTTP boundary. Not a provider recording or a quality oracle. Independent reference ledger is authored separately.",
   "image_matching": "dimensions",
   "exchanges": [

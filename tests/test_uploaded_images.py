@@ -200,3 +200,48 @@ def test_extra_images_are_not_silently_lost(prepared, tmp_path):
     variant = extractive_plans(package).variants[0]
     with pytest.raises(InputRejected, match="четырёх"):
         assign_images(package, variant)
+
+
+def test_native_image_panels_preserve_distinct_source_text_structures(prepared, tmp_path):
+    from studio.composition.image_composer import compose_images
+    from studio.models import Box, ContentModel, Fact, Pattern, SlidePlan
+    from studio.checks.quality import _organization
+
+    _, _, package = prepared
+    package.analysis = {}
+    package.content = ContentModel(
+        title="System",
+        facts=[
+            Fact(id="a", text="The screen shows the current request status."),
+            Fact(id="b", text="Reviewers use this view to check the recorded outcome."),
+        ],
+    )
+    package.template.patterns = [
+        Pattern(
+            id="paired-panels",
+            source_slide=1,
+            source_layout="Two panels",
+            role="split",
+            text_zones=[],
+            title_zone=Box(x=50, y=35, w=750, h=60),
+            body_zones=[Box(x=50, y=150, w=410, h=300), Box(x=490, y=150, w=410, h=300)],
+        )
+    ]
+    image = sanitize_image(image_bytes(), "screen.png", tmp_path, 1)
+    package.images = [image]
+    slide = SlidePlan(title="System", fact_ids=["a", "b"], purpose="content")
+    scenes = {
+        key: compose_images(slide, package, 0, key, [image])
+        for key in ("executive", "analytical", "story")
+    }
+    assert len({str(_organization(scene)) for scene in scenes.values()}) == 3
+    for scene in scenes.values():
+        body = [e for e in scene.elements if e.kind == "text" and e.role == "body"]
+        assert {fid for e in body for fid in e.source_ids} == {"a", "b"}
+        assert all(fact.text in " ".join(e.text for e in body) for fact in package.content.facts)
+        assert len([e for e in scene.elements if e.image_id == image.id]) == 1
+        assert not [
+            f
+            for f in audit_scenes([scene], package)
+            if f.code in {"overlap", "out_of_bounds", "container_overflow", "text_overflow"}
+        ]

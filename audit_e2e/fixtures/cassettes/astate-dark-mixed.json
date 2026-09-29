@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "fixture_revision": 2,
+  "fixture_revision": 3,
   "provenance": "Explicitly authored synthetic model replies at the real HTTP boundary. Not a provider recording or a quality oracle. Independent reference ledger is authored separately.",
   "image_matching": "dimensions",
   "exchanges": [
@@ -1467,7 +1467,7 @@
           },
           {
             "role": "user",
-            "content": "{\"untrusted_input\": {\"slides\": [{\"variant\": \"executive\", \"slide\": 1, \"title\": \"Service delivery / Обработка заявок\", \"actual_text\": \"Service delivery / Обработка\\u000bзаявок\\nКоманда ведёт пилот единой\\u000bочереди заявок. The same queue is\\u000bvisible to reviewers in both offices.\", \"facts\": [{\"id\": \"summary-1-1\", \"text\": \"Команда ведёт пилот единой очереди заявок. The same queue is visible to reviewers in both offices.\", \"section\": \"Service delivery / Обработка заявок\", \"source\": \"user_text\", \"line\": 0, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}]}, {\"variant\": \"executive\", \"slide\": 2, \"title\": \"Экран / Dashboard\", \"actual_text\": \"\\n\\n\\nЭкран / Dashboard\\nНа демонстрационном\\u000bскриншоте показаны\\u000bкарточки статуса и\\u000bграфик по неделям.\\nThe image contains sample\\u000bvalues only.\", \"facts\": [{\"id\": \"summary-2-1\", \"text\": \"На демонстрационном скриншоте показаны карточки статуса и график по неделям.\", \"section\": \"Экран / Dashboard\", \"source\": \"user_text\", \"line\": 0, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"summary-2-2\", \"text\": \"The image contains sample values only.\", \"section\": \"Экран / Dashboard\", \"source\": \"user_text\", \"line\": 0, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}]}, {\"variant\": \"executive\", \"slide\": 3, \"title\": \"Данные / Data\", \"actual_text\": \"\\n\\n\\nДанные / Data\\nКоманда /\\u000bTeam\\nЗаявки /\\u000bRequests\\nВыполнено /\\u000bClosed\\nСреднее\\u000bвремя, ч /\\u000bHours\\nСевер /\\u000bNorth\\n40\\n34\\n18\\nЦентр /\\u000bCentral\\n36\\n33\\n15\\nЮг / South\\n28\\n24\\n21\\nТаблица показывает три\\u000bкоманды и четыре поля;\\nэто наблюдения за\\u000bпервыми 12 неделями, не\\u000bпрогноз.\", \"facts\": [{\"id\": \"summary-3-1\", \"text\": \"Таблица показывает три команды и четыре поля;\", \"section\": \"Данные / Data\", \"source\": \"user_text\", \"line\": 0, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"summary-3-2\", \"text\": \"это наблюдения за первыми 12 неделями, не прогноз.\", \"section\": \"Данные / Data\", \"source\": \"user_text\", \"line\": 0, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"table-3\", \"text\": \"Север / North — 40 — 34 — 18; Центр / Central — 36 — 33 — 15; Юг / South — 28 — 24 — 21\", \"section\": \"Данные / Data\", \"source\": \"summary-data-3\", \"line\": 0, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}]}, {\"variant\": \"executive\", \"slide\": 4, \"title\": \"Ограничение / Caveat\", \"actual_text\": \"Ограничение / Caveat\\nРазница по времени не доказывает эффект\\u000bсервиса: состав команд менялся во время\\u000bпилота.\", \"facts\": [{\"id\": \"summary-4-1\", \"text\": \"Разница по времени не доказывает эффект сервиса: состав команд менялся во время пилота.\", \"section\": \"Ограничение / Caveat\", \"source\": \"user_text\", \"line\": 0, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}]}, {\"variant\": \"executive\", \"slide\": 5, \"title\": \"Решение / Decision\", \"actual_text\": \"\\n\\n\\nРешение / Decision\\nРуководитель сравнит долю закрытых заявок и решит,\\u000bпродолжать ли пилот ещё 8 недель.\", \"facts\": [{\"id\": \"summary-5-1\", \"text\": \"Руководитель сравнит долю закрытых заявок и решит, продолжать ли пилот ещё 8 недель.\", \"section\": \"Решение / Decision\", \"source\": \"user_text\", \"line\": 0, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}]}, {\"variant\": \"story\", \"slide\": 3, \"title\": \"Данные / Data\", \"actual_text\": \"\\n\\n\\nДанные / Data\\nКоманда\\u000b/ Team\\nЗаявки /\\u000bRequests\\nВыполнено\\u000b/ Closed\\nСреднее\\u000bвремя, ч /\\u000bHours\\nСевер /\\u000bNorth\\n40\\n34\\n18\\nЦентр /\\u000bCentral\\n36\\n33\\n15\\nЮг /\\u000bSouth\\n28\\n24\\n21\\nТаблица показывает три\\u000bкоманды и четыре поля;\\nэто наблюдения за\\u000bпервыми 12 неделями, не\\u000bпрогноз.\", \"facts\": [{\"id\": \"summary-3-1\", \"text\": \"Таблица показывает три команды и четыре поля;\", \"section\": \"Данные / Data\", \"source\": \"user_text\", \"line\": 0, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"summary-3-2\", \"text\": \"это наблюдения за первыми 12 неделями, не прогноз.\", \"section\": \"Данные / Data\", \"source\": \"user_text\", \"line\": 0, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"table-3\", \"text\": \"Север / North — 40 — 34 — 18; Центр / Central — 36 — 33 — 15; Юг / South — 28 — 24 — 21\", \"section\": \"Данные / Data\", \"source\": \"summary-data-3\", \"line\": 0, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}]}], \"constraints\": {\"slides\": 5, \"audience\": \"\", \"instructions\": \"\", \"count_mode\": \"default\", \"size_preset\": \"mini\", \"summarize\": true, \"confirm_plan\": true, \"include_cover\": true}, \"slide_budget_adjustment\": {\"status\": \"adjusted\", \"requested\": 5, \"count_mode\": \"default\", \"planned\": 5, \"required\": 5, \"requested_range\": [3, 5], \"message\": \"По смыслу и читаемости предложено 5 слайдов. Можно принять или пересобрать план.\"}}}"
+            "content": "{\"untrusted_input\": {\"slides\": [{\"variant\": \"executive\", \"slide\": 1, \"title\": \"Service delivery / Обработка заявок\", \"actual_text\": \"Service delivery / Обработка\\u000bзаявок\\nКоманда ведёт пилот единой\\u000bочереди заявок. The same queue is\\u000bvisible to reviewers in both offices.\", \"facts\": [{\"id\": \"summary-1-1\", \"text\": \"Команда ведёт пилот единой очереди заявок. The same queue is visible to reviewers in both offices.\", \"section\": \"Service delivery / Обработка заявок\", \"source\": \"user_text\", \"line\": 0, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}]}, {\"variant\": \"executive\", \"slide\": 2, \"title\": \"Экран / Dashboard\", \"actual_text\": \"\\n\\n\\nЭкран / Dashboard\\nНа демонстрационном\\u000bскриншоте показаны карточки\\u000bстатуса и график по неделям.\\nThe image contains sample values\\u000bonly.\", \"facts\": [{\"id\": \"summary-2-1\", \"text\": \"На демонстрационном скриншоте показаны карточки статуса и график по неделям.\", \"section\": \"Экран / Dashboard\", \"source\": \"user_text\", \"line\": 0, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"summary-2-2\", \"text\": \"The image contains sample values only.\", \"section\": \"Экран / Dashboard\", \"source\": \"user_text\", \"line\": 0, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}]}, {\"variant\": \"executive\", \"slide\": 3, \"title\": \"Данные / Data\", \"actual_text\": \"\\n\\n\\nДанные / Data\\nКоманда /\\u000bTeam\\nЗаявки /\\u000bRequests\\nВыполнено /\\u000bClosed\\nСреднее\\u000bвремя, ч /\\u000bHours\\nСевер /\\u000bNorth\\n40\\n34\\n18\\nЦентр /\\u000bCentral\\n36\\n33\\n15\\nЮг / South\\n28\\n24\\n21\\nТаблица показывает три\\u000bкоманды и четыре поля;\\nэто наблюдения за\\u000bпервыми 12 неделями, не\\u000bпрогноз.\", \"facts\": [{\"id\": \"summary-3-1\", \"text\": \"Таблица показывает три команды и четыре поля;\", \"section\": \"Данные / Data\", \"source\": \"user_text\", \"line\": 0, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"summary-3-2\", \"text\": \"это наблюдения за первыми 12 неделями, не прогноз.\", \"section\": \"Данные / Data\", \"source\": \"user_text\", \"line\": 0, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"table-3\", \"text\": \"Север / North — 40 — 34 — 18; Центр / Central — 36 — 33 — 15; Юг / South — 28 — 24 — 21\", \"section\": \"Данные / Data\", \"source\": \"summary-data-3\", \"line\": 0, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}]}, {\"variant\": \"executive\", \"slide\": 4, \"title\": \"Ограничение / Caveat\", \"actual_text\": \"Ограничение / Caveat\\nРазница по времени не доказывает эффект\\u000bсервиса: состав команд менялся во время\\u000bпилота.\", \"facts\": [{\"id\": \"summary-4-1\", \"text\": \"Разница по времени не доказывает эффект сервиса: состав команд менялся во время пилота.\", \"section\": \"Ограничение / Caveat\", \"source\": \"user_text\", \"line\": 0, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}]}, {\"variant\": \"executive\", \"slide\": 5, \"title\": \"Решение / Decision\", \"actual_text\": \"\\n\\n\\nРешение / Decision\\nРуководитель сравнит долю закрытых заявок и решит,\\u000bпродолжать ли пилот ещё 8 недель.\", \"facts\": [{\"id\": \"summary-5-1\", \"text\": \"Руководитель сравнит долю закрытых заявок и решит, продолжать ли пилот ещё 8 недель.\", \"section\": \"Решение / Decision\", \"source\": \"user_text\", \"line\": 0, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}]}, {\"variant\": \"analytical\", \"slide\": 2, \"title\": \"Экран / Dashboard\", \"actual_text\": \"\\n\\n\\nЭкран / Dashboard\\nНа демонстрационном\\u000bскриншоте показаны\\u000bкарточки статуса и\\u000bграфик по неделям.\\nThe image\\u000bcontains\\u000bsample values\\u000bonly.\", \"facts\": [{\"id\": \"summary-2-1\", \"text\": \"На демонстрационном скриншоте показаны карточки статуса и график по неделям.\", \"section\": \"Экран / Dashboard\", \"source\": \"user_text\", \"line\": 0, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"summary-2-2\", \"text\": \"The image contains sample values only.\", \"section\": \"Экран / Dashboard\", \"source\": \"user_text\", \"line\": 0, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}]}, {\"variant\": \"story\", \"slide\": 2, \"title\": \"Экран / Dashboard\", \"actual_text\": \"\\n\\n\\nЭкран / Dashboard\\nНа демонстрационном\\u000bскриншоте показаны\\u000bкарточки статуса и график\\u000bпо неделям.\\u000bThe image contains sample\\u000bvalues only.\", \"facts\": [{\"id\": \"summary-2-1\", \"text\": \"На демонстрационном скриншоте показаны карточки статуса и график по неделям.\", \"section\": \"Экран / Dashboard\", \"source\": \"user_text\", \"line\": 0, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"summary-2-2\", \"text\": \"The image contains sample values only.\", \"section\": \"Экран / Dashboard\", \"source\": \"user_text\", \"line\": 0, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}]}, {\"variant\": \"story\", \"slide\": 3, \"title\": \"Данные / Data\", \"actual_text\": \"\\n\\n\\nДанные / Data\\nКоманда\\u000b/ Team\\nЗаявки /\\u000bRequests\\nВыполнено\\u000b/ Closed\\nСреднее\\u000bвремя, ч /\\u000bHours\\nСевер /\\u000bNorth\\n40\\n34\\n18\\nЦентр /\\u000bCentral\\n36\\n33\\n15\\nЮг /\\u000bSouth\\n28\\n24\\n21\\nТаблица показывает три\\u000bкоманды и четыре поля;\\nэто наблюдения за\\u000bпервыми 12 неделями, не\\u000bпрогноз.\", \"facts\": [{\"id\": \"summary-3-1\", \"text\": \"Таблица показывает три команды и четыре поля;\", \"section\": \"Данные / Data\", \"source\": \"user_text\", \"line\": 0, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"summary-3-2\", \"text\": \"это наблюдения за первыми 12 неделями, не прогноз.\", \"section\": \"Данные / Data\", \"source\": \"user_text\", \"line\": 0, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"table-3\", \"text\": \"Север / North — 40 — 34 — 18; Центр / Central — 36 — 33 — 15; Юг / South — 28 — 24 — 21\", \"section\": \"Данные / Data\", \"source\": \"summary-data-3\", \"line\": 0, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}]}], \"constraints\": {\"slides\": 5, \"audience\": \"\", \"instructions\": \"\", \"count_mode\": \"default\", \"size_preset\": \"mini\", \"summarize\": true, \"confirm_plan\": true, \"include_cover\": true}, \"slide_budget_adjustment\": {\"status\": \"adjusted\", \"requested\": 5, \"count_mode\": \"default\", \"planned\": 5, \"required\": 5, \"requested_range\": [3, 5], \"message\": \"По смыслу и читаемости предложено 5 слайдов. Можно принять или пересобрать план.\"}}}"
           }
         ]
       },
@@ -1593,7 +1593,7 @@
             "content": [
               {
                 "type": "text",
-                "text": "{\"untrusted_input\": {\"slides\": [{\"slide\": 1, \"title\": \"Service delivery / Обработка заявок\", \"authored_title_position\": false, \"layout\": \"columns\", \"purpose\": \"cover\", \"field_safety\": [{\"role\": \"title\", \"index\": 0, \"status\": \"safe\", \"before\": {\"x\": 61.2, \"y\": 171.35, \"w\": 597.5999999999999, \"h\": 112.15}, \"reason\": null, \"recognition_mode\": \"flat_pixel_mask\", \"minimum_contrast\": 21.0, \"after\": {\"x\": 61.49846149114173, \"y\": 171.35, \"w\": 596.9850652066929, \"h\": 112.15}}, {\"role\": \"body\", \"index\": 0, \"status\": \"safe\", \"before\": {\"x\": 115.2, \"y\": 309.6, \"w\": 489.6, \"h\": 130.8}, \"reason\": null, \"recognition_mode\": \"flat_pixel_mask\", \"minimum_contrast\": 21.0, \"after\": {\"x\": 115.49711060531496, \"y\": 309.75, \"w\": 488.98776697834643, \"h\": 130.5}}], \"text_sizes_pt\": [44.0, 29.7], \"expected_chart_types\": [], \"supplied_images\": []}, {\"slide\": 2, \"title\": \"Экран / Dashboard\", \"authored_title_position\": true, \"layout\": \"columns\", \"purpose\": \"content\", \"field_safety\": [{\"role\": \"title\", \"index\": 0, \"status\": \"safe\", \"before\": {\"x\": 54.0, \"y\": 39.6, \"w\": 851.9759842519684, \"h\": 75.6}, \"after\": {\"x\": 54.0, \"y\": 39.6, \"w\": 851.9759842519684, \"h\": 75.6}, \"reason\": \"authored_uniform_text_plate\"}, {\"role\": \"body\", \"index\": 0, \"status\": \"safe\", \"before\": {\"x\": 54.0, \"y\": 147.6, \"w\": 407.98795275590555, \"h\": 316.79999999999995}, \"after\": {\"x\": 54.0, \"y\": 147.6, \"w\": 407.98795275590555, \"h\": 316.79999999999995}, \"reason\": \"authored_uniform_text_plate\"}, {\"role\": \"body\", \"index\": 1, \"status\": \"safe\", \"before\": {\"x\": 497.9879527559055, \"y\": 147.6, \"w\": 407.98795275590555, \"h\": 316.79999999999995}, \"after\": {\"x\": 497.9879527559055, \"y\": 147.6, \"w\": 407.98795275590555, \"h\": 316.79999999999995}, \"reason\": \"authored_uniform_text_plate\"}], \"text_sizes_pt\": [48.6, 29.7, 29.7], \"expected_chart_types\": [], \"supplied_images\": [{\"id\": \"img1\", \"caption\": \"Панель заявок\"}]}], \"image_order\": [1, 2], \"checks\": [\"text inside containers\", \"readable titles\", \"paragraph hierarchy\", \"unintended overlaps\"], \"reference_images\": [{\"image_position\": 3, \"for_slide\": 1, \"purpose\": \"cover\", \"kind\": \"sanitized_template_artwork_not_output\", \"source_slide\": 0, \"derived_divider\": false}, {\"image_position\": 4, \"for_slide\": 2, \"purpose\": \"content\", \"kind\": \"sanitized_template_artwork_not_output\", \"source_slide\": 1, \"derived_divider\": false}]}}"
+                "text": "{\"untrusted_input\": {\"slides\": [{\"slide\": 1, \"title\": \"Service delivery / Обработка заявок\", \"authored_title_position\": false, \"layout\": \"columns\", \"purpose\": \"cover\", \"field_safety\": [{\"role\": \"title\", \"index\": 0, \"status\": \"safe\", \"before\": {\"x\": 61.2, \"y\": 171.35, \"w\": 597.5999999999999, \"h\": 112.15}, \"reason\": null, \"recognition_mode\": \"flat_pixel_mask\", \"minimum_contrast\": 21.0, \"after\": {\"x\": 61.49846149114173, \"y\": 171.35, \"w\": 596.9850652066929, \"h\": 112.15}}, {\"role\": \"body\", \"index\": 0, \"status\": \"safe\", \"before\": {\"x\": 115.2, \"y\": 309.6, \"w\": 489.6, \"h\": 130.8}, \"reason\": null, \"recognition_mode\": \"flat_pixel_mask\", \"minimum_contrast\": 21.0, \"after\": {\"x\": 115.49711060531496, \"y\": 309.75, \"w\": 488.98776697834643, \"h\": 130.5}}], \"text_sizes_pt\": [44.0, 29.7], \"expected_chart_types\": [], \"supplied_images\": []}, {\"slide\": 2, \"title\": \"Экран / Dashboard\", \"authored_title_position\": true, \"layout\": \"columns\", \"purpose\": \"content\", \"field_safety\": [{\"role\": \"title\", \"index\": 0, \"status\": \"safe\", \"before\": {\"x\": 54.0, \"y\": 39.6, \"w\": 851.9759842519684, \"h\": 75.6}, \"after\": {\"x\": 54.0, \"y\": 39.6, \"w\": 851.9759842519684, \"h\": 75.6}, \"reason\": \"authored_uniform_text_plate\"}, {\"role\": \"body\", \"index\": 0, \"status\": \"safe\", \"before\": {\"x\": 54.0, \"y\": 147.6, \"w\": 407.98795275590555, \"h\": 316.79999999999995}, \"after\": {\"x\": 54.0, \"y\": 147.6, \"w\": 407.98795275590555, \"h\": 316.79999999999995}, \"reason\": \"authored_uniform_text_plate\"}, {\"role\": \"body\", \"index\": 1, \"status\": \"safe\", \"before\": {\"x\": 497.9879527559055, \"y\": 147.6, \"w\": 407.98795275590555, \"h\": 316.79999999999995}, \"after\": {\"x\": 497.9879527559055, \"y\": 147.6, \"w\": 407.98795275590555, \"h\": 316.79999999999995}, \"reason\": \"authored_uniform_text_plate\"}], \"text_sizes_pt\": [48.6, 26.4, 26.4], \"expected_chart_types\": [], \"supplied_images\": [{\"id\": \"img1\", \"caption\": \"Панель заявок\"}]}], \"image_order\": [1, 2], \"checks\": [\"text inside containers\", \"readable titles\", \"paragraph hierarchy\", \"unintended overlaps\"], \"reference_images\": [{\"image_position\": 3, \"for_slide\": 1, \"purpose\": \"cover\", \"kind\": \"sanitized_template_artwork_not_output\", \"source_slide\": 0, \"derived_divider\": false}, {\"image_position\": 4, \"for_slide\": 2, \"purpose\": \"content\", \"kind\": \"sanitized_template_artwork_not_output\", \"source_slide\": 1, \"derived_divider\": false}]}}"
               },
               {
                 "type": "image_url",
@@ -2087,6 +2087,154 @@
             "content": [
               {
                 "type": "text",
+                "text": "{\"untrusted_input\": {\"slides\": [{\"slide\": 2, \"title\": \"Экран / Dashboard\", \"authored_title_position\": true, \"layout\": \"columns\", \"purpose\": \"content\", \"field_safety\": [{\"role\": \"title\", \"index\": 0, \"status\": \"safe\", \"before\": {\"x\": 54.0, \"y\": 39.6, \"w\": 851.9759842519684, \"h\": 75.6}, \"after\": {\"x\": 54.0, \"y\": 39.6, \"w\": 851.9759842519684, \"h\": 75.6}, \"reason\": \"authored_uniform_text_plate\"}, {\"role\": \"body\", \"index\": 0, \"status\": \"safe\", \"before\": {\"x\": 54.0, \"y\": 147.6, \"w\": 407.98795275590555, \"h\": 316.79999999999995}, \"after\": {\"x\": 54.0, \"y\": 147.6, \"w\": 407.98795275590555, \"h\": 316.79999999999995}, \"reason\": \"authored_uniform_text_plate\"}, {\"role\": \"body\", \"index\": 1, \"status\": \"safe\", \"before\": {\"x\": 497.9879527559055, \"y\": 147.6, \"w\": 407.98795275590555, \"h\": 316.79999999999995}, \"after\": {\"x\": 497.9879527559055, \"y\": 147.6, \"w\": 407.98795275590555, \"h\": 316.79999999999995}, \"reason\": \"authored_uniform_text_plate\"}], \"text_sizes_pt\": [48.6, 16.0, 29.7], \"expected_chart_types\": [], \"supplied_images\": [{\"id\": \"img1\", \"caption\": \"Панель заявок\"}]}], \"image_order\": [2], \"checks\": [\"text inside containers\", \"readable titles\", \"paragraph hierarchy\", \"unintended overlaps\"], \"reference_images\": [{\"image_position\": 2, \"for_slide\": 2, \"purpose\": \"content\", \"kind\": \"sanitized_template_artwork_not_output\", \"source_slide\": 1, \"derived_divider\": false}]}}"
+              },
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": {
+                    "width": 960,
+                    "height": 540
+                  },
+                  "detail": "high"
+                }
+              },
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": {
+                    "width": 1440,
+                    "height": 810
+                  },
+                  "detail": "high"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "response": {
+        "choices": [
+          {
+            "message": {
+              "role": "assistant",
+              "content": "{\"checked_slides\": [2], \"findings\": []}"
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 100,
+          "completion_tokens": 50,
+          "total_tokens": 150
+        }
+      }
+    },
+    {
+      "request": {
+        "parameters": {
+          "model": "fixture-27b",
+          "temperature": 0.25,
+          "max_tokens": 10000,
+          "response_format": {
+            "type": "json_schema",
+            "json_schema": {
+              "name": "visual_critic",
+              "schema": {
+                "$defs": {
+                  "VisualFinding": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "slide": {
+                        "maximum": 30,
+                        "minimum": 1,
+                        "title": "Slide",
+                        "type": "integer"
+                      },
+                      "code": {
+                        "enum": [
+                          "overflow",
+                          "overlap",
+                          "title",
+                          "readability",
+                          "hierarchy",
+                          "template_artwork",
+                          "layout_purpose",
+                          "duplicate_title",
+                          "chart_type"
+                        ],
+                        "title": "Code",
+                        "type": "string"
+                      },
+                      "severity": {
+                        "enum": [
+                          "warning",
+                          "error"
+                        ],
+                        "title": "Severity",
+                        "type": "string"
+                      },
+                      "message": {
+                        "maxLength": 600,
+                        "minLength": 1,
+                        "title": "Message",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "slide",
+                      "code",
+                      "severity",
+                      "message"
+                    ],
+                    "title": "VisualFinding",
+                    "type": "object"
+                  }
+                },
+                "additionalProperties": false,
+                "properties": {
+                  "checked_slides": {
+                    "items": {
+                      "type": "integer"
+                    },
+                    "maxItems": 10,
+                    "minItems": 1,
+                    "title": "Checked Slides",
+                    "type": "array"
+                  },
+                  "findings": {
+                    "items": {
+                      "$ref": "#/$defs/VisualFinding"
+                    },
+                    "maxItems": 40,
+                    "title": "Findings",
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "checked_slides",
+                  "findings"
+                ],
+                "title": "VisualBatch",
+                "type": "object"
+              },
+              "strict": true
+            }
+          }
+        },
+        "messages": [
+          {
+            "role": "system",
+            "content": {
+              "sha256": "60e57f0189b463cc3acd9e100302d04d8fb9cf4bb9adbc34a069ba96c0099f4d"
+            }
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
                 "text": "{\"untrusted_input\": {\"slides\": [{\"slide\": 3, \"title\": \"Данные / Data\", \"authored_title_position\": true, \"layout\": \"table\", \"purpose\": \"content\", \"field_safety\": [{\"role\": \"title\", \"index\": 0, \"status\": \"safe\", \"before\": {\"x\": 54.0, \"y\": 39.6, \"w\": 851.9759842519684, \"h\": 75.6}, \"after\": {\"x\": 54.0, \"y\": 39.6, \"w\": 851.9759842519684, \"h\": 75.6}, \"reason\": \"authored_uniform_text_plate\"}, {\"role\": \"body\", \"index\": 0, \"status\": \"safe\", \"before\": {\"x\": 54.0, \"y\": 147.6, \"w\": 407.98795275590555, \"h\": 316.79999999999995}, \"after\": {\"x\": 54.0, \"y\": 127.6, \"w\": 427.98795275590555, \"h\": 384.79999999999995}, \"reason\": \"same_uniform_plate_expansion\"}, {\"role\": \"body\", \"index\": 1, \"status\": \"safe\", \"before\": {\"x\": 497.9879527559055, \"y\": 147.6, \"w\": 407.98795275590555, \"h\": 316.79999999999995}, \"after\": {\"x\": 497.9879527559055, \"y\": 127.6, \"w\": 435.98795275590555, \"h\": 384.79999999999995}, \"reason\": \"same_uniform_plate_expansion\"}], \"text_sizes_pt\": [48.6, 16, 29.7, 29.7], \"expected_chart_types\": [], \"supplied_images\": []}], \"image_order\": [3], \"checks\": [\"text inside containers\", \"readable titles\", \"paragraph hierarchy\", \"unintended overlaps\"], \"reference_images\": [{\"image_position\": 2, \"for_slide\": 3, \"purpose\": \"content\", \"kind\": \"sanitized_template_artwork_not_output\", \"source_slide\": 2, \"derived_divider\": false}]}}"
               },
               {
@@ -2383,7 +2531,7 @@
             "content": [
               {
                 "type": "text",
-                "text": "{\"untrusted_input\": {\"slides\": [{\"slide\": 2, \"title\": \"Экран / Dashboard\", \"authored_title_position\": true, \"layout\": \"columns\", \"purpose\": \"content\", \"field_safety\": [{\"role\": \"title\", \"index\": 0, \"status\": \"safe\", \"before\": {\"x\": 54.0, \"y\": 39.6, \"w\": 851.9759842519684, \"h\": 75.6}, \"after\": {\"x\": 54.0, \"y\": 39.6, \"w\": 851.9759842519684, \"h\": 75.6}, \"reason\": \"authored_uniform_text_plate\"}, {\"role\": \"body\", \"index\": 0, \"status\": \"safe\", \"before\": {\"x\": 54.0, \"y\": 147.6, \"w\": 407.98795275590555, \"h\": 316.79999999999995}, \"after\": {\"x\": 54.0, \"y\": 147.6, \"w\": 407.98795275590555, \"h\": 316.79999999999995}, \"reason\": \"authored_uniform_text_plate\"}, {\"role\": \"body\", \"index\": 1, \"status\": \"safe\", \"before\": {\"x\": 497.9879527559055, \"y\": 147.6, \"w\": 407.98795275590555, \"h\": 316.79999999999995}, \"after\": {\"x\": 497.9879527559055, \"y\": 147.6, \"w\": 407.98795275590555, \"h\": 316.79999999999995}, \"reason\": \"authored_uniform_text_plate\"}], \"text_sizes_pt\": [48.6, 29.7, 29.7], \"expected_chart_types\": [], \"supplied_images\": [{\"id\": \"img1\", \"caption\": \"Панель заявок\"}]}], \"image_order\": [2], \"checks\": [\"text inside containers\", \"readable titles\", \"paragraph hierarchy\", \"unintended overlaps\"], \"reference_images\": [{\"image_position\": 2, \"for_slide\": 2, \"purpose\": \"content\", \"kind\": \"sanitized_template_artwork_not_output\", \"source_slide\": 1, \"derived_divider\": false}]}}"
+                "text": "{\"untrusted_input\": {\"slides\": [{\"slide\": 2, \"title\": \"Экран / Dashboard\", \"authored_title_position\": true, \"layout\": \"columns\", \"purpose\": \"content\", \"field_safety\": [{\"role\": \"title\", \"index\": 0, \"status\": \"safe\", \"before\": {\"x\": 54.0, \"y\": 39.6, \"w\": 851.9759842519684, \"h\": 75.6}, \"after\": {\"x\": 54.0, \"y\": 39.6, \"w\": 851.9759842519684, \"h\": 75.6}, \"reason\": \"authored_uniform_text_plate\"}, {\"role\": \"body\", \"index\": 0, \"status\": \"safe\", \"before\": {\"x\": 54.0, \"y\": 147.6, \"w\": 407.98795275590555, \"h\": 316.79999999999995}, \"after\": {\"x\": 54.0, \"y\": 147.6, \"w\": 407.98795275590555, \"h\": 316.79999999999995}, \"reason\": \"authored_uniform_text_plate\"}, {\"role\": \"body\", \"index\": 1, \"status\": \"safe\", \"before\": {\"x\": 497.9879527559055, \"y\": 147.6, \"w\": 407.98795275590555, \"h\": 316.79999999999995}, \"after\": {\"x\": 497.9879527559055, \"y\": 147.6, \"w\": 407.98795275590555, \"h\": 316.79999999999995}, \"reason\": \"authored_uniform_text_plate\"}], \"text_sizes_pt\": [48.6, 29.7], \"expected_chart_types\": [], \"supplied_images\": [{\"id\": \"img1\", \"caption\": \"Панель заявок\"}]}], \"image_order\": [2], \"checks\": [\"text inside containers\", \"readable titles\", \"paragraph hierarchy\", \"unintended overlaps\"], \"reference_images\": [{\"image_position\": 2, \"for_slide\": 2, \"purpose\": \"content\", \"kind\": \"sanitized_template_artwork_not_output\", \"source_slide\": 1, \"derived_divider\": false}]}}"
               },
               {
                 "type": "image_url",

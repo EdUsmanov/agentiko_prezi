@@ -179,6 +179,7 @@ def attach_template_resources(scene, package, slide):
 
 def compose_images(slide, package, index, variant, images):
     from studio.composition.text_composer import text_element, fact_elements
+    from studio.composition.variant_body import compose_variant_body
     from studio.checks.audit import audit_scenes
     from studio.composition.contracts import candidates as semantic_candidates
     from studio.contents.content_sources import package_sources
@@ -288,7 +289,10 @@ def compose_images(slide, package, index, variant, images):
                 )
                 elements.extend(fact_elements(body, body_zone, p, color))
         else:
-            elements.extend(fact_elements(body, text_zone, p, color))
+            elements.extend(
+                compose_variant_body(slide, package, variant, body, text_zone, p, color)
+                or fact_elements(body, text_zone, p, color)
+            )
         cell_w = (visual.w - gap * (columns - 1)) / columns
         cell_h = (visual.h - gap * (rows - 1)) / rows
         for i, image in enumerate(images):
