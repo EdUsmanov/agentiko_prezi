@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+from urllib.parse import urlsplit
 
 from studio.providers.deeppresenter import readiness
 from studio.api.dependencies import ServiceDep
@@ -14,6 +15,7 @@ def health(service: ServiceDep):
         "status": "ok",
         "model_mode": settings.mode,
         "model_id": settings.model_id or None,
+        "model_provider": urlsplit(settings.base_url).hostname if settings.mode == "api" else None,
         "engine": settings.engine,
         "deeppresenter": readiness(),
         "deadline_seconds": settings.deadline_seconds,

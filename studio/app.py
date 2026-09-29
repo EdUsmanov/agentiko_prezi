@@ -12,6 +12,7 @@ from studio.config import Settings
 from studio.api.frontend import register_frontend
 from studio.diagnostics import configure
 from studio.providers.gateway import validate_model_policy
+from studio.providers.selection import select_startup_provider
 from studio.jobs.runtime import JobRuntime
 from studio.security_gate import PromptInjectionDetected
 from studio.jobs.store import Store
@@ -22,6 +23,7 @@ def create_app(settings=None):
     settings = settings or Settings.from_env()
     validate_model_policy(settings)
     configure(settings.api_key)
+    configure(settings.fallback_model_api_key)
     store = Store(settings.data_dir)
     runtime = JobRuntime(settings, store)
     service = PresentationService(settings, store, runtime)
@@ -30,6 +32,10 @@ def create_app(settings=None):
 
     @asynccontextmanager
     async def lifespan(app):
+        selected = await select_startup_provider(settings)
+        app.state.settings = selected
+        runtime.settings = selected
+        service.settings = selected
         await runtime.startup()
         try:
             yield

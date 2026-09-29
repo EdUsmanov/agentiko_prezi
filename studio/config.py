@@ -38,6 +38,9 @@ class Settings:
     base_url: str = ""
     model_id: str = ""
     api_key: str = field(default="", repr=False)
+    fallback_model_base_url: str = ""
+    fallback_model_id: str = ""
+    fallback_model_api_key: str = field(default="", repr=False)
     parameters_b: float = 0
     open_weights: bool = False
     license: str = ""
@@ -89,6 +92,9 @@ class Settings:
                 if openrouter
                 else os.getenv("STUDIO_MODEL_API_KEY") or os.getenv("LLM_API_KEY", "")
             ),
+            fallback_model_base_url=os.getenv("STUDIO_FALLBACK_MODEL_BASE_URL", "").rstrip("/"),
+            fallback_model_id=os.getenv("STUDIO_FALLBACK_MODEL_ID", ""),
+            fallback_model_api_key=os.getenv("STUDIO_FALLBACK_MODEL_API_KEY", ""),
             parameters_b=float(os.getenv("STUDIO_MODEL_PARAMETERS_B", "0")),
             open_weights=os.getenv("STUDIO_MODEL_OPEN_WEIGHTS", "false").lower() == "true",
             license=os.getenv("STUDIO_MODEL_LICENSE", ""),
