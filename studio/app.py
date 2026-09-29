@@ -10,7 +10,6 @@ import time
 from urllib.parse import urlsplit
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from typing import Literal
 from pydantic import BaseModel, Field, ConfigDict, field_validator
@@ -28,6 +27,7 @@ from .uploads import (
 from .cache_version import pipeline_version
 from .examples import sources
 from .security_gate import PromptInjectionDetected, check_text_fields
+from .frontend import register_frontend
 
 
 class GenerateRequest(BaseModel):
@@ -232,9 +232,16 @@ def create_app(settings=None):
             )
 
     async def auto_generate(pid):
-        job = store.get(pid)
+        try:
+            job = store.get(pid)
+        except KeyError:
+            return
         await asyncio.sleep(max(0, job["auto_generate_at"] - time.time()))
-        if store.get(pid).get("auto_generation") != "scheduled":
+        try:
+            current = store.get(pid)
+        except KeyError:
+            return
+        if current.get("auto_generation") != "scheduled":
             return
         try:
             await generation(
@@ -246,6 +253,8 @@ def create_app(settings=None):
                 ),
                 automatic=True,
             )
+        except KeyError:
+            return
         except Exception as exc:
             from .diagnostics import redact
 
@@ -455,6 +464,13 @@ def create_app(settings=None):
     def job(jid: str):
         return store.get(jid)
 
+    @app.delete("/api/jobs/{jid}")
+    def delete_job(jid: str):
+        try:
+            return store.delete_tree(jid)
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+
     @app.post("/api/prepare", status_code=202)
     async def preparation(
         text: str = Form(..., max_length=120000),
@@ -463,6 +479,7 @@ def create_app(settings=None):
         slides: int | None = Form(None, ge=1, le=30),
         size_preset: Literal["mini", "standard", "large"] | None = Form(None),
         reference_id: str = Form(""),
+        source_package_id: str = Form(""),
         template: UploadFile | None = File(None),
         images: list[UploadFile] | None = File(None),
     ):
@@ -477,8 +494,11 @@ def create_app(settings=None):
         require_current_pipeline()
         if len(images) > MAX_IMAGES:
             raise HTTPException(422, "Допускается до 12 изображений")
-        if bool(reference_id) == bool(template and template.filename):
-            raise HTTPException(422, "Выберите один шаблон: файл или пример")
+        if (
+            sum((bool(reference_id), bool(source_package_id), bool(template and template.filename)))
+            != 1
+        ):
+            raise HTTPException(422, "Выберите один шаблон: файл, пример или изученный пакет")
         if not text.strip():
             raise HTTPException(422, "Добавьте текст")
         ref = None
@@ -486,6 +506,19 @@ def create_app(settings=None):
             ref = next((r for r in references() if r["id"] == reference_id), None)
             if not ref:
                 raise HTTPException(404, "Неизвестный пример")
+        source = None
+        source_input = None
+        if source_package_id:
+            source_job = store.get(source_package_id)
+            if source_job["kind"] != "preparation" or source_job["state"] != "ready":
+                raise HTTPException(409, "Дизайн-система ещё не подготовлена")
+            try:
+                source = load_package(store, source_package_id)
+            except (ValueError, FileNotFoundError) as exc:
+                raise HTTPException(409, str(exc)) from exc
+            source_input = store.directory(source_package_id) / "input.pptx"
+            if not source_input.is_file():
+                raise HTTPException(409, "Исходный шаблон недоступен")
         if (
             template
             and template.filename
@@ -493,10 +526,20 @@ def create_app(settings=None):
         ):
             raise HTTPException(422, "Поддерживаются PPTX и POTX без макросов")
         job = store.create(
-            "preparation", {"template_name": ref["name"] if ref else Path(template.filename).name}
+            "preparation",
+            {
+                "template_name": source.template.name
+                if source
+                else ref["name"]
+                if ref
+                else Path(template.filename).name,
+                **({"source_package_id": source_package_id} if source else {}),
+            },
         )
         target = store.directory(job["id"]) / "input.pptx"
-        if ref:
+        if source:
+            shutil.copyfile(source_input, target)
+        elif ref:
             shutil.copyfile(settings.data_dir / "references" / ref["id"] / "input.pptx", target)
         else:
             size = 0
@@ -713,9 +756,4 @@ def create_app(settings=None):
         inline = path.suffix in (".html", ".png", ".pdf")
         return FileResponse(path, filename=None if inline else path.name)
 
-    @app.get("/")
-    def index():
-        return FileResponse(ROOT / "web/index.html")
-
-    app.mount("/static", StaticFiles(directory=ROOT / "web"), name="static")
-    return app
+    return register_frontend(app)

@@ -1,5 +1,6 @@
 from pathlib import Path
 import json
+import shutil
 import sqlite3
 import time
 import uuid
@@ -124,6 +125,75 @@ class Store:
         with self.connect() as c:
             ids = [r[0] for r in c.execute("SELECT id FROM jobs ORDER BY created DESC LIMIT 30")]
         return [self.get(jid) for jid in ids]
+
+    def delete_tree(self, jid):
+        """Remove a job, its generated result and all revisions with their files."""
+        self.directory(jid)
+        staging = self.root / ".deleting" / uuid.uuid4().hex
+        moved = []
+        try:
+            with self.connect() as c:
+                c.execute("BEGIN IMMEDIATE")
+                rows = c.execute("SELECT id,kind,state,data FROM jobs").fetchall()
+                records = {row["id"]: row for row in rows}
+                if jid not in records:
+                    raise KeyError("Задание не найдено")
+                targets = {jid}
+                while True:
+                    linked = {
+                        row["id"]
+                        for row in rows
+                        if row["id"] not in targets
+                        and (
+                            (
+                                row["kind"] == "generation"
+                                and json.loads(row["data"]).get("package_id") in targets
+                            )
+                            or (
+                                row["kind"] == "preparation"
+                                and json.loads(row["data"]).get("parent_package") in targets
+                            )
+                        )
+                    }
+                    if not linked:
+                        break
+                    targets.update(linked)
+                if any(records[key]["state"] in ("accepted", "running") for key in targets):
+                    raise ValueError("Дождитесь завершения запуска перед удалением")
+                for row in rows:
+                    if row["id"] in targets or row["kind"] != "preparation":
+                        continue
+                    data = json.loads(row["data"])
+                    if data.get("generation_id") in targets:
+                        data.pop("generation_id", None)
+                        data["auto_generation"] = "cancelled"
+                        c.execute(
+                            "UPDATE jobs SET data=? WHERE id=?",
+                            (json.dumps(data, ensure_ascii=False), row["id"]),
+                        )
+                for key in targets:
+                    directory = self.directory(key)
+                    if directory.exists() or directory.is_symlink():
+                        staging.mkdir(parents=True, exist_ok=True)
+                        destination = staging / key
+                        directory.rename(destination)
+                        moved.append((directory, destination))
+                c.executemany("DELETE FROM events WHERE job_id=?", [(key,) for key in targets])
+                c.executemany("DELETE FROM jobs WHERE id=?", [(key,) for key in targets])
+        except Exception:
+            for directory, destination in reversed(moved):
+                destination.rename(directory)
+            if staging.exists():
+                staging.rmdir()
+            raise
+        for _, destination in moved:
+            if destination.is_symlink():
+                destination.unlink()
+            else:
+                shutil.rmtree(destination)
+        if staging.exists():
+            staging.rmdir()
+        return {"deleted": sorted(targets)}
 
     def recover(self):
         # UI pagination must not leave older active jobs blocking all new generation.
