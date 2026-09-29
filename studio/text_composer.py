@@ -11,6 +11,10 @@ def text_element(
 
     profile, resolved_style = styled_profile(profile, field_style, role)
     size = size or profile.body_size
+    original_size = size
+    from .design_balance import preferred_size
+
+    size = preferred_size(profile, size, role)
     minimum = 18 if role == "title" else 16 if source_ids else None
     if minimum is not None:
         size = max(size, minimum)
@@ -20,11 +24,9 @@ def text_element(
         candidates.append(minimum)
     if role == "title":
         candidates.extend(range(18, int(size) + 1, 2))
-    candidates = sorted(set(candidates + [size]), reverse=True)
+    candidates = sorted(set(candidates + [size, original_size]), reverse=True)
     for candidate in candidates:
-        if role == "title" and any(
-            text_width(word, font_file, candidate) > box.w * 0.94 for word in text.split()
-        ):
+        if any(text_width(word, font_file, candidate) > box.w * 0.94 for word in text.split()):
             continue
         if (
             len(wrap_text(text, font_file, candidate, box.w * (0.94 if role == "title" else 1)))
@@ -117,10 +119,13 @@ def fact_elements(facts, box, profile, color, heading_zone=None, field_style=Non
     facts = [
         group[0].model_copy(update={"text": " ".join(f.text for f in group)}) for group in grouped
     ]
-    preferred_size = max(16, profile.body_size)
+    from .design_balance import preferred_size as readable_size
+
+    preferred_size = readable_size(profile, max(16, profile.body_size), "body")
     sizes = sorted(
         {
             preferred_size,
+            max(16, profile.body_size),
             16,
             min(12, profile.body_size),
             *[s for s in profile.font_sizes if 12 <= s <= preferred_size],
@@ -157,7 +162,14 @@ def fact_elements(facts, box, profile, color, heading_zone=None, field_style=Non
 
     for size in sizes:
         gap, heights = layout(size)
-        if sum(heights) + gap * (len(facts) - 1) <= box.h:
+        words_fit = all(
+            text_width(word, profile.font_file, size)
+            <= (box.w - (size * 1.4 if bullet else 0))
+            * (0.94 if f.emphasis or resolved_style.get("bold") else 1)
+            for f, bullet in zip(facts, bullets)
+            for word in f.text.split()
+        )
+        if words_fit and sum(heights) + gap * (len(facts) - 1) <= box.h:
             break
     y = box.y
     for fact, height, group, bullet in zip(facts, heights, originals, bullets):

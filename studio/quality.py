@@ -10,6 +10,7 @@ from math import ceil
 def candidate_regressions(before, after, package, audit=None):
     from .audit import audit_scenes
     from .scene_regions import unused_body_regions
+    from .design_balance import broken_words
 
     audit = audit or audit_scenes
     problems = []
@@ -20,6 +21,8 @@ def candidate_regressions(before, after, package, audit=None):
         problems.append({"slide": slide, "code": code})
 
     for index, (old, new) in enumerate(zip(before, after), 1):
+        if broken_words(new, package.template) > broken_words(old, package.template):
+            add(index, "word_break_regression")
         if old.source_ids != new.source_ids or old.title != new.title or old.purpose != new.purpose:
             add(index, "scenario_changed")
         if unused_body_regions(new, package) > unused_body_regions(old, package):

@@ -271,3 +271,17 @@ def test_background_variety_cannot_trade_data_height_for_width(background, kind)
     assert preserves_data_space(scene, alternative)
     alternative.elements[-1].box.w -= 20
     assert not preserves_data_space(scene, alternative)
+
+
+def test_background_swap_keeps_large_body_contrast_stronger_than_title(background):
+    from studio.template_geometry import contrast
+
+    package, scene = background
+    title, body = scene.elements
+    title.color = body.color = "#888888"
+    title.size = body.size = 28
+    body.role = "body"
+    result = apply_background(scene, package, "donor")
+    assert result.elements[1].color == "#888888"
+    assert contrast(result.elements[2].color, "#FFFFFF") >= 4.5
+    assert background_is_safe(result, package)

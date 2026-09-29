@@ -41,7 +41,16 @@ def unused_body_regions(scene, package):
         # text field occupies less than 8% of the canvas. Ignore tiny metadata.
         substantial = [zone for zone in removed if zone.w * zone.h >= canvas * 0.015]
         collective = sum(zone.w * zone.h for zone in substantial) >= canvas * 0.08
-        zones.extend(zone for zone in substantial if collective or zone.w * zone.h >= canvas * 0.08)
+        zones.extend(
+            zone
+            for zone in substantial
+            if collective
+            or zone.w * zone.h >= canvas * 0.08
+            or zone.w * zone.h >= canvas * 0.025
+            and any(
+                zone.w >= body.w * 0.7 and zone.h >= body.h * 0.4 for body in pattern.body_zones
+            )
+        )
     empty = []
     for zone in zones:
         if occupied(zone):
