@@ -764,6 +764,22 @@ async function showTimings(job) {
     } catch { /* Missing historical preparation must not block downloads. */ }
   }
 }
+function findingPriority(finding) {
+  return finding.severity === 'error' ? 4
+    : /безопасност|не проверены|проверки фона/i.test(finding.raw || finding.message || '') ? 3
+    : ['composition_diversity','insufficient_diversity'].includes(finding.code) ? 3
+    : finding.severity === 'warning' ? 2 : 1;
+}
+function visibleAuditFindings(findings) {
+  const generic = finding => ['preparation','run'].includes(finding.source);
+  // Hide only repeated generic notices. Keep original IDs for every repair action
+  // and retain distinct locations, severities and concrete detector findings.
+  return findings.filter((finding,index) => finding.action || finding.repaired || !generic(finding)
+    || !findings.some((other,otherIndex) => otherIndex !== index && !other.action && !other.repaired
+      && (!generic(other) || otherIndex < index)
+      && ['variant','slide','message','severity','element'].every(key => (finding[key] ?? null) === (other[key] ?? null))))
+    .sort((a,b) => findingPriority(b)-findingPriority(a));
+}
 function reviewGroups(job) {
   const groups = new Map();
   const severityRank = {info:0,warning:1,error:2};
@@ -772,6 +788,7 @@ function reviewGroups(job) {
     const key = raw.trim();
     if (!groups.has(key)) groups.set(key,{code:finding.code,raw,variants:new Set(),slides:new Set(),severity:'info'});
     const group = groups.get(key);
+    if (findingPriority(finding) > findingPriority(group)) group.code = finding.code;
     if (finding.variant) group.variants.add(finding.variant);
     if (Number(finding.slide) > 0) group.slides.add(Number(finding.slide));
     if ((severityRank[finding.severity] || 0) > severityRank[group.severity]) group.severity = finding.severity;
@@ -837,9 +854,6 @@ function showResults(job) {
     }
     card.append(links); $('#result-grid').append(card);
   }
-  const findingPriority = finding => finding.severity === 'error' ? 4
-    : /безопасност|не проверены|проверки фона/i.test(finding.raw) ? 3
-    : finding.severity === 'warning' ? 2 : 1;
   const findings = reviewGroups(job).sort((a,b) => findingPriority(b)-findingPriority(a));
   $('#result-alert').hidden = job.state !== 'needs_review'; $('#result-alert').replaceChildren();
   if (job.state === 'needs_review') {
@@ -903,7 +917,7 @@ async function loadAudit(job) {
   let dimensions = null;
   try { const source = await api(`/api/jobs/${encodeURIComponent(job.package_id)}`); dimensions = source.template; }
   catch (_) { /* The slide preview remains available without spatial marks. */ }
-  for (const finding of review.findings || []) {
+  for (const finding of visibleAuditFindings(review.findings || [])) {
     const row = el('div',`audit-finding ${finding.severity}`), content = el('div');
     const title = `${finding.variant || 'Вся колода'}${finding.slide ? ` · слайд ${finding.slide}` : ''} · ${sourceLabels[finding.source] || finding.source}`;
     content.append(el('strong','',title),el('p','profile-detail',finding.message));

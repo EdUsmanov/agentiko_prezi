@@ -1,7 +1,10 @@
 """Compare independent source anchors across exports without claiming OCR coverage."""
 
 from html.parser import HTMLParser
+import re
 import unicodedata
+
+VERSION = "source-anchor-format-agreement-3"
 
 
 class VisibleHTMLText(HTMLParser):
@@ -41,7 +44,10 @@ def html_text(value):
 
 
 def _norm(value):
-    return " ".join(unicodedata.normalize("NFKC", value).casefold().split())
+    value = unicodedata.normalize("NFKC", str(value)).casefold()
+    # PDF extraction may glue a list marker to preceding sentence/clause punctuation.
+    value = re.sub(r"([.!?;:])\s*•\s*", r"\1 ", value)
+    return " ".join(value.split())
 
 
 def assess_export_consistency(bundle):
@@ -113,6 +119,7 @@ def assess_export_consistency(bundle):
         else "passed"
     )
     return {
+        "version": VERSION,
         "status": status,
         "scope": "literal_source_anchor_consistency_not_visual_equivalence",
         "findings": findings,

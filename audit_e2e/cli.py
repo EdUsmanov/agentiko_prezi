@@ -105,10 +105,11 @@ def run_experiment(args):
         raise ValueError("live requires --max-requests and --timeout (total run wall seconds)")
     cases = load_cases(args.suite)
     from .presentation_diversity import VERSION as presentation_policy
+    from .export_consistency import VERSION as export_policy
 
     for case in cases:
         case["presentation_diversity_policy"] = presentation_policy
-        case["export_consistency_policy"] = "source-anchor-format-agreement-1"
+        case["export_consistency_policy"] = export_policy
     if args.case:
         requested = set(args.case)
         cases = [case for case in cases if case["id"] in requested]

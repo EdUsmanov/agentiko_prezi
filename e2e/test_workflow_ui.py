@@ -292,3 +292,93 @@ def test_quality_failed_draft_has_preview_and_selected_repair(browser_page):
         f"/api/jobs/{child}/files/presentations.zip"
     )
     expect(page.locator("#audit-list")).to_contain_text("Выбранные замечания: не обнаружено 1")
+
+
+def test_result_prioritizes_diversity_without_hiding_locations_or_repair_ids(browser_page):
+    page = browser_page
+    pid, gid = "a" * 32, "b" * 32
+    duplicate = "Варианты совпадают: executive + analytical."
+    findings = (
+        [
+            {
+                "id": f"font-{variant}",
+                "source": "variant",
+                "variant": variant,
+                "slide": 1,
+                "code": "local_font_unresolved",
+                "severity": "warning",
+                "message": "Использован шрифт роли.",
+            }
+            for variant in ("executive", "story")
+        ]
+        + [
+            {
+                "id": source,
+                "source": source,
+                "code": code,
+                "severity": "warning",
+                "message": duplicate,
+            }
+            for source, code in (
+                ("preparation", "preparation_warning"),
+                ("run", "run_warning"),
+                ("diversity", "composition_diversity"),
+            )
+        ]
+        + [
+            {
+                "id": f"repair-{source}",
+                "source": source,
+                "variant": "executive",
+                "slide": 1,
+                "code": "overlap",
+                "severity": "warning",
+                "message": "Проверьте перекрытие.",
+                "action": "change_layout",
+            }
+            for source in ("variant", "visual_audit")
+        ]
+    )
+    job = {
+        "id": gid,
+        "kind": "generation",
+        "state": "needs_review",
+        "created": 1,
+        "package_id": pid,
+        "analysis_seconds": 1,
+        "elapsed_seconds": 1,
+        "variants": [
+            {"key": key, "title": key, "slides": 1} for key in ("executive", "analytical", "story")
+        ],
+        "quality_report": {"findings": findings},
+    }
+
+    def api(method, path, body):
+        if path == "/api/health":
+            return 200, {"model_mode": "extractive", "engine": "native"}
+        if path == "/api/runtime":
+            return 200, {"restart_required": False}
+        if path == "/api/references":
+            return 200, []
+        if path == "/api/jobs":
+            return 200, [job]
+        if path == f"/api/jobs/{pid}":
+            return 200, {"id": pid, "template": {"width": 960, "height": 540}}
+        if path == f"/api/generations/{gid}/findings":
+            return 200, {"audit_hash": "c" * 64, "findings": findings, "files": {}}
+        raise AssertionError(f"Unexpected UI request: {method} {path}")
+
+    _page_with_api(page, api)
+    page.locator(".history-item").click()
+    expect(page.locator("#result-alert p")).to_have_text(duplicate)
+    rows = page.locator("#audit-list .audit-finding")
+    expect(rows).to_have_count(5)
+    expect(rows.first).to_contain_text("Различие композиций")
+    expect(rows.first).to_contain_text(duplicate)
+    expect(page.locator("#audit-list").get_by_text(duplicate, exact=True)).to_have_count(1)
+    expect(
+        page.locator("#audit-list").get_by_text("Использован шрифт роли.", exact=True)
+    ).to_have_count(2)
+    assert page.locator("#audit-list input[type=checkbox]").evaluate_all(
+        "inputs => inputs.map(input => input.value)"
+    ) == ["repair-variant", "repair-visual_audit"]

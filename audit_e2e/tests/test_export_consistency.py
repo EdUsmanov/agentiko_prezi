@@ -1,4 +1,6 @@
-from audit_e2e.export_consistency import assess_export_consistency, html_text
+import pytest
+
+from audit_e2e.export_consistency import VERSION, _norm, assess_export_consistency, html_text
 
 
 def _bundle(
@@ -54,3 +56,61 @@ def test_unextractable_raster_or_paraphrase_is_inconclusive_not_a_false_visual_f
     result = assess_export_consistency(_bundle(pdf=""))
     assert result["status"] == "inconclusive"
     assert result["scope"] == "literal_source_anchor_consistency_not_visual_equivalence"
+
+
+def _anchor_bundle(quote, pdf, *, text_contract=True):
+    bundle = _bundle(pdf=pdf, html=quote, text_contract=text_contract)
+    bundle["reference"]["points"] = [{"id": "anchor", "quote": quote, "required": True}]
+    bundle["variants"]["executive"]["slides"][0]["text"] = quote
+    return bundle
+
+
+def test_pdf_bullet_after_sentence_boundary_preserves_anchor_and_special_characters():
+    quote = (
+        "Bookings and cancellations are event counts. Attendee visits count people entering a room. "
+        "The reading is −5 °C; it is not a forecast."
+    )
+    pdf = quote.replace(". Attendee", ".• Attendee")
+
+    result = assess_export_consistency(_anchor_bundle(quote, pdf))
+
+    assert result["status"] == "passed"
+    assert result["coverage"][0]["literal_presence"] == {
+        "pptx": True,
+        "pdf": True,
+        "html": True,
+    }
+    normalized = _norm("The reading is −5 °C; it is not a forecast.")
+    assert "the reading is −5 °c; it is not a forecast." == normalized
+    assert _norm("A•B") == "a•b"
+
+
+def test_pdf_bullet_normalization_does_not_hide_a_real_omission():
+    quote = (
+        "Bookings and cancellations are event counts. Attendee visits count people entering a room."
+    )
+    result = assess_export_consistency(
+        _anchor_bundle(quote, "Bookings and cancellations are event counts.•", text_contract=True)
+    )
+
+    assert result["status"] == "failed"
+    assert result["version"] == VERSION == "source-anchor-format-agreement-3"
+    assert result["findings"][0]["literal_presence"] == {
+        "pptx": True,
+        "pdf": False,
+        "html": True,
+    }
+
+
+@pytest.mark.parametrize("punctuation", [";", ":"])
+def test_pdf_clause_bullet_keeps_number_negation_and_condition(punctuation):
+    quote = f"The pilot lasts 12 weeks{punctuation} expand only if reviewed, not automatically."
+    pdf = quote.replace(f"{punctuation} ", f"{punctuation}• ")
+    assert assess_export_consistency(_anchor_bundle(quote, pdf))["status"] == "passed"
+    for before, after in [
+        ("12 weeks", "21 weeks"),
+        ("not automatically", "automatically"),
+        ("only if reviewed", "without review"),
+    ]:
+        damaged = pdf.replace(before, after)
+        assert assess_export_consistency(_anchor_bundle(quote, damaged))["status"] == "failed"

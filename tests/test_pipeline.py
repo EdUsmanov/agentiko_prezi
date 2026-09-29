@@ -75,9 +75,7 @@ def test_final_audit_errors_keep_downloadable_decks(prepared, monkeypatch):
     result = store.get(job["id"])
     assert result["state"] == "needs_review"
     assert result["quality_report"]["errors"] == 3
-    assert sum(
-        f["code"] == "pptx_fact_coverage" for f in result["quality_report"]["findings"]
-    ) == 3
+    assert sum(f["code"] == "pptx_fact_coverage" for f in result["quality_report"]["findings"]) == 3
     root = store.directory(job["id"])
     with ZipFile(root / "presentations.zip") as archive:
         assert sum(name.endswith(".pptx") for name in archive.namelist()) == 3
