@@ -1,14 +1,22 @@
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from ..models import BriefDraft
+from studio.models import BriefDraft
 
 
 class GenerateRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     package_id: str
     accept_adjusted_slide_count: bool = False
+    variant_count: Literal[1, 3] = 3
+
+    @field_validator("variant_count", mode="before")
+    @classmethod
+    def strict_variant_count(cls, value):
+        if type(value) is not int or value not in (1, 3):
+            raise ValueError("Выберите одну или три презентации")
+        return value
 
 
 class ReviseRequest(BaseModel):

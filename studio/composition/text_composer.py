@@ -37,21 +37,26 @@ def text_element(
 
     profile, resolved_style = styled_profile(profile, field_style, role)
     size = size or profile.body_size
-    if role == "body":
-        size = max(16, size)
+    original_size = size
+    from studio.composition.design_balance import preferred_size
+
+    size = preferred_size(profile, size, role)
+    minimum = 18 if role == "title" else 16 if source_ids or role == "body" else None
+    if minimum is not None:
+        size = max(size, minimum)
     family, font_file = role_font(profile, role)
     candidates = (
         body_size_candidates(profile, size, minimum=int(body_fallback))
         if role == "body" and body_fallback
         else [s for s in profile.font_sizes if 10 <= s <= size]
     )
+    if minimum is not None:
+        candidates.append(minimum)
     if role in ("title", "subheading"):
         candidates.extend(range(18 if role == "title" else 16, int(size) + 1, 2))
-    candidates = sorted(set(candidates + [size]), reverse=True)
+    candidates = sorted(set(candidates + [size, original_size]), reverse=True)
     for candidate in candidates:
-        if role == "title" and any(
-            text_width(word, font_file, candidate) > box.w * 0.94 for word in text.split()
-        ):
+        if any(text_width(word, font_file, candidate) > box.w * 0.94 for word in text.split()):
             continue
         if role == "body" and not words_fit(
             text, font_file, candidate, box.w * (0.94 if resolved_style.get("bold") else 1)
@@ -148,8 +153,19 @@ def fact_elements(facts, box, profile, color, heading_zone=None, field_style=Non
     facts = [
         group[0].model_copy(update={"text": " ".join(f.text for f in group)}) for group in grouped
     ]
-    ceiling = max(16, profile.body_size)
-    sizes = body_size_candidates(profile, ceiling)
+    from studio.composition.design_balance import preferred_size as readable_size
+
+    preferred_size = readable_size(profile, max(16, profile.body_size), "body")
+    sizes = body_size_candidates(profile, preferred_size)
+    # Measure exactly the marker that will be rendered. A single paragraph,
+    # source note or heading must not lose width to an invisible bullet.
+    bullets = [
+        fact.list_item
+        or len(facts) > 1
+        and not fact.text.startswith(("Источник:", "Source:"))
+        and not fact.text.endswith(":")
+        for fact in facts
+    ]
 
     def layout(size):
         gap = size * 0.5
@@ -159,33 +175,29 @@ def fact_elements(facts, box, profile, color, heading_zone=None, field_style=Non
                     f.text,
                     profile.font_file,
                     size,
-                    (box.w - size * 1.4) * (0.94 if f.emphasis else 1),
+                    (box.w - (size * 1.4 if bullet else 0))
+                    * (0.94 if f.emphasis or resolved_style.get("bold") else 1),
                 )
             )
             * size
             * 1.25
-            for f in facts
+            for f, bullet in zip(facts, bullets)
         ]
         return gap, heights
 
     for size in sizes:
         gap, heights = layout(size)
-        if sum(heights) + gap * (len(facts) - 1) <= box.h and all(
-            words_fit(
-                f.text, profile.font_file, size, (box.w - size * 1.4) * (0.94 if f.emphasis else 1)
-            )
-            for f in facts
-        ):
+        words_fit = all(
+            text_width(word, profile.font_file, size)
+            <= (box.w - (size * 1.4 if bullet else 0))
+            * (0.94 if f.emphasis or resolved_style.get("bold") else 1)
+            for f, bullet in zip(facts, bullets)
+            for word in f.text.split()
+        )
+        if words_fit and sum(heights) + gap * (len(facts) - 1) <= box.h:
             break
     y = box.y
-    for fact, height, group in zip(facts, heights, originals):
-        # A list is still useful for legacy packages whose Markdown markers were lost.
-        bullet = (
-            fact.list_item
-            or len(facts) > 1
-            and not fact.text.startswith(("Источник:", "Source:"))
-            and not fact.text.endswith(":")
-        )
+    for fact, height, group, bullet in zip(facts, heights, originals, bullets):
         b = Box(x=box.x, y=y, w=box.w, h=height)
         e = Element(
             kind="text",

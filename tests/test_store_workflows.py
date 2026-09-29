@@ -49,7 +49,11 @@ def test_brief_approval_binds_both_hashes_and_cannot_reset_cancelled_timer(tmp_p
         with pytest.raises(ValueError, match="изменился"):
             store.approve_brief(pid, p, d)
     approved = store.approve_brief(pid, "package-v1", "draft-v1")
-    assert approved["auto_generation"] == "scheduled"
+    assert approved["auto_generation"] == "manual"
+    assert "auto_generate_at" not in approved
+    assert store.generation_for(pid, automatic=True) == (None, False)
+    # Existing persisted timers remain cancellable and repeated approval cannot restore one.
+    store.update(pid, auto_generation="scheduled", auto_generate_at=4102444800)
     store.cancel_auto_generation(pid)
     again = store.approve_brief(pid, "package-v1", "draft-v1")
     assert again["auto_generation"] == "cancelled"
@@ -59,10 +63,13 @@ def test_brief_approval_binds_both_hashes_and_cannot_reset_cancelled_timer(tmp_p
     assert sum(created for _, created in results) == 1
 
 
-def test_draft_edit_is_idempotent_and_does_not_inherit_approval(tmp_path):
+@pytest.mark.parametrize("legacy_timer", [False, True])
+def test_draft_edit_is_idempotent_and_does_not_inherit_approval(tmp_path, legacy_timer):
     store = Store(tmp_path)
     pid = brief(store)
     store.approve_brief(pid, "package-v1", "draft-v1")
+    if legacy_timer:
+        store.update(pid, auto_generation="scheduled", auto_generate_at=4102444800)
     results = race(lambda: store.claim_draft_revision(pid, "package-v1", {"slides": []}))
     assert len({job["id"] for job, _ in results}) == 1
     assert sum(created for _, created in results) == 1
@@ -70,7 +77,7 @@ def test_draft_edit_is_idempotent_and_does_not_inherit_approval(tmp_path):
     assert new["parent_package"] == pid
     assert new["auto_generation"] == "needs_confirmation"
     assert "approved_package_hash" not in new
-    assert store.get(pid)["auto_generation"] == "cancelled"
+    assert store.get(pid)["auto_generation"] == ("cancelled" if legacy_timer else "manual")
     assert store.get(pid)["package_hash"] == "package-v1"
 
 

@@ -67,7 +67,9 @@ def test_single_slide_single_pattern_reports_limited_diversity(prepared, source)
     decks = {v.key: compose_variant(v, package) for v in plans.variants}
     for scenes in decks.values():
         repair_scenes(scenes, package)
+    original = deepcopy(decks)
     report = ensure_diversity(decks, package)
+    assert decks == original
     assert not report["verified"]
     assert report["distinct"] < 3 and report["findings"]
     before = deepcopy(decks)

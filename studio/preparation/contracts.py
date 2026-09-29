@@ -3,9 +3,9 @@
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 
-from ..config import Settings
+from studio.config import Settings
 from studio.providers.gateway import ModelGateway
-from ..models import (
+from studio.models import (
     BriefDraft,
     Constraints,
     ContentModel,

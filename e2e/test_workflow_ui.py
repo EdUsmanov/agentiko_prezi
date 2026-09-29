@@ -36,7 +36,7 @@ def _page_with_api(page, api):
 
     page.route(ORIGIN + "/**", route)
     page.goto(ORIGIN)
-    expect(page.locator("#model-mode")).to_have_text("Автономно · без LLM")
+    expect(page.locator("#model-disclosure")).to_contain_text("без смыслового анализа LLM")
 
 
 def _prepared(pid, *, approved=False):
@@ -126,8 +126,7 @@ def test_brief_edit_and_approval_bind_both_hashes(browser_page):
 
     _page_with_api(page, api)
     expect(page.locator("#generate-button")).to_be_disabled()
-    page.locator("#nav-history").click()
-    page.get_by_role("button", name="Использовать пакет").click()
+    page.locator(".history-item").click()
     expect(page.locator(".brief-approval")).to_be_visible()
     page.get_by_label("Тезис 1 слайда 1").fill("Новый тезис")
     expect(page.locator("#generate-button")).to_be_disabled()
@@ -272,8 +271,7 @@ def test_quality_failed_draft_has_preview_and_selected_repair(browser_page):
         raise AssertionError(f"Unexpected UI request: {method} {path}")
 
     _page_with_api(page, api)
-    page.locator("#nav-history").click()
-    page.get_by_role("button", name="Аудит черновика").click()
+    page.locator(".history-item").click()
     expect(page.locator("#results")).to_be_visible()
     expect(page.locator("#download-all")).to_be_hidden()
     expect(page.locator("#manifest-link")).to_be_hidden()

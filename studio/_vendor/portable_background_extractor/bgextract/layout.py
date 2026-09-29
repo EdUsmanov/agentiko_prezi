@@ -1,6 +1,6 @@
 """Inherited content scaffolds and slide navigation in extracted backgrounds."""
 
-from .context import _contained
+from studio._vendor.portable_background_extractor.bgextract.context import _contained
 
 
 def remove_web_link_button(rows: list[dict], decisions: list[dict]) -> None:

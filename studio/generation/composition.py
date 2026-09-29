@@ -2,12 +2,12 @@
 
 import asyncio
 from pathlib import Path
-from ..models import Plans, PreparedPackage
+from studio.models import Plans, PreparedPackage
 from studio.checks.audit import audit_scenes, repair_scenes
 from studio.checks.diversity import ensure_diversity
 from studio.composition.render import render_variant
-from .results import CompositionResult, VariantResult, DiversityResult
-from ..stage_runtime import GenerationDeadline
+from studio.generation.results import CompositionResult, VariantResult, DiversityResult
+from studio.stage_runtime import GenerationDeadline
 
 
 def compose_generation(
@@ -25,10 +25,21 @@ def compose_generation(
         decks[selected.key] = scenes
         background_selection[selected.key] = report
     package.analysis["background_diversity"] = background_selection
-    (directory / "plans.json").write_text(plans.model_dump_json(indent=2))
     initial_by_key = {key: audit_scenes(scenes, package) for key, scenes in decks.items()}
     repairs_by_key = {key: repair_scenes(scenes, package) for key, scenes in decks.items()}
     diversity = ensure_diversity(decks, package)
+    from studio.checks.background_diversity import background_report
+
+    # Diversity can change layouts after the initial background selection.
+    # Persist the choices actually exported, not the superseded proposal.
+    for variant in plans.variants:
+        for slide, scene in zip(variant.slides, decks[variant.key]):
+            slide.pattern_id = scene.pattern_id or "token:auto"
+            slide.background_pattern_id = scene.background_pattern_id
+        report = background_selection[variant.key]
+        report["after_selection"] = report["after"]
+        report["after"] = background_report(decks[variant.key], package.template)
+    (directory / "plans.json").write_text(plans.model_dump_json(indent=2))
 
     return CompositionResult(
         plans,

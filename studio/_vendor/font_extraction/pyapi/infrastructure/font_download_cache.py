@@ -8,7 +8,7 @@ import os
 import tempfile
 from pathlib import Path
 
-from ..pipeline.reference_fonts import SFNT_FORMATS
+from studio._vendor.font_extraction.pyapi.pipeline.reference_fonts import SFNT_FORMATS
 
 ORIGINS = {"google-fonts", "fontsource", "microsoft-aptos"}
 MAX_FONT_BYTES = 8 * 1024 * 1024

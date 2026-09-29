@@ -7,19 +7,10 @@ from collections import defaultdict
 from io import BytesIO
 from xml.etree import ElementTree as ET
 
-from ..domain.archive_safety import validate_archive
-from .ooxml_resolution import effective_theme, inheritance_parts
-from .reference_font_usage_styles import (
-    _effective_font,
-    _parent_shape,
-    _placeholder,
-    _resolve_name,
-    _role,
-    _script_counts,
-    _source_properties,
-    _theme_fonts,
-)
-from .reference_profile import _ordered_slides, _relationship_rows
+from studio._vendor.font_extraction.pyapi.domain.archive_safety import validate_archive
+from studio._vendor.font_extraction.pyapi.pipeline.ooxml_resolution import effective_theme, inheritance_parts
+from studio._vendor.font_extraction.pyapi.pipeline.reference_font_usage_styles import _effective_font, _parent_shape, _placeholder, _resolve_name, _role, _script_counts, _source_properties, _theme_fonts
+from studio._vendor.font_extraction.pyapi.pipeline.reference_profile import _ordered_slides, _relationship_rows
 
 P = "http://schemas.openxmlformats.org/presentationml/2006/main"
 A = "http://schemas.openxmlformats.org/drawingml/2006/main"

@@ -18,39 +18,10 @@ from openai.types.chat.chat_completion_message_function_tool_call import (
 from pydantic import BaseModel
 
 from typing import Any as AgentEnv
-from studio._vendor.deeppresenter.utils.config import (
-    LLM,
-    DeepPresenterConfig,
-    get_json_from_response,
-)
-from studio._vendor.deeppresenter.utils.constants import (
-    AGENT_PROMPT,
-    CONTEXT_MODE_PROMPT,
-    CONTINUE_MSG,
-    HALF_BUDGET_NOTICE_MSG,
-    HIST_LOST_MSG,
-    LAST_ITER_MSG,
-    MA_RESEACHER_PROMPT,
-    MA_RRESENTER_PROMPT,
-    MAX_LOGGING_LENGTH,
-    MAX_TOOLCALL_PER_TURN,
-    MEMORY_COMPACT_MSG,
-    OFFLINE_PROMPT,
-    PACKAGE_DIR,
-    URGENT_BUDGET_NOTICE_MSG,
-)
-from studio._vendor.deeppresenter.utils.log import (
-    debug,
-    info,
-    timer,
-)
-from studio._vendor.deeppresenter.utils.typings import (
-    ChatMessage,
-    Cost,
-    InputRequest,
-    Role,
-    RoleConfig,
-)
+from studio._vendor.deeppresenter.utils.config import LLM, DeepPresenterConfig, get_json_from_response
+from studio._vendor.deeppresenter.utils.constants import AGENT_PROMPT, CONTEXT_MODE_PROMPT, CONTINUE_MSG, HALF_BUDGET_NOTICE_MSG, HIST_LOST_MSG, LAST_ITER_MSG, MA_RESEACHER_PROMPT, MA_RRESENTER_PROMPT, MAX_LOGGING_LENGTH, MAX_TOOLCALL_PER_TURN, MEMORY_COMPACT_MSG, OFFLINE_PROMPT, PACKAGE_DIR, URGENT_BUDGET_NOTICE_MSG
+from studio._vendor.deeppresenter.utils.log import debug, info, timer
+from studio._vendor.deeppresenter.utils.typings import ChatMessage, Cost, InputRequest, Role, RoleConfig
 
 
 class Agent:

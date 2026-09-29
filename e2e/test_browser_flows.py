@@ -20,6 +20,7 @@ def upload(page, url, template, text=BRIEF, image=None, expected_status=202):
     expect(page.locator("#prepare-button")).to_be_enabled()
     page.locator("#template").set_input_files(template)
     page.locator("#content").fill(text)
+    page.locator("#extra-settings > summary").click()
     page.locator("#slides").select_option("mini")
     if image:
         page.locator("#images").set_input_files(image)
@@ -57,7 +58,8 @@ def test_model_replay_upload_generate_download_history_and_cache(browser_page, t
     with application(tmp_path / "app", cassette=CASSETTE) as (url, replay, settings):
         package_id = upload(page, url, template)
         expect_prepared(page)
-        assert page.request.get(url + "/api/jobs/" + package_id).json()["state"] == "ready"
+        ready = page.request.get(url + "/api/jobs/" + package_id).json()
+        assert ready["state"] == "ready"
         # The production form must submit values before controls are disabled.
         saved = json.loads(
             (settings.data_dir / "jobs" / package_id / "analysis-input.json").read_text()
@@ -103,13 +105,14 @@ def test_model_replay_upload_generate_download_history_and_cache(browser_page, t
         replay.assert_consumed()
         calls = len(replay.calls)
         page.reload()
-        page.locator("#nav-history").click()
-        expect(page.locator("#history-list")).to_contain_text("synthetic.pptx")
-        page.locator("#close-history").click()
+        expect(page.locator("#history-list")).to_contain_text(
+            ready["content"].get("title") or "synthetic.pptx"
+        )
         # New upload, same immutable evidence: successful analysis responses must be reused.
         upload(page, url, template)
         expect_prepared(page)
         assert len(replay.calls) == calls
+        page.locator("#analysis-template .analysis-edit").click()
         page.locator("#content").fill(BRIEF + "\nДополнительный факт.")
         expect(page.locator("#generate-button")).to_be_disabled()
         expect(page.locator("#prep-state")).to_have_text("Нужен новый анализ")
@@ -214,7 +217,8 @@ def test_provider_failure_is_generic_in_panel_and_detailed_in_log(browser_page, 
         upload(page, url, template)
         if stage == "analysis":
             expect(page.locator("#prep-state")).to_have_text("Анализ не завершён", timeout=120_000)
-            panel = page.locator("#profile")
+            panel = page.locator("#toast")
+            expect(panel).to_contain_text("Анализ не завершён")
         else:
             expect_prepared(page)
             page.locator("#generate-button").click()
@@ -223,7 +227,10 @@ def test_provider_failure_is_generic_in_panel_and_detailed_in_log(browser_page, 
         expect(panel).not_to_contain_text("HTTPStatusError")
         expect(panel).not_to_contain_text("401")
         expect(page.locator("#results")).not_to_be_visible()
-        page.locator("#open-diagnostics").click()
+        if stage == "analysis":
+            page.locator("#history-list .history-item").filter(has_text="synthetic.pptx").click()
+        else:
+            panel.get_by_role("button", name="Открыть журнал", exact=True).click()
         expect(page.locator("#diagnostics-dialog")).to_be_visible()
         expect(page.locator("#diagnostics-output")).to_contain_text("HTTPStatusError")
         expect(page.locator("#diagnostics-output")).to_contain_text("401")

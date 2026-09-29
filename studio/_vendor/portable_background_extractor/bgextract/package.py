@@ -8,11 +8,11 @@ from io import BytesIO
 from pathlib import PurePosixPath
 from xml.etree import ElementTree as ET
 
-from .archive_safety import validate_archive
-from .raster_cleanup import clean_identity_png
-from .raster_regions import reconstruct_regions
-from .resolution import flatten_groups, resolved_slide
-from .roles import apply_background_roles
+from studio._vendor.portable_background_extractor.bgextract.archive_safety import validate_archive
+from studio._vendor.portable_background_extractor.bgextract.raster_cleanup import clean_identity_png
+from studio._vendor.portable_background_extractor.bgextract.raster_regions import reconstruct_regions
+from studio._vendor.portable_background_extractor.bgextract.resolution import flatten_groups, resolved_slide
+from studio._vendor.portable_background_extractor.bgextract.roles import apply_background_roles
 
 P = "http://schemas.openxmlformats.org/presentationml/2006/main"
 R = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"

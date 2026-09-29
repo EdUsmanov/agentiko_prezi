@@ -17,6 +17,7 @@ def test_body_text_tries_readable_size_without_exceeding_field():
         font_assets=[],
         font_sizes=[11, 12, 14, 19, 28],
         body_size=12,
+        height=540,
         foreground="#000000",
     )
     text = "Unified queue pilot across offices"

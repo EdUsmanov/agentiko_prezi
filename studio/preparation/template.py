@@ -4,15 +4,15 @@ import json
 from copy import deepcopy
 from pathlib import Path
 
-from ..config import Settings
+from studio.config import Settings
 from studio.providers.gateway import ModelGateway
 from studio.templates.native_template import compile_backgrounds
-from ..security import digest
-from ..security_gate import PromptInjectionDetected, check_template, check_text_fields
+from studio.security import digest
+from studio.security_gate import PromptInjectionDetected, check_template, check_text_fields
 from studio.contents.parsing import parse_content
 from studio.templates.template_analysis import prepare_template_analysis
 from studio.jobs.store import Store
-from .contracts import (
+from studio.preparation.contracts import (
     PreparationRequest,
     PreparationServices,
     TemplateAnalysisResult,
@@ -42,6 +42,21 @@ async def analyze_template_only(
     # template cache just to retain a native resource source pointer.
     result.profile.resource_source = str(Path(path).resolve())
     return result
+
+
+def load_template(path, directory, settings, analyze, progress) -> TemplatePreparation:
+    """Restore verified template artifacts or perform their technical analysis once."""
+    from studio.templates.template_cache import TemplateCache
+
+    cached = TemplateCache(settings).restore(path, directory)
+    profile = (
+        cached[0]
+        if cached
+        else analyze(
+            path, directory, allow_download=settings.download_fonts, font_progress=progress
+        )
+    )
+    return TemplatePreparation(profile, cached[1] if cached else None)
 
 
 def prepare_template(
@@ -77,7 +92,7 @@ def prepare_template(
         )
         if content_model is not None and content_model.quarantined:
             raise PromptInjectionDetected(content_model.quarantined)
-        from ..cache_version import atomic_json
+        from studio.cache_version import atomic_json
 
         atomic_json(
             directory / "analysis-input.json",
@@ -97,20 +112,14 @@ def prepare_template(
         )
         (directory / "analysis-input.json").chmod(0o600)
     check_template(path)
-    from studio.templates.template_cache import TemplateCache
-
-    template_cache = TemplateCache(settings)
-    cached_template = template_cache.restore(path, directory)
-    template = (
-        cached_template[0]
-        if cached_template
-        else services.analyze_template(
-            path,
-            directory,
-            allow_download=settings.download_fonts,
-            font_progress=lambda phase: store.update(job_id, phase=phase, progress=30),
-        )
+    technical = load_template(
+        path,
+        directory,
+        settings,
+        services.analyze_template,
+        lambda phase: store.update(job_id, phase=phase, progress=30),
     )
+    template = technical.profile
     if (
         any(f.get("required_for_generation", True) for f in template.missing_fonts)
         or not template.font_file
@@ -167,19 +176,18 @@ def prepare_template(
             error="Добавьте точные TTF в fonts/ или data/local-fonts/ и нажмите «Проверить шрифты повторно». Анализ шаблона сохранён.",
         )
         return None
-    return TemplatePreparation(template, cached_template[1] if cached_template else None)
+    return technical
 
 
 async def prepare_template_result(
-    store: Store,
-    job_id: str,
+    path: Path,
     technical: TemplatePreparation,
     settings: Settings,
     gateway: ModelGateway,
+    progress,
 ) -> TemplateAnalysisResult:
     """Run the same raster, background, semantic and cache path for both entry points."""
-    directory = store.directory(job_id)
-    path = directory / "input.pptx"
+    directory = path.parent
     profile = technical.profile
     if (
         technical.cached_analysis is None
@@ -189,16 +197,16 @@ async def prepare_template_result(
     ):
         from studio.checks.raster_review import review_template_rasters
 
-        store.update(job_id, phase="VL-проверка растровых фонов", progress=38)
+        progress("VL-проверка растровых фонов", 38)
         await review_template_rasters(path, gateway, directory)
     if technical.cached_analysis is None and any(p.title_zone for p in profile.patterns):
-        store.update(job_id, phase="Подготовка исходных макетов и фирменной графики", progress=40)
+        progress("Подготовка исходных макетов и фирменной графики", 40)
         compile_backgrounds(profile, path, directory)
     result = await analyze_template_only(
         TemplateAnalysisResult(profile, {}, {}),
         path,
         gateway,
-        lambda phase, value: store.update(job_id, phase=phase, progress=value),
+        progress,
         technical.cached_analysis,
     )
     layers = [p.background_image for p in result.profile.patterns if p.background_image]

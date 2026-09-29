@@ -8,8 +8,8 @@ from pathlib import Path
 import shutil
 import uuid
 
-from .cache_version import pipeline_version
-from .config import Settings
+from studio.cache_version import pipeline_version
+from studio.config import Settings
 from studio.composition.artifacts import public_path
 from studio.contents.brief import (
     apply_edited_draft,
@@ -18,12 +18,12 @@ from studio.contents.brief import (
 )
 from studio.contents.parsing import parse_constraints
 from studio.providers.deeppresenter import readiness
-from .diagnostics import redact
+from studio.diagnostics import redact
 from studio.templates.examples import sources
-from .models import BriefDraft
-from .pipeline import load_package
-from .security import digest
-from .security_gate import check_text_fields
+from studio.models import BriefDraft
+from studio.pipeline import load_package
+from studio.security import digest
+from studio.security_gate import check_text_fields
 from studio.jobs.store import Store
 from studio.jobs.runtime import JobRuntime
 from studio.contents.uploads import (
@@ -71,6 +71,17 @@ class PresentationService:
     def references(self):
         return sources(self.settings)
 
+    def reference_profile(self, reference_id: str) -> dict:
+        from studio.preparation.reference_analysis import reference_profile
+
+        return reference_profile(self.settings, reference_id)
+
+    def delete_job(self, jid: str) -> dict:
+        try:
+            return self.store.delete_tree(jid)
+        except ValueError as exc:
+            raise ApplicationError("conflict", str(exc)) from exc
+
     def recent_jobs(self) -> list[dict]:
         return self.store.recent(exclude_kind="template")
 
@@ -84,8 +95,10 @@ class PresentationService:
         if job.get("auto_generation") == "scheduled":
             self.store.log(pid, "generation.scheduled", delay_seconds=60)
             self.runtime.schedule_auto_generation(pid)
-        else:
+        elif job.get("auto_generation") == "needs_confirmation":
             self.store.log(pid, "generation.confirmation_required")
+        else:
+            self.store.log(pid, "generation.manual_start_required")
 
     def _persist_request(self, jid: str, payload: dict) -> None:
         """Publish a complete request before the child process can start."""
@@ -160,6 +173,7 @@ class PresentationService:
         size_preset: str | None = None,
         reference_id: str = "",
         template_job_id: str = "",
+        source_package_id: str = "",
         template_name: str = "",
         template_chunks: AsyncIterable[bytes] | None = None,
         images: Sequence[tuple[str, Callable[[int], Awaitable[bytes]]]] = (),
@@ -176,13 +190,31 @@ class PresentationService:
         self.require_current_pipeline()
         if len(images) > MAX_IMAGES:
             raise ApplicationError("invalid", "Допускается до 12 изображений")
-        if sum(bool(choice) for choice in (reference_id, template_job_id, template_name)) != 1:
+        if (
+            sum(
+                bool(choice)
+                for choice in (reference_id, template_job_id, source_package_id, template_name)
+            )
+            != 1
+        ):
             raise ApplicationError("invalid", "Выберите один шаблон: файл или пример")
         if not text.strip():
             raise ApplicationError("invalid", "Добавьте текст")
         if input_mode not in ("content", "brief") or image_presentation not in ("plain", "device"):
             raise ApplicationError("invalid", "Неизвестный режим подготовки")
         ref = self._reference(reference_id) if reference_id else None
+        source_package = None
+        if source_package_id:
+            previous = self.store.get(source_package_id)
+            if previous["kind"] != "preparation" or previous["state"] != "ready":
+                raise ApplicationError("conflict", "Дизайн-система ещё не подготовлена")
+            try:
+                source_package = self.load_operation(self.store, source_package_id)
+            except (ValueError, FileNotFoundError) as exc:
+                raise ApplicationError("conflict", str(exc)) from exc
+            source = self.store.directory(source_package_id) / "input.pptx"
+            if not source.is_file():
+                raise ApplicationError("conflict", "Исходный шаблон недоступен")
         template_job = None
         if template_job_id:
             template_job = self.store.get(template_job_id)
@@ -198,16 +230,24 @@ class PresentationService:
             check_text_fields(template_name=template_job["template_name"])
         self._validate_template_name(template_name)
         name = (
-            template_job["template_name"]
+            source_package.template.name
+            if source_package
+            else template_job["template_name"]
             if template_job
             else ref["name"]
             if ref
             else Path(template_name).name
         )
-        job = self.store.create("preparation", {"template_name": name})
+        job = self.store.create(
+            "preparation",
+            {
+                "template_name": name,
+                **({"source_package_id": source_package_id} if source_package else {}),
+            },
+        )
         if ref:
             source = self.settings.data_dir / "references" / ref["id"] / "input.pptx"
-        elif not template_job:
+        elif not template_job and not source_package:
             source = None
         await self._save_template(job["id"], source, template_chunks)
         assets = []
@@ -258,6 +298,7 @@ class PresentationService:
         *,
         accept_adjusted_slide_count: bool = False,
         automatic: bool = False,
+        variant_count: int = 3,
     ) -> dict:
         self.require_current_pipeline()
         if self.settings.engine == "deeppresenter" and not readiness()["ready"]:
@@ -290,7 +331,9 @@ class PresentationService:
                     (budget.message if budget else "План подготовлен.")
                     + " Подтвердите генерацию с предложенным количеством слайдов."
                 )
-            job, created = self.store.generation_for(package_id, automatic=automatic)
+            job, created = self.store.generation_for(
+                package_id, automatic=automatic, variant_count=variant_count
+            )
             if not created:
                 return job or self.store.get(package_id)
             deadline = (

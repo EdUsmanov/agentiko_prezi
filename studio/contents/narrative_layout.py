@@ -58,6 +58,7 @@ def narrative_storyboard(package):
                     audit_scenes([scene], package),
                     index + 1,
                     {row["fact_id"] for row in package.analysis["editorial"].get("provenance", [])},
+                    profile=package.template,
                 )
                 if feedback["repair_issues"]:
                     bad.append(index + 1)

@@ -1,5 +1,6 @@
 """Preparation-only grounded content units. Never generate facts or reorder them."""
 
+from copy import deepcopy
 from typing import Literal
 from pydantic import Field
 
@@ -96,6 +97,20 @@ def _batches(facts):
         characters += len(fact.text)
     if batch:
         yield batch
+
+
+def reviewed_editorial_report(package):
+    """Report editorial slide roles separately from evidence-slot classifier units."""
+    groups = deepcopy(package.analysis.get("narrative", {}).get("groups", []))
+    return {
+        "catalog_version": VERSION,
+        "status": "completed" if groups else "not_run",
+        "method": "reviewed_editorial_groups",
+        "reviewed_groups": groups,
+        # Consumers use units as evidence-slot contracts. Editorial groups are
+        # not classifier units and must not change rendering or source binding.
+        "units": [],
+    }
 
 
 async def analyze_content_archetypes(package, gateway, progress=None):

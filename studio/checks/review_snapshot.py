@@ -139,12 +139,12 @@ def build_snapshot(store, generation_id: str, manifest: dict, package, plans) ->
     files = {}
     names = ["plans.json", "audit-input.json"] + [
         f"{variant}/{filename}"
-        for variant in ("executive", "analytical", "story")
+        for variant in scenes_by_variant
         for filename in ("slides.json", "deck.pptx", "deck.pdf", "deck.html")
     ]
     names.extend(
         f"{variant}/FONT_LICENSES.txt"
-        for variant in ("executive", "analytical", "story")
+        for variant in scenes_by_variant
         if public_path(root, f"{variant}/FONT_LICENSES.txt") is not None
     )
     for result in manifest["variants"]:

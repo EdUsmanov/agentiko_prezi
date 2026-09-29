@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from xml.etree import ElementTree as ET
 
-from .reference_color_values import paint_colors, resolve_color
-from .reference_font_usage_styles import _source_properties
+from studio._vendor.color_extraction.pipeline.reference_color_values import paint_colors, resolve_color
+from studio._vendor.color_extraction.pipeline.reference_font_usage_styles import _source_properties
 
 P = "http://schemas.openxmlformats.org/presentationml/2006/main"
 A = "http://schemas.openxmlformats.org/drawingml/2006/main"

@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from fastapi.responses import FileResponse, JSONResponse
 
-from .dependencies import ServiceDep
+from studio.api.dependencies import ServiceDep
 
 
 router = APIRouter(prefix="/api/jobs")
@@ -15,6 +15,11 @@ def jobs(service: ServiceDep):
 @router.get("/{jid}")
 def job(jid: str, service: ServiceDep):
     return service.get_job(jid)
+
+
+@router.delete("/{jid}")
+def delete_job(jid: str, service: ServiceDep):
+    return service.delete_job(jid)
 
 
 @router.get("/{jid}/diagnostics")

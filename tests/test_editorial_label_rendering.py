@@ -1,0 +1,175 @@
+from copy import deepcopy
+import pytest
+from studio.models import Fact, SlidePlan, Box
+from studio.composition.composer import compose
+from studio.contents.semantic_bindings import (
+    labeled_facts,
+    missing_editorial_labels,
+    object_contract,
+)
+
+
+@pytest.mark.parametrize("native", [False, True])
+@pytest.mark.parametrize("title", ["Архитектура", "Формирует план."])
+def test_generic_layout_keeps_editorial_actor_names(prepared, native, title):
+    _, _, package = prepared
+    package.content.facts = [
+        Fact(id="a", text="Формирует план."),
+        Fact(id="b", text="Проверяет файл."),
+    ]
+    package.content.tables = []
+    package.analysis = {
+        "editorial": {
+            "provenance": [{"fact_id": "a", "group": "ИИ"}, {"fact_id": "b", "group": "Код"}],
+            "bindings": [
+                {
+                    "purpose": "structure",
+                    "fact_ids": ["a", "b"],
+                    "groups": [
+                        {"label": "ИИ", "fact_ids": ["a"], "parent": None},
+                        {"label": "Код", "fact_ids": ["b"], "parent": None},
+                    ],
+                }
+            ],
+        }
+    }
+    pattern = package.template.patterns[0]
+    pattern.body_zones = [Box(x=50, y=130, w=800, h=300)]
+    pattern.heading_zones = []
+    pattern.purpose = "content"
+    before = deepcopy(package.content)
+    slide = SlidePlan(
+        title=title,
+        fact_ids=["a", "b"],
+        purpose="structure",
+        pattern_id=pattern.id if native else "token:auto",
+    )
+    scene = compose(slide, package, 0, "executive")
+    assert not missing_editorial_labels(scene, package)
+    assert package.content == before
+    assert any("ИИ. Формирует план." in e.text for e in scene.elements)
+    assert any("Код. Проверяет файл." in e.text for e in scene.elements)
+    # A renderer regression must be detected despite unchanged fact IDs.
+    for element in scene.elements:
+        element.text = element.text.replace("ИИ. ", "")
+    assert missing_editorial_labels(scene, package) == ["ИИ"]
+    from studio.checks.audit import audit_scenes
+
+    assert any(
+        f.code == "semantic_label_missing" and f.severity == "error"
+        for f in audit_scenes([scene], package)
+    )
+    if native:
+        contract = object_contract(slide, package, pattern)
+        text = "\n".join(p for f in contract["fields"].values() for p in f["paragraphs"])
+        assert "ИИ. Формирует план." in text and "Код. Проверяет файл." in text
+
+
+def test_inline_labels_do_not_duplicate_existing_owner_or_mutate_source():
+    from types import SimpleNamespace
+
+    package = SimpleNamespace(
+        analysis={"editorial": {"provenance": [{"fact_id": "a", "group": "ИИ"}]}}
+    )
+    fact = Fact(id="a", text="ИИ формирует план.")
+    assert labeled_facts([fact], package)[0].text == fact.text
+    package.analysis["editorial"]["provenance"][0]["group"] = "Инженер"
+    assert labeled_facts([fact], package)[0].text == "Инженер. ИИ формирует план."
+    assert fact.text == "ИИ формирует план."
+
+
+def test_native_export_audit_detects_missing_owner_with_intact_claim_text():
+    from types import SimpleNamespace
+    from pptx import Presentation
+    from pptx.util import Pt
+    from studio.models import VariantPlan
+    from studio.checks.export_audit import inspect_content
+
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    title = slide.shapes.add_textbox(Pt(20), Pt(20), Pt(600), Pt(50))
+    title.text = "Архитектура"
+    body = slide.shapes.add_textbox(Pt(20), Pt(100), Pt(600), Pt(100))
+    body.text = "Формирует план."
+    package = SimpleNamespace(
+        images=[], analysis={"editorial": {"provenance": [{"fact_id": "a", "group": "ИИ"}]}}
+    )
+    variant = VariantPlan(
+        key="executive", title="Тест", slides=[SlidePlan(title="Архитектура", fact_ids=["a"])]
+    )
+    _, findings = inspect_content(prs, variant, package)
+    assert any(f["code"] == "semantic_label_missing" and f["severity"] == "error" for f in findings)
+    body.text = "ИИ. Формирует план."
+    assert not inspect_content(prs, variant, package)[1]
+
+
+@pytest.mark.parametrize(
+    "text,label,represented",
+    [
+        ("Формирует план.", "ИИ", False),
+        ("ИИ формирует план.", "ИИ", True),
+        ("Кодекс описывает правила.", "Код", False),
+        ("Обычный факт.", "", True),
+    ],
+)
+def test_title_deduplication_requires_the_editorial_owner(text, label, represented):
+    from types import SimpleNamespace
+    from studio.models import ContentModel
+    from studio.contents.content_sources import package_sources
+
+    package = SimpleNamespace(
+        content=ContentModel(title="Test", facts=[Fact(id="f", text=text)]),
+        analysis={"editorial": {"provenance": [{"fact_id": "f", "group": label}]}},
+    )
+    body, titles = package_sources(SlidePlan(title=text, fact_ids=["f"]), package)
+    assert [f.id for f in body] == ([] if represented else ["f"])
+    assert titles == (["f"] if represented else [])
+
+
+def test_table_cell_does_not_replace_its_separately_stored_owner():
+    from types import SimpleNamespace
+    from studio.models import ContentModel, TableData
+    from studio.contents.content_sources import package_sources
+
+    package = SimpleNamespace(
+        content=ContentModel(
+            title="Test",
+            facts=[Fact(id="f", text="100")],
+            tables=[TableData(id="t", headers=["Значение"], rows=[["100"]])],
+        ),
+        analysis={"editorial": {"provenance": [{"fact_id": "f", "group": "Выручка"}]}},
+    )
+    slide = SlidePlan(title="Результаты", fact_ids=["f"], table_id="t")
+    assert [f.id for f in package_sources(slide, package)[0]] == ["f"]
+    package.analysis = {}
+    assert not package_sources(slide, package)[0]
+
+
+def test_semantic_label_audit_reads_editable_comparison_table_headers():
+    from types import SimpleNamespace
+    from studio.models import Element, SlideScene
+
+    package = SimpleNamespace(
+        analysis={
+            "editorial": {
+                "provenance": [{"fact_id": "a", "group": "ИИ"}, {"fact_id": "b", "group": "Код"}]
+            }
+        }
+    )
+    scene = SlideScene(
+        title="Ответственность",
+        layout="table",
+        background="#FFFFFF",
+        source_ids=["a", "b"],
+        elements=[
+            Element(
+                kind="table",
+                box=Box(x=0, y=0, w=500, h=200),
+                rows=[["ИИ", "Код"], ["Формирует план", "Проверяет файл"]],
+                source_ids=["a", "b"],
+            )
+        ],
+    )
+    assert not missing_editorial_labels(scene, package)
+    scene.elements[0].rows[0][0] = "Участник"
+    assert missing_editorial_labels(scene, package) == ["ИИ"]

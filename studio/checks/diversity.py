@@ -25,7 +25,11 @@ def error_keys(scenes, package):
 def preserves_quality(before, after, package):
     from studio.checks.quality import candidate_regressions
 
-    return not candidate_regressions(before, after, package, audit=audit_scenes)
+    from studio.composition.background_selection import preserves_data_space
+
+    return all(
+        preserves_data_space(a, b) for a, b in zip(before, after)
+    ) and not candidate_regressions(before, after, package, audit=audit_scenes)
 
 
 def ensure_diversity(decks, package):

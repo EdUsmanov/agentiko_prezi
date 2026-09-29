@@ -16,6 +16,16 @@ def compatible(pattern, slide, index=0):
     if not pattern.reusable or pattern.purpose in ("service", "reference"):
         return False
     purpose = slide.purpose
+    if (
+        purpose in ("agenda", "comparison", "structure", "composition", "process", "timeline")
+        and pattern.graphic_kind == "none"
+        and len(pattern.body_zones) > 1
+    ):
+        areas = [zone.w * zone.h for zone in pattern.body_zones]
+        # Strongly unequal generic panels imply a lead claim or hierarchy.
+        # Peer topics/actors cannot acquire that relationship from template geometry.
+        if min(areas) > 0 and max(areas) > min(areas) * 3:
+            return False
     if pattern.graphic_kind in (
         "sequence",
         "hierarchy",
@@ -141,7 +151,8 @@ def candidates(package, slide, index=0, *, source_slides_only=False, prefer_spec
             if exact:
                 return exact
     if (
-        slide.pattern_id is None
+        prefer_specialized
+        and slide.pattern_id is None
         and package.analysis.get("editorial")
         and getattr(getattr(package, "constraints", None), "summarize", False)
     ):

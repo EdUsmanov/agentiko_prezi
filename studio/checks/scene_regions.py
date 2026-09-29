@@ -3,7 +3,8 @@
 
 def unused_body_regions(scene, package):
     """Count unoccupied authored content slots, not intentional cover whitespace."""
-    pattern = next((p for p in package.template.patterns if p.id == scene.pattern_id), None)
+    pattern_id = scene.pattern_id or scene.background_pattern_id
+    pattern = next((p for p in package.template.patterns if p.id == pattern_id), None)
     if not pattern or scene.purpose in ("cover", "divider") or pattern.role in ("cover", "divider"):
         return 0
     content = [
@@ -25,7 +26,11 @@ def unused_body_regions(scene, package):
                 return True
         return False
 
-    zones = list(pattern.body_zones)
+    from studio.composition.content_panels import empty_content_panels
+
+    # A background donor lends only its artwork, not its original text slots.
+    zones = list(pattern.body_zones) if scene.pattern_id else []
+    zones.extend(empty_content_panels(scene, package.template, pattern))
     # Data patterns combine proven empty authored fields into one editable band.
     # Their old field boxes are not separate panels once that band is occupied.
     merged_zone = pattern.body_zones[0] if len(pattern.body_zones) == 1 else None
@@ -39,20 +44,50 @@ def unused_body_regions(scene, package):
     # A large source text field removed as 'unused' can leave a conspicuous
     # panel (e.g. an Education code sample). Do not select it for variety alone.
     canvas = getattr(package.template, "width", 0) * getattr(package.template, "height", 0)
-    if canvas > 0:
+    if canvas > 0 and scene.pattern_id:
         from studio.models import Box
 
-        for field in pattern.fields:
-            if field.get("role") == "unused" and field.get("box"):
-                zone = Box.model_validate(field["box"])
-                if (
-                    occupied_merge
-                    and zone.x >= merged_zone.x
+        removed = [
+            Box.model_validate(field["box"])
+            for field in pattern.fields
+            if field.get("role") == "unused" and field.get("box")
+        ]
+        if occupied_merge:
+            removed = [
+                zone
+                for zone in removed
+                if not (
+                    zone.x >= merged_zone.x
                     and zone.y >= merged_zone.y
                     and zone.x + zone.w <= merged_zone.x + merged_zone.w
                     and zone.y + zone.h <= merged_zone.y + merged_zone.h
-                ):
-                    continue
-                if zone.w * zone.h >= canvas * 0.08:
-                    zones.append(zone)
-    return sum(not occupied(zone) for zone in zones)
+                )
+            ]
+        # Several emptied cards can be conspicuous together even when each
+        # text field occupies less than 8% of the canvas. Ignore tiny metadata.
+        substantial = [zone for zone in removed if zone.w * zone.h >= canvas * 0.015]
+        collective = sum(zone.w * zone.h for zone in substantial) >= canvas * 0.08
+        zones.extend(
+            zone
+            for zone in substantial
+            if collective
+            or zone.w * zone.h >= canvas * 0.08
+            or zone.w * zone.h >= canvas * 0.025
+            and any(
+                zone.w >= body.w * 0.7 and zone.h >= body.h * 0.4 for body in pattern.body_zones
+            )
+        )
+    empty = []
+    for zone in zones:
+        if occupied(zone):
+            continue
+        # A card can have both a body placeholder and its containing shape.
+        # Count this as one empty field, not two independent omissions.
+        if any(
+            min(z.x + z.w, zone.x + zone.w) - max(z.x, zone.x) >= min(z.w, zone.w) - 1
+            and min(z.y + z.h, zone.y + zone.h) - max(z.y, zone.y) >= min(z.h, zone.h) - 1
+            for z in empty
+        ):
+            continue
+        empty.append(zone)
+    return len(empty)

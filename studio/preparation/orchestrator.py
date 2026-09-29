@@ -6,12 +6,12 @@ from pathlib import Path
 import json
 import time
 from pydantic import ValidationError
-from ..models import PreparedPackage, UploadedImage
-from ..config import Settings
+from studio.models import PreparedPackage, UploadedImage
+from studio.config import Settings
 from studio.providers.gateway import ModelGateway
 from studio.jobs.store import Store
-from ..security import digest, InputRejected
-from ..security_gate import PromptInjectionDetected
+from studio.security import digest, InputRejected
+from studio.security_gate import PromptInjectionDetected
 from studio.contents.parsing import insufficient_material, parse_content, parse_constraints
 from studio.templates.fonts import role_font, check_glyphs
 from studio.templates.font_coverage import content_text, ensure_text_coverage
@@ -21,13 +21,13 @@ from studio.checks.diversity import ensure_diversity
 from studio.templates.opendesign import export_design, provenance
 
 
-from .contracts import (
+from studio.preparation.contracts import (
     PreparationRequest,
     PreparationServices,
     TemplateAnalysisResult,
     TemplatePreparation,
 )
-from .template import prepare_template, prepare_template_result
+from studio.preparation.template import prepare_template, prepare_template_result
 
 
 def preparation_diagnostics(template, warnings):
@@ -218,7 +218,7 @@ def check_prepared_package(
     )
     package.manifest["analysis_seconds"] = round(time.monotonic() - started, 3)
     export_design(template, directory)
-    from ..diagnostics import stage_summary
+    from studio.diagnostics import stage_summary
 
     timings["local_final_checks_seconds"] = round(time.monotonic() - checks_started, 3)
     package.analysis["timings"] = {**timings, "model": stage_summary(gateway.calls)}
@@ -249,15 +249,7 @@ def seal_preparation(store: Store, job_id: str, package: PreparedPackage) -> Non
         phase="Готово к генерации",
         progress=100,
         package_hash=digest(raw.encode()),
-        auto_generation="needs_confirmation"
-        if package.input_mode == "brief"
-        or (report.get("slide_budget") or {}).get("status") == "needs_input"
-        or (
-            not constraints.confirm_plan
-            and (report.get("slide_budget") or {}).get("status") == "adjusted"
-        )
-        else "scheduled",
-        auto_generate_at=time.time() + 60,
+        auto_generation="needs_confirmation" if package.input_mode == "brief" else "manual",
         template=template.model_dump(
             exclude={"font_file", "assets", "font_assets", "background_source"}
         )
@@ -293,7 +285,7 @@ def record_preparation_failure(
     exc: Exception,
 ) -> None:
     directory = store.directory(job_id)
-    from ..diagnostics import exception
+    from studio.diagnostics import exception
 
     exception("analysis.failed", exc)
     message = (
@@ -312,7 +304,7 @@ def record_preparation_failure(
         else None,
         "elapsed_seconds": round(time.monotonic() - started, 3),
     }
-    from ..cache_version import atomic_json
+    from studio.cache_version import atomic_json
 
     from studio.checks.repair_errors import RepairFailure
 
@@ -387,7 +379,11 @@ def run_preparation(
             try:
                 template_started = time.monotonic()
                 template_result = await prepare_template_result(
-                    store, job_id, technical, settings, gateway
+                    store.directory(job_id) / "input.pptx",
+                    technical,
+                    settings,
+                    gateway,
+                    lambda phase, value: store.update(job_id, phase=phase, progress=value),
                 )
                 template_seconds = round(time.monotonic() - template_started, 3)
                 timings["template_seconds"] = template_seconds
@@ -460,7 +456,13 @@ def run_template_preanalysis(
 
         async def analyze() -> TemplateAnalysisResult:
             try:
-                return await prepare_template_result(store, job_id, technical, settings, gateway)
+                return await prepare_template_result(
+                    store.directory(job_id) / "input.pptx",
+                    technical,
+                    settings,
+                    gateway,
+                    lambda phase, value: store.update(job_id, phase=phase, progress=value),
+                )
             finally:
                 if hasattr(gateway, "aclose"):
                     await gateway.aclose()

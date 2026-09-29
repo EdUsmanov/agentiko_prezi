@@ -127,7 +127,8 @@ def test_approval_binds_both_hashes_and_cancel_is_terminal(tmp_path, monkeypatch
         assert client.post(path, json=body).status_code == 200
         assert client.post(path, json=body).status_code == 200
         assert app.state.store.get(job["id"])["approved_draft_hash"] == "d" * 64
-        assert scheduled == [job["id"], job["id"]]
+        assert scheduled == []
+        assert app.state.store.get(job["id"])["auto_generation"] == "manual"
 
         active = app.state.store.create("template")
         response = client.post(f"/api/jobs/{active['id']}/cancel")

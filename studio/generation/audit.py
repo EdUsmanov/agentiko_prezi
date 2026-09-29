@@ -1,9 +1,9 @@
 """Final read-only audit of the exact files selected for publication."""
 
 from pathlib import Path
-from ..models import PreparedPackage, Plans, SlideScene, Finding
-from ..config import Settings
-from .results import (
+from studio.models import PreparedPackage, Plans, SlideScene, Finding
+from studio.config import Settings
+from studio.generation.results import (
     VariantResult,
     SemanticBinding,
     ContentReviewResult,

@@ -1,8 +1,8 @@
 """Native editable charts, grounded exclusively in source table cells."""
 
-import math
 import re
 from studio.models import Element
+from studio.contents.numeric_text import numeric_cell
 
 
 def _header_unit(header):
@@ -41,22 +41,18 @@ def chart_eligible(table, chart_type="auto"):
 
 def table_series(table):
     series = []
-    if len(table.rows) > 30:
+    if not table.rows or len(table.rows) > 30:
         return None
     for ci in range(1, len(table.headers)):
         values = []
         units = set()
         for row in table.rows:
-            match = re.fullmatch(
-                r"\s*([−\-+]?\d[\d\s]*(?:[.,]\d+)?)\s*(%|₽|руб\.?|млн|тыс\.?)?\s*", row[ci]
-            )
-            if not match:
+            parsed = numeric_cell(row[ci])
+            if parsed is None:
                 return None
-            number = float(match[1].replace(" ", "").replace(",", ".").replace("−", "-"))
-            if not math.isfinite(number):
-                return None
+            number, unit = parsed
             values.append(number)
-            units.add(match[2] or "")
+            units.add(unit)
         if len(units) > 1:
             return None
         series.append(values)
@@ -115,6 +111,9 @@ def chart_projection(table, *, compact_captions=False):
 
     headers = [plain_inline(c) for c in table.headers]
     rows = [[plain_inline(c) for c in row] for row in table.rows]
+    # A total is a supplement only when there are detail rows to plot.
+    # With totals alone it is the actual category; removing it creates an empty chart.
+    has_details = any(not re.match(r"^(?:всего|итого|total)\b", row[0], re.I) for row in rows)
     units = []
     for ci in range(1, len(headers)):
         suffixes = {re.sub(r"^[\s−\-+\d.,]+", "", row[ci]).strip() for row in rows}
@@ -125,7 +124,7 @@ def chart_projection(table, *, compact_captions=False):
     plotted = []
     supplement = []
     for row in rows:
-        total = bool(re.match(r"^(?:всего|итого|total)\b", row[0], re.I))
+        total = has_details and bool(re.match(r"^(?:всего|итого|total)\b", row[0], re.I))
         columns = list(range(1, len(headers))) if total else omitted
         if columns and (not compact_captions or total):
             supplement.append(
@@ -134,7 +133,11 @@ def chart_projection(table, *, compact_captions=False):
         if not total:
             plotted.append([row[0]] + [row[i] for i in selected])
     if compact_captions:
-        regular = [row for row in rows if not re.match(r"^(?:всего|итого|total)\b", row[0], re.I)]
+        regular = [
+            row
+            for row in rows
+            if not has_details or not re.match(r"^(?:всего|итого|total)\b", row[0], re.I)
+        ]
         supplement = [
             f"{headers[i]} ({headers[0]}): " + "; ".join(f"{row[0]} — {row[i]}" for row in regular)
             for i in omitted
@@ -168,6 +171,11 @@ def chart_caption_layout(rows, width, profile):
 
 
 def render_chart(slide, e, profile):
+    if e.chart_type == "column_stacked":
+        from studio.composition.stacked_chart import render_stacked_chart
+
+        return render_stacked_chart(slide, e, profile)
+
     from pptx.chart.data import CategoryChartData
     from pptx.enum.chart import XL_CHART_TYPE, XL_LEGEND_POSITION, XL_LABEL_POSITION
     from pptx.util import Pt
@@ -292,7 +300,9 @@ def render_chart(slide, e, profile):
         chart.legend.position = XL_LEGEND_POSITION.BOTTOM
         chart.legend.include_in_layout = False
         apply_ooxml_font(chart.legend.font, font_file)
-        chart.legend.font.size = Pt(min(16, e.size))
+        from studio.composition.chart_layout import legend_font_size
+
+        chart.legend.font.size = Pt(legend_font_size(e))
         chart.legend.font.color.rgb = rgb(e.color)
     palette = list(dict.fromkeys([profile.accent] + profile.colors))
     from studio.templates.template_geometry import contrast

@@ -22,6 +22,7 @@ PROFILE = SimpleNamespace(
     font_assets=[],
     font_sizes=[12, 16, 20, 24],
     body_size=20,
+    height=540,
     accent="#336699",
     foreground="#222222",
 )

@@ -21,6 +21,10 @@ class BarLayout:
     fits: bool
 
 
+def legend_font_size(element):
+    return min(element.size, 12 if len(element.series_names) > 2 else 14)
+
+
 def wrap_category(text, font, size, width):
     # Category identifiers must survive whitespace normalization unchanged.
     # A single oversized token is rejected rather than split into new words.
@@ -59,9 +63,10 @@ def bar_layout(element, profile, caption_height=0):
     left = label_width + 12
     series_count = len(element.series_values) or 1
     names = element.series_names if series_count > 1 else []
-    legend_width = sum(text_width(name, font, size) + 28 for name in names)
+    legend_size = legend_font_size(element)
+    legend_width = sum(text_width(name, font, legend_size) + 28 for name in names)
     legend_lines = max(1, ceil(legend_width / max(1, width))) if names else 0
-    bottom = size * 1.8 + legend_lines * size * 1.6
+    bottom = size * 1.8 + legend_lines * legend_size * 1.6
     if series_count == 1 and element.unit:
         bottom += len(wrap_text(element.unit, font, size, max(1, width - left))) * size * 1.25 + 4
     top = size * 0.5

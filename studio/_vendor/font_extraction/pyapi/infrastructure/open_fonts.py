@@ -9,7 +9,7 @@ from urllib.parse import urlencode, urlsplit
 
 import httpx
 
-from ..domain.font_names import base_font_family
+from studio._vendor.font_extraction.pyapi.domain.font_names import base_font_family
 
 logger = logging.getLogger(__name__)
 

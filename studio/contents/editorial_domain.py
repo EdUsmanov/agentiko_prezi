@@ -8,6 +8,7 @@ from studio.models import StrictModel, Fact, ContentModel, TableData
 from studio.checks.repair_errors import PlanValidationError, RepairIssue, plan_error
 from studio.templates.archetype_catalog import Archetype
 from studio.contents.narrative_data import DataRow, choose_visualization
+from studio.contents.numeric_text import normalize_numeric_typography
 
 
 class Citation(StrictModel):
@@ -99,7 +100,10 @@ def nums(text, *, include_ordinals=False):
     """
     values = Counter(
         n.replace(",", ".")
-        for n in re.findall(r"[-−+]?\d+(?:[.,]\d+)?", re.sub(r"(?<=\d)[-–—](?=\d)", " ", text))
+        for n in re.findall(
+            r"[-−+]?\d+(?:[.,]\d+)?",
+            normalize_numeric_typography(re.sub(r"(?<=\d)[-–—](?=\d)", "\n", text)),
+        )
     )
     if include_ordinals:
         for number, pattern in _ORDINAL_PATTERNS.items():
@@ -345,7 +349,7 @@ def validate_plan(raw, content, bounds, character_budget=600, require_cover=Fals
                 # independently by the semantic reviewer. Only positional process
                 # labels are exempt; the claim itself always needs evidence.
                 missing = claim_numbers(claim.text, claim.group, slide.purpose, claim_index) - set(
-                    nums(" ".join(evidence), include_ordinals=True)
+                    nums("\n".join(evidence), include_ordinals=True)
                 )
                 if missing:
                     issues.append(
@@ -367,7 +371,7 @@ def validate_plan(raw, content, bounds, character_budget=600, require_cover=Fals
                         action="revise_content",
                     )
                 signatures[signature] = f"s{slide_index}b{claim_index}"
-            evidence = " ".join(facts[f].text for f in slide_sources)
+            evidence = "\n".join(facts[f].text for f in slide_sources)
             missing = set(nums(slide.title)) - set(nums(evidence, include_ordinals=True))
             if missing:
                 issues.append(

@@ -42,6 +42,24 @@ def normalize_meanings(raw):
             raise ValueError("Conflicting duplicate pattern classifications")
         unique[meaning.pattern_id] = meaning
     parsed.patterns = list(unique.values())
+    for meaning in parsed.patterns:
+        # An explicit refusal to confirm a relation must never enable its reuse.
+        # Models sometimes still describe the pictured kind/IDs in that branch.
+        # Those optional observations are not a composition contract.
+        if not meaning.graphic_flow_confirmed:
+            if (
+                meaning.graphic_kind != "none"
+                or meaning.graphic_shape_ids
+                or meaning.body_order
+                or meaning.graphic_edges
+            ):
+                from studio.diagnostics import event
+
+                event("template.graphic_reuse_declined", pattern_id=meaning.pattern_id)
+            meaning.graphic_kind = "none"
+            meaning.graphic_shape_ids = []
+            meaning.body_order = []
+            meaning.graphic_edges = []
     return parsed
 
 

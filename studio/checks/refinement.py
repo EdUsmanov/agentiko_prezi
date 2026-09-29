@@ -42,13 +42,15 @@ def apply_edits(package, plans, decks, edits, allowed, composition_cache=None):
         ):
             raise ValueError("Repair outside the affected slide/candidate allowlist")
         seen.add(key)
+        # Geometry may change; never reuse an unchecked background with new boxes.
+        mapping[edit.variant].slides[edit.slide - 1].background_pattern_id = None
         if edit.operation == "change_layout":
             mapping[edit.variant].slides[edit.slide - 1].pattern_id = edit.pattern_id
         else:
             mapping[edit.variant].slides[edit.slide - 1].chart_style = "readable"
             # Re-evaluate physical capacity, including a larger compatible layout.
             mapping[edit.variant].slides[edit.slide - 1].pattern_id = None
-    validate_plans(trial, package)
+    validate_plans(trial, package, expected_keys=[v.key for v in plans.variants])
     changed = {}
     for key in {e.variant for e in edits}:
         # Preserve the actual exported state of untouched slides, including diversity repairs.

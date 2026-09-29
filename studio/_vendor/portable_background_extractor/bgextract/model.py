@@ -7,11 +7,11 @@ from collections import Counter
 from io import BytesIO
 from xml.etree import ElementTree as ET
 
-from .archive_safety import validate_archive
-from .features import P
-from .package import active_slide_parts
-from .resolution import inheritance_parts, resolved_slide
-from .roles import background_roles, protected_background_regions
+from studio._vendor.portable_background_extractor.bgextract.archive_safety import validate_archive
+from studio._vendor.portable_background_extractor.bgextract.features import P
+from studio._vendor.portable_background_extractor.bgextract.package import active_slide_parts
+from studio._vendor.portable_background_extractor.bgextract.resolution import inheritance_parts, resolved_slide
+from studio._vendor.portable_background_extractor.bgextract.roles import background_roles, protected_background_regions
 
 logger = logging.getLogger(__name__)
 

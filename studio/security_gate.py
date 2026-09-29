@@ -2,7 +2,7 @@
 
 from zipfile import ZipFile
 from defusedxml import ElementTree as ET
-from .security import scan_text, validate_pptx
+from studio.security import scan_text, validate_pptx
 
 
 class PromptInjectionDetected(ValueError):

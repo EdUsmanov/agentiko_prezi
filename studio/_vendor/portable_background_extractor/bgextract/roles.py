@@ -3,42 +3,11 @@
 import re
 from xml.etree import ElementTree as ET
 
-from .cleanup import (
-    count_asset_slides,
-    remove_repeated_avatar_slots,
-    remove_sample_media_units,
-    remove_sample_table_rules,
-    remove_speaker_avatar_slot,
-    remove_subject_svg_overlays,
-)
-from .context import (
-    _remove_content_grid_dividers,
-    _remove_sample_content_surfaces,
-    refine_content_media,
-    remove_content_panel_members,
-    remove_content_unit_tail,
-    remove_icon_showcase_vectors,
-    remove_labelled_card_backings,
-    remove_percentage_chart_artwork,
-    remove_placeholder_companions,
-    remove_sample_style_connectors,
-    remove_subject_mockups,
-    remove_vectors_inside_sample_text,
-)
-from .features import A, P, collect_objects, shape_id
-from .layout import (
-    remove_footer_status_icons,
-    remove_layout_content_scaffold,
-    remove_navigation_dots,
-    remove_numbered_timeline_rule,
-    remove_web_link_button,
-)
-from .subject_fragments import (
-    preserve_masked_photo_collage,
-    remove_closing_subject_icons,
-    remove_screenshot_header_strips,
-    subject_fragment_reason,
-)
+from studio._vendor.portable_background_extractor.bgextract.cleanup import count_asset_slides, remove_repeated_avatar_slots, remove_sample_media_units, remove_sample_table_rules, remove_speaker_avatar_slot, remove_subject_svg_overlays
+from studio._vendor.portable_background_extractor.bgextract.context import _remove_content_grid_dividers, _remove_sample_content_surfaces, refine_content_media, remove_content_panel_members, remove_content_unit_tail, remove_icon_showcase_vectors, remove_labelled_card_backings, remove_percentage_chart_artwork, remove_placeholder_companions, remove_sample_style_connectors, remove_subject_mockups, remove_vectors_inside_sample_text
+from studio._vendor.portable_background_extractor.bgextract.features import A, P, collect_objects, shape_id
+from studio._vendor.portable_background_extractor.bgextract.layout import remove_footer_status_icons, remove_layout_content_scaffold, remove_navigation_dots, remove_numbered_timeline_rule, remove_web_link_button
+from studio._vendor.portable_background_extractor.bgextract.subject_fragments import preserve_masked_photo_collage, remove_closing_subject_icons, remove_screenshot_header_strips, subject_fragment_reason
 
 BRAND = re.compile(
     r"logo|logotype|wordmark|brand(?:ing)?\b|corporate identity|watermark|логотип|айдентик|фирменный знак|водяной знак",

@@ -7,29 +7,14 @@ from io import BytesIO
 from xml.etree import ElementTree as ET
 from defusedxml.ElementTree import fromstring as safe_fromstring
 
-from ..domain.archive_safety import validate_archive
-from .ooxml_resolution import effective_theme, inheritance_parts
-from .reference_color_bullets import bullet_color
-from .reference_color_elements import (
-    A,
-    P,
-    _background,
-    _first_paint,
-    _id,
-    _record,
-    _style_paint,
-    _text_color,
-)
-from .reference_color_package import ordered_slides
-from .reference_color_tables import (
-    cell_styles,
-    style_border,
-    style_fill,
-    style_text_color,
-    table_styles,
-)
-from .reference_color_values import paint_colors, resolve_color, theme_colors
-from .reference_font_usage_styles import _parent_shape, _placeholder, _role
+from studio._vendor.color_extraction.domain.archive_safety import validate_archive
+from studio._vendor.color_extraction.pipeline.ooxml_resolution import effective_theme, inheritance_parts
+from studio._vendor.color_extraction.pipeline.reference_color_bullets import bullet_color
+from studio._vendor.color_extraction.pipeline.reference_color_elements import A, P, _background, _first_paint, _id, _record, _style_paint, _text_color
+from studio._vendor.color_extraction.pipeline.reference_color_package import ordered_slides
+from studio._vendor.color_extraction.pipeline.reference_color_tables import cell_styles, style_border, style_fill, style_text_color, table_styles
+from studio._vendor.color_extraction.pipeline.reference_color_values import paint_colors, resolve_color, theme_colors
+from studio._vendor.color_extraction.pipeline.reference_font_usage_styles import _parent_shape, _placeholder, _role
 
 TEXT_RUNS = {f"{{{A}}}r", f"{{{A}}}fld"}
 

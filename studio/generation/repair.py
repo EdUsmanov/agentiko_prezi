@@ -7,17 +7,17 @@ import time
 
 from studio.composition.artifacts import public_path
 from studio.checks.audit import audit_scenes
-from ..config import Settings
+from studio.config import Settings
 from studio.composition.contracts import candidates
 from studio.composition.layout_edits import LayoutEdit
-from ..models import Plans, SlideScene
+from studio.models import Plans, SlideScene
 from studio.checks.refinement import apply_edits
 from studio.composition.render import render_variant
 from studio.checks.review_snapshot import load_snapshot, snapshot_hash
-from ..stage_runtime import GenerationDeadline
-from .audit import audit_diversity, audit_variant_exports, summarize_audits
-from .publication import publish_generation
-from .results import (
+from studio.stage_runtime import GenerationDeadline
+from studio.generation.audit import audit_diversity, audit_variant_exports, summarize_audits
+from studio.generation.publication import publish_generation
+from studio.generation.results import (
     CompositionResult,
     ContentReviewResult,
     DiversityResult,
@@ -29,7 +29,7 @@ from .results import (
     VariantResult,
     VisualReviewResult,
 )
-from .reviews import review_exported_content
+from studio.generation.reviews import review_exported_content
 from studio.checks.visual import review_visuals
 
 

@@ -2,7 +2,7 @@ from typing import Literal
 
 from fastapi import APIRouter, File, Form, UploadFile
 
-from .dependencies import ServiceDep
+from studio.api.dependencies import ServiceDep
 
 
 router = APIRouter(prefix="/api")
@@ -36,6 +36,7 @@ async def prepare(
     size_preset: Literal["mini", "standard", "large"] | None = Form(None),
     reference_id: str = Form(""),
     template_job_id: str = Form(""),
+    source_package_id: str = Form(""),
     template: UploadFile | None = File(None),
     images: list[UploadFile] | None = File(None),
     input_mode: Literal["content", "brief"] = Form("content"),
@@ -50,6 +51,7 @@ async def prepare(
         size_preset=size_preset,
         reference_id=reference_id,
         template_job_id=template_job_id,
+        source_package_id=source_package_id,
         template_name=template.filename if template else "",
         template_chunks=chunks(template) if template else None,
         images=[(image.filename, image.read) for image in uploads],

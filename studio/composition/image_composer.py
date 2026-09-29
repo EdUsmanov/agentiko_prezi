@@ -180,16 +180,16 @@ def attach_template_resources(scene, package, slide):
 def compose_images(slide, package, index, variant, images):
     from studio.composition.text_composer import text_element, fact_elements
     from studio.checks.audit import audit_scenes
-    from studio.composition.contracts import (
-        body_and_title_sources,
-        candidates as semantic_candidates,
-    )
+    from studio.composition.contracts import candidates as semantic_candidates
+    from studio.contents.content_sources import package_sources
 
     p = package.template
     facts = {f.id: f for f in package.content.facts}
     tables = {t.id: t for t in package.content.tables}
-    relevant, title_ids = body_and_title_sources(slide, package.content)
-    body = [f for f in relevant if f.source not in tables]
+    relevant, title_ids = package_sources(slide, package)
+    from studio.contents.semantic_bindings import labeled_facts
+
+    body = labeled_facts([f for f in relevant if f.source not in tables], package)
     patterns = [
         pat
         for pat in semantic_candidates(package, slide, index, prefer_specialized=False)

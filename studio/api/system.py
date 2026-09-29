@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
 from studio.providers.deeppresenter import readiness
-from .dependencies import ServiceDep
+from studio.api.dependencies import ServiceDep
 
 
 router = APIRouter(prefix="/api")
@@ -27,7 +27,7 @@ def health(service: ServiceDep):
             "t2i": False,
             "semantic_preparation": True,
             "deterministic_compositions": True,
-            "organizer_preanalysis": False,
+            "organizer_preanalysis": True,
             "font_roles": True,
             "download_fonts": settings.download_fonts,
             "image_uploads": True,
@@ -40,6 +40,11 @@ def references(service: ServiceDep):
     return service.references()
 
 
+@router.get("/references/{reference_id}/profile")
+def saved_reference_profile(reference_id: str, service: ServiceDep):
+    return service.reference_profile(reference_id)
+
+
 @router.get("/runtime")
 def runtime_status(service: ServiceDep):
-    return {"restart_required": service.restart_required(), "organizer_preanalysis": False}
+    return {"restart_required": service.restart_required(), "organizer_preanalysis": True}

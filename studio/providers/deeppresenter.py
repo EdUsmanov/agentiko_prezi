@@ -211,7 +211,7 @@ class CompositionEnvironment:
                 repair_scenes(scenes, self.package)
                 if errors(audit_scenes(scenes, self.package)) - self.baseline[variant.key]:
                     raise ValueError("No safe composition after bounded repair")
-        validate_plans(candidate, self.package)
+        validate_plans(candidate, self.package, expected_keys=[v.key for v in self.plans.variants])
         self.plans = candidate
         self.revision += 1
         self.inspected_revision = -1
@@ -400,7 +400,10 @@ async def design(package, plans, gateway, workspace, timeout):
         }
     )
     payload = {
-        "plans": plans.model_dump(),
+        # Background selection is server-owned and runs after Design.
+        "plans": plans.model_dump(
+            exclude={"variants": {"__all__": {"slides": {"__all__": {"background_pattern_id"}}}}}
+        ),
         "facts": [{"id": f.id, "text": f.text} for f in package.content.facts],
         "catalog": catalog,
         "color_schemes": agent_color_context(package.template)["source_schemes"],

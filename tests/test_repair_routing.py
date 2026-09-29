@@ -355,12 +355,20 @@ def test_layout_alternative_is_bounded_and_respects_explicit_choice(
         ],
     )
     result = composer.compose_slide(variant, package, 0, [])
-    assert len(calls) == expected_calls
     if expected_calls == 2:
-        assert calls == [None, "token:auto"]
+        from studio.composition.contracts import candidates
+
+        masters = [
+            p.id
+            for p in candidates(package, variant.slides[0], prefer_specialized=False)
+            if not p.source_slide
+        ]
+        # Try each compatible master once before the generic alternative.
+        assert calls == [None, *masters, "token:auto"]
         assert result.pattern_id is None and result.elements[0].text == original.elements[0].text
         assert variant.slides[0].pattern_id is None
     else:
+        assert len(calls) == expected_calls
         assert result.pattern_id == "authored"
 
 

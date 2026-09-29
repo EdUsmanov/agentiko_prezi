@@ -14,8 +14,8 @@ from io import BytesIO
 from pathlib import Path
 from xml.etree import ElementTree as ET
 
-from ..application.ports import FontDecoder, FontResolver
-from ..domain.archive_safety import validate_archive
+from studio._vendor.font_extraction.pyapi.application.ports import FontDecoder, FontResolver
+from studio._vendor.font_extraction.pyapi.domain.archive_safety import validate_archive
 
 logger = logging.getLogger(__name__)
 

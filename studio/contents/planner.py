@@ -5,6 +5,7 @@ from studio.models import Plans, VariantPlan, SlidePlan
 from studio.security import INJECTION
 from studio.contents.parsing import numeric_column, slide_heading
 from studio.contents.storyboard import planned_slide_count
+from studio.contents.editorial_domain import nums
 
 NAMES = {
     "executive": "Ключевые тезисы",
@@ -118,11 +119,13 @@ def extractive_plans(package):
     return Plans(variants=variants)
 
 
-def validate_plans(plans, package):
+def validate_plans(plans, package, *, expected_keys=None):
     from studio.contents.sections import divider_members
+    from studio.composition.background_selection import background_candidates
 
+    backgrounds = {p.id for p in background_candidates(package)}
     chapters = divider_members(package)
-    if [v.key for v in plans.variants] != list(NAMES):
+    if [v.key for v in plans.variants] != list(NAMES if expected_keys is None else expected_keys):
         raise ValueError("Нужны три уникальных варианта в заданном порядке")
     facts = {f.id: f for f in package.content.facts}
     tables = {t.id: t for t in package.content.tables}
@@ -151,6 +154,13 @@ def validate_plans(plans, package):
             ]:
                 raise ValueError("Разделители нарушили порядок или состав исходного материала")
         for si, slide in enumerate(variant.slides):
+            if slide.background_pattern_id and (
+                slide.background_pattern_id not in backgrounds
+                or slide.pattern_id not in (None, "token:auto")
+                or slide.purpose in ("cover", "divider")
+                or slide.layout == "divider"
+            ):
+                raise ValueError("Несовместимый фон свободной компоновки")
             if slide.layout == "divider":
                 available = {
                     p.id for p in package.template.patterns if p.role == "divider" and p.title_zone
@@ -200,17 +210,15 @@ def validate_plans(plans, package):
                     "Нарушен явно заданный порядок и состав слайдов: используйте required_outline"
                 )
             evidence = (
-                " ".join(facts[f].text for f in slide.fact_ids)
-                + " "
+                "\n".join(facts[f].text for f in slide.fact_ids)
+                + "\n"
                 + package.content.title
-                + " "
-                + " ".join(facts[f].section for f in slide.fact_ids)
+                + "\n"
+                + "\n".join(facts[f].section for f in slide.fact_ids)
             )
             if INJECTION.search(slide.title):
                 raise ValueError("Инструкция вместо заголовка")
-            if not set(re.findall(r"\d+(?:[.,]\d+)?", slide.title)) <= set(
-                re.findall(r"\d+(?:[.,]\d+)?", evidence)
-            ):
+            if not set(nums(slide.title)) <= set(nums(evidence)):
                 raise ValueError("Неподтверждённое число в заголовке")
             if slide.table_id and (
                 slide.table_id not in tables
@@ -241,6 +249,7 @@ def assign_compositions(plans, package):
             # Semantic planning cannot pin an untested physical layout. Design
             # assigns pattern IDs only AFTER this unconstrained fit baseline.
             slide.pattern_id = None
+            slide.background_pattern_id = None
             if slide.table_id:
                 table = tables[slide.table_id]
                 if table.visualization != "auto":
@@ -394,6 +403,8 @@ def planning_schema(package):
     definitions = schema["$defs"]
     definitions["VariantPlan"]["properties"]["key"] = {"type": "string", "const": "executive"}
     definitions["SlidePlan"]["properties"]["pattern_id"] = {"type": "null"}
+    # Physical background selection belongs to server composition, not the model.
+    definitions["SlidePlan"]["properties"].pop("background_pattern_id")
     definitions["SlidePlan"]["properties"]["layout"]["enum"] = [
         "statement",
         "split",

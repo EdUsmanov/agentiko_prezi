@@ -1,13 +1,13 @@
 from pathlib import Path
 import json
 import subprocess
-from .config import ROOT, Settings
-from .models import PreparedPackage
-from .security import digest
+from studio.config import ROOT, Settings
+from studio.models import PreparedPackage
+from studio.security import digest
 from studio.templates.parsing import analyze_template
 from studio.providers.gateway import ModelGateway
 from studio.preparation.intelligence import prepare_intelligence
-from .security_gate import check_package
+from studio.security_gate import check_package
 
 
 def revision():
@@ -44,8 +44,8 @@ def prepare(
     draft=None,
     allowed_fact_ids=None,
 ):
-    from .preparation.contracts import PreparationRequest, PreparationServices
-    from .preparation.orchestrator import run_preparation
+    from studio.preparation.contracts import PreparationRequest, PreparationServices
+    from studio.preparation.orchestrator import run_preparation
 
     request = PreparationRequest(
         text,
@@ -67,8 +67,8 @@ def prepare(
 
 
 def preanalyze_template(store, job_id, settings=None):
-    from .preparation.contracts import PreparationServices
-    from .preparation.orchestrator import run_template_preanalysis
+    from studio.preparation.contracts import PreparationServices
+    from studio.preparation.orchestrator import run_template_preanalysis
 
     services = PreparationServices(
         analyze_template, prepare_intelligence, ModelGateway, versions, revision
@@ -133,11 +133,11 @@ async def generate(store, job_id, settings):
 
 
 async def _generate(store, job_id, settings, gateway):
-    from .generation.flow import run_generation
+    from studio.generation.flow import run_generation
 
     job = store.get(job_id)
     if job.get("operation") == "repair":
-        from .generation.repair import run_repair
+        from studio.generation.repair import run_repair
 
         return await run_repair(
             store,

@@ -8,7 +8,8 @@ from studio.models import Box, Element, SlideScene
 from studio.templates.fonts import wrap_text, role_font, element_font, table_cell_fits
 from studio.contents.parsing import numeric_column
 from studio.templates.template_geometry import contrast, minimum_text_contrast
-from studio.composition.contracts import body_and_title_sources, candidates as semantic_candidates
+from studio.composition.contracts import candidates as semantic_candidates
+from studio.contents.content_sources import package_sources
 from studio.templates.field_style import field_style, styled_profile
 from studio.composition.table_style import column_widths, row_heights
 
@@ -19,8 +20,9 @@ def _variant_body(
     """Use source-backed structure inside one ordinary template body field."""
     if len(body) < 2 or slide.table_id or slide.purpose in ("cover", "divider"):
         return None
-    from studio.contents.semantic_bindings import content_groups
+    from studio.contents.semantic_bindings import content_groups, labeled_facts
 
+    body = labeled_facts(body, package)
     binding = content_groups(slide, package)
     groups = binding["groups"] if binding["status"] == "specialized" else []
     ordered = [f.id for group in groups for f in group["facts"]] == [f.id for f in body]
@@ -110,7 +112,7 @@ def _variant_body(
                 and group["label"].casefold()
                 not in " ".join(f.text for f in group["facts"]).casefold()
                 else "",
-                [f.text for f in group["facts"]],
+                [f.text for f in labeled_facts(group["facts"], package)],
             )
             for group in groups
         ]
@@ -226,7 +228,7 @@ def compose(slide, package, index, variant):
     p = package.template
     w, h, m = p.width, p.height, p.margin
     _facts = {f.id: f for f in package.content.facts}
-    relevant, title_ids = body_and_title_sources(slide, package.content)
+    relevant, title_ids = package_sources(slide, package)
     tables = {t.id: t for t in package.content.tables}
     elements = []
     top_assets = [a for a in p.assets if a.box.y < h * 0.15]
@@ -257,7 +259,9 @@ def compose(slide, package, index, variant):
         raise ValueError("Шаблон не оставляет достаточно места для заголовка и содержания")
     gap = w * 0.025
     # Every fact is rendered, or represented by its full source table.
-    body = [f for f in relevant if f.source not in tables]
+    from studio.contents.semantic_bindings import labeled_facts
+
+    body = labeled_facts([f for f in relevant if f.source not in tables], package)
     if slide.table_id:
         table = tables[slide.table_id]
         numeric = numeric_column(table)
@@ -533,7 +537,7 @@ def _compose_slide(variant, package, index, image_groups=None):
                 )
                 scene.elements[i].background_hint = element.background_hint
                 scene.elements[i].field_style = element.field_style
-    _, title_ids = body_and_title_sources(slide, package.content)
+    _, title_ids = package_sources(slide, package)
     for element in scene.elements:
         if element.role == "title":
             element.source_ids = title_ids
@@ -570,6 +574,22 @@ def _compose_slide(variant, package, index, image_groups=None):
     )
     if urls:
         scene.notes += "\nИсточники:\n" + "\n".join(urls)
+    from studio.composition.table_layout import adapt_table_layout
+
+    from studio.composition.stacked_adaptation import adapt_stacked_scene
+
+    scene = adapt_stacked_scene(adapt_table_layout(scene, package), package)
+    from studio.composition.design_balance import improve_contrast
+    from studio.composition.chart_space import expand_chart_space
+
+    scene = improve_contrast(expand_chart_space(scene, package), package.template)
+    if slide.background_pattern_id:
+        from studio.composition.background_selection import apply_background
+
+        selected = apply_background(scene, package, slide.background_pattern_id)
+        if selected is None:
+            raise ValueError("Выбранный фон больше не совместим с областями содержания")
+        scene = selected
     from studio.composition.image_composer import attach_template_resources
 
     attach_template_resources(scene, package, slide)
@@ -580,6 +600,12 @@ def compose_slide(variant, package, index, image_groups=None):
     """Try deterministic geometry before requesting any editorial rewrite."""
     scene = _compose_slide(variant, package, index, image_groups)
     slide = variant.slides[index]
+    if slide.pattern_id is None and slide.purpose not in ("cover", "divider"):
+        from studio.composition.background_adaptation import master_fallback
+
+        selected = master_fallback(variant, package, index, scene, image_groups, _compose_slide)
+        if selected is not None:
+            return selected
     if slide.pattern_id is None and slide.layout == "chart":
         from studio.composition.render import chart_fits
 
@@ -694,7 +720,7 @@ def compose_native(slide, package, index, variant):
         return None
     _facts = {f.id: f for f in package.content.facts}
     tables = {t.id: t for t in package.content.tables}
-    relevant, title_ids = body_and_title_sources(slide, package.content)
+    relevant, title_ids = package_sources(slide, package)
     body = [f for f in relevant if f.source not in tables]
     if len({f.source for f in relevant if f.source in tables}) > 1:
         raise ValueError("Несколько таблиц на одном слайде: увеличьте число слайдов")
@@ -712,6 +738,14 @@ def compose_native(slide, package, index, variant):
         return pattern.body_zones
 
     def elements_for(pattern):
+        from studio.contents.semantic_bindings import bind_groups, labeled_facts
+
+        binding = bind_groups(slide, package, pattern)
+        render_body = (
+            body
+            if binding["status"] == "specialized" and not slide.table_id
+            else labeled_facts(body, package)
+        )
         foreground = pattern.foreground or p.foreground
         title = text_element(
             slide.title,
@@ -726,11 +760,10 @@ def compose_native(slide, package, index, variant):
         title.background_hint = pattern.title_background
         elements = [title]
         zones = zones_for(pattern)
-        from studio.contents.semantic_bindings import bind_groups, content_groups
+        from studio.contents.semantic_bindings import content_groups
 
-        binding = bind_groups(slide, package, pattern)
         if len(zones) == len(pattern.body_zones) and binding["status"] != "specialized":
-            for i, zone in enumerate(pattern.number_zones[: min(len(zones), len(body))]):
+            for i, zone in enumerate(pattern.number_zones[: min(len(zones), len(render_body))]):
                 if zone:
                     label = text_element(
                         f"{i + 1:02d}",
@@ -751,9 +784,9 @@ def compose_native(slide, package, index, variant):
                     table,
                     pattern,
                     p,
-                    bool(body),
+                    bool(render_body),
                     chart=slide.layout == "chart",
-                    body_texts=[f.text for f in body],
+                    body_texts=[f.text for f in render_body],
                 )
             except ValueError:
                 return None
@@ -801,7 +834,7 @@ def compose_native(slide, package, index, variant):
                         return None
                 else:
                     elements.append(element)
-            if body:
+            if render_body:
                 remaining = [zone for i, zone in enumerate(pattern.body_zones) if i != selected]
                 if remaining:
                     text_zone = max(remaining, key=lambda zone: zone.w * zone.h)
@@ -813,7 +846,7 @@ def compose_native(slide, package, index, variant):
                     )
                 elements.extend(
                     fact_elements(
-                        body,
+                        render_body,
                         text_zone,
                         p,
                         foreground,
@@ -874,14 +907,18 @@ def compose_native(slide, package, index, variant):
             else:
                 count = (
                     1
-                    if slide.purpose in ("comparison", "process", "timeline") and body
-                    else min(len(zones), len(body))
+                    if slide.purpose
+                    in ("comparison", "process", "timeline", "structure", "composition")
+                    and render_body
+                    else min(len(zones), len(render_body))
                 )
             for i, b in enumerate(zones[:count]):
                 if slide.layout == "split" and count == 2:
-                    group = body[:1] if i == 0 else body[1:]
+                    group = render_body[:1] if i == 0 else render_body[1:]
                 else:
-                    group = body[i * len(body) // count : (i + 1) * len(body) // count]
+                    group = render_body[
+                        i * len(render_body) // count : (i + 1) * len(render_body) // count
+                    ]
                 heading = (
                     pattern.heading_zones[i]
                     if len(zones) == len(pattern.body_zones) and i < len(pattern.heading_zones)
@@ -1070,6 +1107,9 @@ def compose_native(slide, package, index, variant):
             purpose=slide.purpose,
             pattern_id=pattern.id,
         )
+        from studio.composition.design_balance import design_cost, improve_contrast
+
+        improve_contrast(probe, p)
         # Table fitting can lower the font after composition. Score the same
         # repaired geometry that the preparation/generation audits will see,
         # otherwise a cramped 16pt table wins and later becomes unreadable.
@@ -1088,7 +1128,8 @@ def compose_native(slide, package, index, variant):
             for f in policy_findings
         )
         score = (
-            policy_penalty
+            design_cost(probe, p)
+            + policy_penalty
             + contrast_penalty
             + overflow * 100
             + chart_penalty

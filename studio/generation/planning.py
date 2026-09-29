@@ -1,12 +1,12 @@
 """Choose a plan and run the configured design engine within one deadline."""
 
 from pathlib import Path
-from ..config import Settings
+from studio.config import Settings
 from studio.providers.gateway import ModelGateway
-from ..models import PreparedPackage
+from studio.models import PreparedPackage
 from studio.contents.planner import plan, validate_plans, assign_compositions
-from .results import PlanningResult, EngineReport
-from ..stage_runtime import GenerationDeadline
+from studio.generation.results import PlanningResult, EngineReport
+from studio.stage_runtime import GenerationDeadline
 from studio.jobs.store import Store
 
 
@@ -62,6 +62,9 @@ async def plan_generation(
         # Backward-compatible path for immutable packages created before semantic preparation.
         plans, fallback = await plan(package, gateway, min(120, deadline.remaining(60)))
         planning_source = "extractive" if fallback or settings.mode == "extractive" else "model"
+    if store.get(job_id).get("variant_count", 3) == 1:
+        plans = plans.model_copy(deep=True)
+        plans.variants = plans.variants[:1]
     engine_report = {"engine": "native", "status": "completed"}
     if settings.engine == "deeppresenter":
         from studio.providers.deeppresenter import design

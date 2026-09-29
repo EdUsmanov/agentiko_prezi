@@ -3,12 +3,12 @@
 import json
 from pathlib import Path
 from collections.abc import Callable
-from ..models import PreparedPackage
+from studio.models import PreparedPackage
 from studio.providers.gateway import ModelGateway
-from ..config import Settings
+from studio.config import Settings
 from studio.jobs.store import Store
-from ..stage_runtime import GenerationDeadline
-from .results import (
+from studio.stage_runtime import GenerationDeadline
+from studio.generation.results import (
     CompositionResult,
     VariantResult,
     ContentReviewResult,

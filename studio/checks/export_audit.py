@@ -195,6 +195,55 @@ def explicit_line_widths(paragraph, profile, default_size):
     return widths
 
 
+def _chart_annotation_pairs(slide):
+    """Only declared, contained labels of a native chart may overlay that chart.
+
+    Text/text overlap, slide bounds and font-fit checks still run normally.
+    The relationship must survive in the exported group; a name alone cannot
+    exempt arbitrary content or annotations outside their chart's bounds.
+    """
+    pairs = set()
+    for group in slide.shapes:
+        if group.name != "forma_chart_annotations" or not hasattr(group, "shapes"):
+            continue
+        children = list(group.shapes)
+        charts = [s for s in children if s.has_chart]
+        if len(charts) != 1:
+            continue
+        chart = charts[0]
+        names = [str(s.name) for s in chart.chart.series]
+        labels = [str(c.label) for c in chart.chart.plots[0].categories]
+        suffix = chart.chart._element.get("{urn:vk-forma:chart}value-suffix", "")
+        numbers = {f"{v:g}" + suffix for s in chart.chart.series for v in s.values}
+        for shape in children:
+            if not shape.has_text_frame or not shape.text.strip():
+                continue
+            value = " ".join(shape.text.split())
+            known = (
+                value in numbers
+                or value in labels
+                or any(
+                    value == n
+                    or re.fullmatch(
+                        re.escape(n) + r"(?: — (?:Всего|Итого|Total|total): [−\-+\d.,% ]+)+", value
+                    )
+                    for n in names
+                )
+            )
+            # The category heading is recorded on the exported chart itself.
+            heading = chart.chart._element.get("{urn:vk-forma:chart}category-heading", "")
+            known = known or value == " ".join(heading.split())
+            contained = (
+                shape.left >= chart.left
+                and shape.top >= chart.top
+                and shape.left + shape.width <= chart.left + chart.width + 12700
+                and shape.top + shape.height <= chart.top + chart.height + 12700
+            )
+            if known and contained:
+                pairs.add(frozenset((shape.shape_id, chart.shape_id)))
+    return pairs
+
+
 def geometry(prs, profile, repair=False):
     """Conservative text-fit bounds. Does not claim to replace rendered VLM QA.
 
@@ -205,6 +254,7 @@ def geometry(prs, profile, repair=False):
     repairs = []
     for si, slide in enumerate(prs.slides, 1):
         occupied = []
+        chart_annotations = _chart_annotation_pairs(slide)
         for shape, box in walk_shapes(slide.shapes):
             if shape.has_table:
                 occupied.append((shape.shape_id, box))
@@ -393,7 +443,11 @@ def geometry(prs, profile, repair=False):
 
         for i, (object_id, a) in enumerate(occupied):
             for other_id, b in occupied[i + 1 :]:
-                if object_id != other_id and overlaps(a, b):
+                if (
+                    object_id != other_id
+                    and frozenset((object_id, other_id)) not in chart_annotations
+                    and overlaps(a, b)
+                ):
                     findings.append(
                         {
                             "code": "pptx_content_overlap",
@@ -456,6 +510,14 @@ def inspect_content(prs, variant, package):
                 images.add(digest(blob))
         text = "\n".join(texts)
         actual.append({"actual_text": text, "native_tables": tables})
+        for claim in getattr(package, "analysis", {}).get("editorial", {}).get("provenance", []):
+            label = claim.get("group", "")
+            if label and claim["fact_id"] in plan.fact_ids and not contains_text(text, label):
+                add(
+                    "semantic_label_missing",
+                    f"В тексте PPTX потеряна смысловая подпись: {label}",
+                    index,
+                )
         title = normalized(plan.title)
         matches = sum(normalized(t) == title for t in texts)
         if not matches:
@@ -511,10 +573,28 @@ def inspect_content(prs, variant, package):
                         index,
                     )
                 _, compact = chart_projection(table, compact_captions=True)
-                # Both layouts must retain the entire category/value mapping.
-                if not any(
-                    all(contains_text(text, caption) for caption in captions)
-                    for captions in (supplement, compact)
+                # Compact legends may pair each series with its own source total.
+                # This alternative cannot cover omitted units or missing columns.
+                total_rows = [
+                    row for row in table.rows if re.match(r"^(?:всего|итого|total)\b", row[0], re.I)
+                ]
+                mapped_totals = (
+                    plan.chart_type == "column_stacked"
+                    and projected.headers == table.headers
+                    and contains_text(text, table.headers[0])
+                    and all(
+                        contains_text(text, f"{table.headers[i]} — {row[0]}: {row[i]}")
+                        for row in total_rows
+                        for i in range(1, len(table.headers))
+                    )
+                )
+                # Every accepted layout retains the category/value mapping.
+                if (
+                    not any(
+                        all(contains_text(text, caption) for caption in captions)
+                        for captions in (supplement, compact)
+                    )
+                    and not mapped_totals
                 ):
                     add(
                         "chart_supplement",

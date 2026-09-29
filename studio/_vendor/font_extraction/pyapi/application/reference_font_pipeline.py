@@ -8,26 +8,12 @@ import logging
 import re
 from collections import defaultdict
 
-from ..domain.font_model import (
-    FontAsset,
-    FontRoleSummary,
-    FontUse,
-    MissingFont,
-    PresentationFontData,
-    SlideFontData,
-)
-from ..domain.font_names import base_font_family
-from ..infrastructure.font_downloads import _matches
-from ..pipeline.reference_font_usage import extract_reference_font_usage
-from ..pipeline.reference_fonts import (
-    SFNT_FORMATS,
-    _font_permissions,
-    _installed_fonts,
-    _may_repackage,
-    _style_weight,
-    reference_font_assets,
-)
-from .ports import FontDecoder, FontVariantResolver
+from studio._vendor.font_extraction.pyapi.domain.font_model import FontAsset, FontRoleSummary, FontUse, MissingFont, PresentationFontData, SlideFontData
+from studio._vendor.font_extraction.pyapi.domain.font_names import base_font_family
+from studio._vendor.font_extraction.pyapi.infrastructure.font_downloads import _matches
+from studio._vendor.font_extraction.pyapi.pipeline.reference_font_usage import extract_reference_font_usage
+from studio._vendor.font_extraction.pyapi.pipeline.reference_fonts import SFNT_FORMATS, _font_permissions, _installed_fonts, _may_repackage, _style_weight, reference_font_assets
+from studio._vendor.font_extraction.pyapi.application.ports import FontDecoder, FontVariantResolver
 
 logger = logging.getLogger(__name__)
 FontKey = tuple[str, int, str]

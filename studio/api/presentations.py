@@ -1,8 +1,14 @@
 from fastapi import APIRouter
 from fastapi.responses import FileResponse
 
-from .dependencies import ServiceDep
-from .schemas import ApproveRequest, DraftRequest, GenerateRequest, RepairRequest, ReviseRequest
+from studio.api.dependencies import ServiceDep
+from studio.api.schemas import (
+    ApproveRequest,
+    DraftRequest,
+    GenerateRequest,
+    RepairRequest,
+    ReviseRequest,
+)
 
 
 router = APIRouter(prefix="/api")
@@ -11,7 +17,9 @@ router = APIRouter(prefix="/api")
 @router.post("/generate", status_code=202)
 async def generate(body: GenerateRequest, service: ServiceDep):
     return service.generate(
-        body.package_id, accept_adjusted_slide_count=body.accept_adjusted_slide_count
+        body.package_id,
+        accept_adjusted_slide_count=body.accept_adjusted_slide_count,
+        variant_count=body.variant_count,
     )
 
 

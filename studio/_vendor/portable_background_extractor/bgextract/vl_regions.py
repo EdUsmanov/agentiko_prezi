@@ -16,9 +16,9 @@ from xml.etree import ElementTree as ET
 import httpx
 from PIL import Image, ImageOps
 
-from .package import active_slide_parts
-from .raster_regions import large_white_content_surface, smooth_light_canvas
-from .resolution import inheritance_parts
+from studio._vendor.portable_background_extractor.bgextract.package import active_slide_parts
+from studio._vendor.portable_background_extractor.bgextract.raster_regions import large_white_content_surface, smooth_light_canvas
+from studio._vendor.portable_background_extractor.bgextract.resolution import inheritance_parts
 
 P = "http://schemas.openxmlformats.org/presentationml/2006/main"
 A = "http://schemas.openxmlformats.org/drawingml/2006/main"

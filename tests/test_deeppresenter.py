@@ -157,7 +157,7 @@ def test_geometry_guard_repairs_unsafe_choice_without_rejecting_plan(prepared):
     assert env.inspected_revision == -1
 
 
-def test_guard_replaces_tiny_title_even_when_geometry_fits(prepared):
+def test_guard_keeps_tiny_source_title_readable_and_inside_geometry(prepared):
     _, _, package = prepared
     pattern = next(
         p for p in package.template.patterns if p.title_zone and p.body_zones
@@ -168,8 +168,16 @@ def test_guard_replaces_tiny_title_even_when_geometry_fits(prepared):
     env = environment(prepared)
     assignments = [Assignment(**{**a, "pattern_id": pattern.id}) for a in env.baseline_assignments]
     result = env.compose(assignments)
-    assert result["repairs"]
-    assert all(s.pattern_id != pattern.id for v in env.plans.variants for s in v.slides)
+    assert result["accepted"]
+    from studio.checks.audit import audit_scenes
+    from studio.checks.repair_policy import FIT_CODES
+
+    # Growing a title inside its authored field is now a valid repair too.
+    # Check the visible result, whether the pattern is retained or replaced.
+    for variant in env.plans.variants:
+        scenes = compose_variant(variant, package)
+        assert all(e.size >= 18 for s in scenes for e in s.elements if e.role == "title")
+        assert not any(f.code in FIT_CODES for f in audit_scenes(scenes, package))
 
 
 def test_runtime_timeout_cancels_provider(prepared, tmp_path):

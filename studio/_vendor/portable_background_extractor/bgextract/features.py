@@ -7,7 +7,7 @@ from xml.etree import ElementTree as ET
 
 from PIL import Image, UnidentifiedImageError
 
-from .resolution import flatten_groups
+from studio._vendor.portable_background_extractor.bgextract.resolution import flatten_groups
 
 P = "http://schemas.openxmlformats.org/presentationml/2006/main"
 A = "http://schemas.openxmlformats.org/drawingml/2006/main"

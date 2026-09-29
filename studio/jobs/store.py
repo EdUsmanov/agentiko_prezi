@@ -1,5 +1,6 @@
 from pathlib import Path
 import json
+import shutil
 import sqlite3
 import time
 import uuid
@@ -133,6 +134,79 @@ class Store:
             ids = [r[0] for r in rows]
         return [self.get(jid) for jid in ids]
 
+    def delete_tree(self, jid):
+        """Remove a job, its generated result and all revisions with their files."""
+        self.directory(jid)
+        staging = self.root / ".deleting" / uuid.uuid4().hex
+        moved = []
+        try:
+            with self.connect() as c:
+                c.execute("BEGIN IMMEDIATE")
+                rows = c.execute("SELECT id,kind,state,data FROM jobs").fetchall()
+                records = {row["id"]: row for row in rows}
+                if jid not in records:
+                    raise KeyError("Задание не найдено")
+                targets = {jid}
+                while True:
+                    linked = {
+                        row["id"]
+                        for row in rows
+                        if row["id"] not in targets
+                        and (
+                            (
+                                row["kind"] == "generation"
+                                and (
+                                    json.loads(row["data"]).get("package_id") in targets
+                                    or json.loads(row["data"]).get("parent_generation_id")
+                                    in targets
+                                )
+                            )
+                            or (
+                                row["kind"] == "preparation"
+                                and json.loads(row["data"]).get("parent_package") in targets
+                            )
+                        )
+                    }
+                    if not linked:
+                        break
+                    targets.update(linked)
+                if any(records[key]["state"] in ("accepted", "running") for key in targets):
+                    raise ValueError("Дождитесь завершения запуска перед удалением")
+                for row in rows:
+                    if row["id"] in targets or row["kind"] != "preparation":
+                        continue
+                    data = json.loads(row["data"])
+                    if data.get("generation_id") in targets:
+                        data.pop("generation_id", None)
+                        data["auto_generation"] = "cancelled"
+                        c.execute(
+                            "UPDATE jobs SET data=? WHERE id=?",
+                            (json.dumps(data, ensure_ascii=False), row["id"]),
+                        )
+                for key in targets:
+                    directory = self.directory(key)
+                    if directory.exists() or directory.is_symlink():
+                        staging.mkdir(parents=True, exist_ok=True)
+                        destination = staging / key
+                        directory.rename(destination)
+                        moved.append((directory, destination))
+                c.executemany("DELETE FROM events WHERE job_id=?", [(key,) for key in targets])
+                c.executemany("DELETE FROM jobs WHERE id=?", [(key,) for key in targets])
+        except Exception:
+            for directory, destination in reversed(moved):
+                destination.rename(directory)
+            if staging.exists():
+                staging.rmdir()
+            raise
+        for _, destination in moved:
+            if destination.is_symlink():
+                destination.unlink()
+            else:
+                shutil.rmtree(destination)
+        if staging.exists():
+            staging.rmdir()
+        return {"deleted": sorted(targets)}
+
     def recover(self):
         # UI pagination must not leave older active jobs blocking all new generation.
         with self.connect() as c:
@@ -182,8 +256,10 @@ class Store:
             for r in rows
         ]
 
-    def generation_for(self, pid, automatic=False):
+    def generation_for(self, pid, automatic=False, variant_count=3):
         """Claim once per immutable package, atomically across concurrent requests."""
+        if type(variant_count) is not int or variant_count not in (1, 3):
+            raise ValueError("Выберите одну или три презентации")
         jid = uuid.uuid4().hex
         with self.connect() as c:
             c.execute("BEGIN IMMEDIATE")
@@ -202,6 +278,10 @@ class Store:
             if data.get("generation_id"):
                 previous = self.get(data["generation_id"])
                 if automatic or previous["state"] not in ("failed", "cancelled", "timed_out"):
+                    if not automatic and previous.get("variant_count", 3) != variant_count:
+                        raise ValueError(
+                            "Для этого пакета уже запущено другое количество презентаций"
+                        )
                     return previous, False
             if automatic and data.get("auto_generation") != "scheduled":
                 return None, False
@@ -218,10 +298,17 @@ class Store:
                     "generation",
                     "accepted",
                     time.time(),
-                    json.dumps({"package_id": pid, "progress": 0, "phase": "Запуск"}),
+                    json.dumps(
+                        {
+                            "package_id": pid,
+                            "variant_count": variant_count,
+                            "progress": 0,
+                            "phase": "Запуск",
+                        }
+                    ),
                 ),
             )
-            data.update(generation_id=jid, auto_generation="started")
+            data.update(generation_id=jid, auto_generation="started", variant_count=variant_count)
             c.execute(
                 "UPDATE jobs SET data=? WHERE id=?", (json.dumps(data, ensure_ascii=False), pid)
             )
@@ -231,7 +318,7 @@ class Store:
         return self.get(jid), True
 
     def approve_brief(self, pid, package_hash, draft_hash):
-        """Approve the exact sealed package and draft in the same transaction as scheduling."""
+        """Approve the exact sealed package and draft before manual generation."""
         with self.connect() as c:
             c.execute("BEGIN IMMEDIATE")
             row = c.execute(
@@ -258,8 +345,7 @@ class Store:
                 approved_package_hash=package_hash,
                 approved_draft_hash=draft_hash,
                 approved_at=time.time(),
-                auto_generation="scheduled",
-                auto_generate_at=time.time() + 60,
+                auto_generation="manual",
             )
             c.execute(
                 "UPDATE jobs SET data=? WHERE id=?", (json.dumps(data, ensure_ascii=False), pid)
@@ -356,6 +442,7 @@ class Store:
                 "operation": "repair",
                 "package_id": source["package_id"],
                 "parent_generation_id": source_id,
+                "variant_count": source.get("variant_count", 3),
                 "audit_hash": audit_hash,
                 "finding_ids": selection,
                 "selected_finding_ids": selection,

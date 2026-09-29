@@ -44,6 +44,27 @@ def shortening_contracts(previous, allowed, feedback, budget):
             if geometry_only and fields
             else []
         )
+        field_targets = [
+            {
+                "role": field["role"],
+                "fact_ids": field.get("fact_ids", []),
+                "target_max_characters": field["target_max_characters"],
+            }
+            for field in fields
+            if isinstance(field.get("target_max_characters"), int)
+            and field["target_max_characters"] > 0
+        ]
+        per_bullet = max(1, (budget - labels) // max(1, len(slide["bullets"])))
+        if field_targets:
+            # A local geometry limit is not the whole-slide writing budget.
+            # Keep separate field limits so fitting neighbours stay untouched.
+            per_bullet = (
+                min(per_bullet, field_targets[0]["target_max_characters"])
+                if len(slide["bullets"]) == 1
+                and len(field_targets) == 1
+                and field_targets[0]["role"] != "title"
+                else None
+            )
 
         contracts.append(
             {
@@ -67,7 +88,8 @@ def shortening_contracts(previous, allowed, feedback, budget):
                 "groups": [b["group"] for b in slide["bullets"]]
                 if slide["purpose"] in ("timeline", "process", "hierarchy", "structure")
                 else None,
-                "target_characters_per_bullet": max(1, (budget - labels) // len(slide["bullets"])),
+                "target_characters_per_bullet": per_bullet,
+                "field_character_targets": field_targets,
             }
         )
     return contracts

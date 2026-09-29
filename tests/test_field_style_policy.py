@@ -35,7 +35,11 @@ def test_local_field_font_survives_global_role_and_native_export(template, tmp_p
     output.save(target)
     run = Presentation(target).slides[0].shapes[0].text_frame.paragraphs[0].runs[0]
     assert run.font.name == "Montserrat" and run.font.bold
-    assert run.font.size.pt == 34
+    # Authored family/face and source size stay recorded; measured layout may
+    # enlarge sparse text within the bounded adaptive scale.
+    assert element.field_style["size"] == 34
+    assert 34 < element.size <= 34 * 1.35
+    assert run.font.size.pt == element.size
 
 
 def test_missing_field_face_is_explicit_not_claimed_exact(template, tmp_path):

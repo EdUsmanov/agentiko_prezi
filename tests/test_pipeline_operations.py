@@ -16,9 +16,9 @@ from studio.jobs import runtime as runtime_module
 from studio import cache_version as library
 
 
-def test_unlimited_is_default(tmp_path):
+def test_five_minutes_is_default(tmp_path):
     settings = Settings(data_dir=tmp_path)
-    assert settings.deadline_seconds is None
+    assert settings.deadline_seconds == 300
 
 
 def test_server_code_not_analysis_fingerprint(tmp_path, monkeypatch):
@@ -249,10 +249,13 @@ def test_restart_resumes_due_autostart_once(tmp_path, monkeypatch):
         assert len(calls) == 1
 
 
-def test_generation_can_finish_after_five_minutes(prepared):
+def test_explicit_unlimited_configuration_can_finish_after_five_minutes(prepared):
     from studio.pipeline import generate
 
     settings, store, package = prepared
+    from dataclasses import replace
+
+    settings = replace(settings, deadline_seconds=None)
     assert settings.deadline_seconds is None
     job = store.create("generation", {"package_id": package.id, "deadline_at": None})
     with store.connect() as c:

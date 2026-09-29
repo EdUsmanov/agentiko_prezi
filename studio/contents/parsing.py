@@ -168,23 +168,22 @@ def parse_content(text: str) -> ContentModel:
 
 
 def numeric_column(table):
-    import math
+    from studio.contents.numeric_text import numeric_cell
 
     for ci in range(1, len(table.headers)):
         values, suffixes = [], set()
         for row in table.rows:
-            match = re.fullmatch(
-                r"\s*([−\-+]?\d[\d\s]*(?:[.,]\d+)?)\s*(%|₽|руб\.?|млн|тыс\.?)?\s*", row[ci]
-            )
-            if not match:
+            parsed = numeric_cell(row[ci])
+            if parsed is None:
                 break
-            values.append(float(match[1].replace(" ", "").replace(",", ".").replace("−", "-")))
-            suffixes.add(match[2] or "")
+            number, unit = parsed
+            values.append(number)
+            suffixes.add(unit)
         if (
             len(values) == len(table.rows)
             and len(suffixes) == 1
             and len(values) <= 6
-            and all(math.isfinite(v) and v >= 0 for v in values)
+            and all(v >= 0 for v in values)
             and max(values, default=0) > 0
         ):
             return ci, values, next(iter(suffixes))

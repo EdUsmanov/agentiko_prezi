@@ -4,17 +4,17 @@ import json
 import time
 from pathlib import Path
 from studio.composition.artifacts import package_results
-from ..models import PreparedPackage, JsonObject
-from ..config import Settings
+from studio.models import PreparedPackage, JsonObject
+from studio.config import Settings
 from studio.providers.gateway import ModelGateway
 from studio.jobs.store import Store
-from .results import (
+from studio.generation.results import (
     PlanningResult,
     CompositionResult,
     ReviewedGeneration,
     FinalAuditResult,
 )
-from ..stage_runtime import GenerationDeadline
+from studio.stage_runtime import GenerationDeadline
 
 
 def publish_generation(
@@ -112,6 +112,7 @@ def publish_generation(
         "font_substitutions": font_substitutions,
         "started_at": job["created"],
         "deadline_at": deadline.deadline_at,
+        "variant_count": len(results),
         "variants": results,
         "contextual_audit": contextual,
         "visual_audit": visual,
@@ -127,7 +128,7 @@ def publish_generation(
             "ocr_check": False,
         },
     }
-    from ..diagnostics import stage_summary
+    from studio.diagnostics import stage_summary
 
     manifest["timings"] = {
         **timings,
@@ -229,7 +230,9 @@ def publish_generation(
     store.update(
         job_id,
         "needs_review" if needs_review else "completed",
-        phase="Требуется проверка" if needs_review else "Три презентации готовы",
+        phase="Требуется проверка"
+        if needs_review
+        else ("Презентация готова" if len(results) == 1 else "Три презентации готовы"),
         progress=100,
         elapsed_seconds=round(time.time() - job["created"], 3),
         analysis_seconds=package.manifest.get("analysis_seconds"),

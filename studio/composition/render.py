@@ -95,6 +95,10 @@ def primitives(element, profile):
 def chart_fits(element, profile):
     """Validate actual chart label/bar geometry, not just its enclosing box."""
     if element.series_values:
+        if element.chart_type == "column_stacked":
+            from studio.composition.stacked_chart import stacked_layout
+
+            return stacked_layout(element, profile)["fits"]
         # Native charts own axis layout. This is only a minimum-size guard;
         # actual label clipping is checked on the rendered PPTX by vision.
         from studio.composition.charts import chart_caption_layout
@@ -185,6 +189,12 @@ def clean_base(source, profile):
 
 
 def render_pptx(scenes, profile, source, path, verify_text=True):
+    from types import SimpleNamespace
+    from studio.composition.background_selection import background_is_safe
+
+    # Reject stale/unsafe background selections before writing any output.
+    if any(not background_is_safe(s, SimpleNamespace(template=profile)) for s in scenes):
+        raise ValueError("Выбранный фон больше не совместим с содержимым")
     prs = clean_base(source, profile)
     resource_source = None
     if any(e.resource_id for scene in scenes for e in scene.elements):
@@ -194,7 +204,12 @@ def render_pptx(scenes, profile, source, path, verify_text=True):
         resource_source = open_presentation(resource_path)
     for scene in scenes:
         pattern = next(
-            (p for p in profile.patterns if p.id == scene.pattern_id and p.title_zone), None
+            (
+                p
+                for p in profile.patterns
+                if p.id == (scene.pattern_id or scene.background_pattern_id)
+            ),
+            None,
         )
         if pattern:
             slide = source_slide(prs, pattern)

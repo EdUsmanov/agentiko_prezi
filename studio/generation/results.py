@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from studio.composition.layout_edits import LayoutEdit
-from ..models import Plans, SlideScene, Finding, ContextualFinding, JsonObject
+from studio.models import Plans, SlideScene, Finding, ContextualFinding, JsonObject
 
 VariantKey = Literal["executive", "analytical", "story"]
 
@@ -146,6 +146,7 @@ class MeaningfulDiversity(StageResult):
 
 
 class BackgroundDiversity(StageResult):
+    background_colors: dict[str, int] = Field(default_factory=dict)
     source_slides: list[int | None]
     families: list[str]
     unique_backgrounds: int = Field(ge=0)

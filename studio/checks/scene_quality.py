@@ -3,6 +3,7 @@
 
 def scene_quality_findings(scenes, package):
     """Absolute checks remain visible even if a bad baseline was not worsened."""
+    from studio.composition.background_selection import background_is_safe
     from studio.models import Finding
     from studio.checks.scene_regions import unused_body_regions
 
@@ -12,6 +13,15 @@ def scene_quality_findings(scenes, package):
         def warn(code, message):
             findings.append(Finding(code=code, severity="warning", slide=index, message=message))
 
+        if not background_is_safe(scene, package):
+            findings.append(
+                Finding(
+                    code="background_conflict",
+                    severity="error",
+                    slide=index,
+                    message="Выбранный фон несовместим с содержимым или его контрастом.",
+                )
+            )
         for ei, e in enumerate(scene.elements):
             if (
                 e.kind in ("text", "table", "chart")

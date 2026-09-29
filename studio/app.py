@@ -3,18 +3,17 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from .api import errors, jobs, presentations, system, templates
+from studio.api import errors, jobs, presentations, system, templates
 from studio.presentation_service import PresentationService, ApplicationError
-from .api.middleware import UploadLimitMiddleware, local_security
-from .config import ROOT, Settings
-from .diagnostics import configure
+from studio.api.middleware import UploadLimitMiddleware, local_security
+from studio.config import Settings
+from studio.api.frontend import register_frontend
+from studio.diagnostics import configure
 from studio.providers.gateway import validate_model_policy
 from studio.jobs.runtime import JobRuntime
-from .security_gate import PromptInjectionDetected
+from studio.security_gate import PromptInjectionDetected
 from studio.jobs.store import Store
 from studio.contents.uploads import MAX_TOTAL_BYTES
 
@@ -58,9 +57,4 @@ def create_app(settings=None):
     app.include_router(jobs.router)
     app.include_router(system.router)
 
-    @app.get("/")
-    def index():
-        return FileResponse(ROOT / "web/index.html")
-
-    app.mount("/static", StaticFiles(directory=ROOT / "web"), name="static")
-    return app
+    return register_frontend(app)

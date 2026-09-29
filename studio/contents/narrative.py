@@ -11,6 +11,7 @@ from collections import Counter
 from typing import Literal
 from pydantic import Field
 from studio.models import StrictModel
+from studio.contents.numeric_text import normalize_numeric_typography
 
 
 class Excerpt(StrictModel):
@@ -30,7 +31,10 @@ class Narrative(StrictModel):
 
 
 def numbers(text):
-    return Counter(re.findall(r"[-−+]?\d+(?:[.,]\d+)?\s*%?", text))
+    return Counter(
+        re.sub(r"\s", "", value).replace(",", ".")
+        for value in re.findall(r"[-−+]?\d+(?:[.,]\d+)?\s*%?", normalize_numeric_typography(text))
+    )
 
 
 def validate_narrative(raw, content):
@@ -40,7 +44,7 @@ def validate_narrative(raw, content):
     if ids != list(facts):
         raise ValueError("Every source fact must occur once, in source order")
     for slide in parsed.slides:
-        evidence = " ".join(facts[e.fact_id].text for e in slide.excerpts)
+        evidence = "\n".join(facts[e.fact_id].text for e in slide.excerpts)
         if numbers(slide.title) - numbers(evidence):
             raise ValueError("Unsupported title number")
         tables = [

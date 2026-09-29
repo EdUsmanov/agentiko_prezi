@@ -6,8 +6,8 @@ from pathlib import Path
 import sys
 import tempfile
 
-from .config import ROOT
-from .security import digest
+from studio.config import ROOT
+from studio.security import digest
 
 
 def atomic_json(path, value):
@@ -62,7 +62,7 @@ def analysis_version():
         )
     # Policy affects model permission/limits as well as generation. Exclude only
     # the scheduling field, never silently ignore security policy changes.
-    from .config import POLICY
+    from studio.config import POLICY
 
     policy = {k: v for k, v in POLICY.items() if k != "generation_deadline_seconds"}
     versions = {str(p.relative_to(ROOT)): digest(p.read_bytes()) for p in sorted(files)}
@@ -93,6 +93,14 @@ def dependency_version(names):
 
 
 TEMPLATE_DEPENDENCIES = [
+    "studio/composition/background_adaptation.py",
+    "studio/composition/background_selection.py",
+    "studio/composition/chart_space.py",
+    "studio/composition/content_panels.py",
+    "studio/composition/design_balance.py",
+    "studio/composition/stacked_adaptation.py",
+    "studio/composition/stacked_chart.py",
+    "studio/composition/table_layout.py",
     "studio/cache_version.py",
     "studio/composition/text_layout.py",
     "studio/composition/text_composer.py",
@@ -158,6 +166,7 @@ def template_version():
 
 
 STAGE_BASE_DEPENDENCIES = [
+    "studio/contents/numeric_text.py",
     "studio/cache_version.py",
     "studio/providers/induction.py",
     "studio/providers/gateway.py",

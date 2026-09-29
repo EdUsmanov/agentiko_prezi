@@ -10,6 +10,7 @@ from math import ceil
 def candidate_regressions(before, after, package, audit=None, *, preserve_structure=False):
     from studio.checks.audit import audit_scenes
     from studio.checks.scene_regions import unused_body_regions
+    from studio.composition.design_balance import broken_words
 
     audit = audit or audit_scenes
     problems = []
@@ -20,6 +21,8 @@ def candidate_regressions(before, after, package, audit=None, *, preserve_struct
         problems.append({"slide": slide, "code": code})
 
     for index, (old, new) in enumerate(zip(before, after), 1):
+        if broken_words(new, package.template) > broken_words(old, package.template):
+            add(index, "word_break_regression")
         if old.source_ids != new.source_ids or old.title != new.title or old.purpose != new.purpose:
             add(index, "scenario_changed")
         if unused_body_regions(new, package) > unused_body_regions(old, package):
@@ -147,9 +150,9 @@ def meaningful_diversity(decks, profile):
             }
         )
     return {
-        "verified": bool(pairs) and all(p["verified"] for p in pairs),
+        "verified": len(decks) == 1 or bool(pairs) and all(p["verified"] for p in pairs),
         "pairs": pairs,
-        "method": "source_linked_visual_organization",
+        "method": "single_variant" if len(decks) == 1 else "source_linked_visual_organization",
     }
 
 

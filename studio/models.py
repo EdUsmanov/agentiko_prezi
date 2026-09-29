@@ -1,5 +1,5 @@
 from typing import Literal
-from pydantic import BaseModel, ConfigDict, Field, JsonValue
+from pydantic import BaseModel, ConfigDict, Field, JsonValue, field_validator
 from studio.templates.archetype_catalog import Archetype
 
 JsonObject = dict[str, JsonValue]
@@ -205,6 +205,7 @@ class SlidePlan(StrictModel):
     table_id: str | None = None
     role: Literal["context", "insight", "evidence", "action", "appendix"] = "insight"
     pattern_id: str | None = None
+    background_pattern_id: str | None = None
     purpose: Archetype | Literal["auto"] = "auto"
     chart_type: Literal["auto", "bar", "column", "column_stacked", "line", "pie"] = "auto"
     chart_style: Literal["standard", "readable"] = "standard"
@@ -217,7 +218,15 @@ class VariantPlan(StrictModel):
 
 
 class Plans(StrictModel):
-    variants: list[VariantPlan] = Field(min_length=3, max_length=3)
+    variants: list[VariantPlan] = Field(min_length=1, max_length=3)
+
+    @field_validator("variants")
+    @classmethod
+    def complete_variant_selection(cls, variants):
+        keys = [v.key for v in variants]
+        if keys not in (["executive"], ["executive", "analytical", "story"]):
+            raise ValueError("Expected one executive variant or all three ordered variants")
+        return variants
 
 
 class DraftBullet(StrictModel):
@@ -321,6 +330,7 @@ class SlideScene(StrictModel):
     layout: str
     purpose: Archetype | Literal["auto"] = "auto"
     pattern_id: str | None = None
+    background_pattern_id: str | None = None
     strategy: str = "token_composition"
     notes: str = ""
 

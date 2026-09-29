@@ -6,7 +6,6 @@ from studio.contents.section_metadata import (
     divider_members as divider_members,
 )
 
-import re
 from collections import Counter
 from pydantic import Field
 from studio.models import SlidePlan, StrictModel
@@ -73,9 +72,11 @@ async def prepare_sections(package, gateway):
         result = []
         for chapter in parsed.chapters:
             ids = [f for i in chapter.sections for f in groups[i]["fact_ids"]]
-            evidence = " ".join(facts[f].text + " " + facts[f].section for f in ids)
-            if INJECTION.search(chapter.title) or not set(re.findall(r"\d+", chapter.title)) <= set(
-                re.findall(r"\d+", evidence)
+            evidence = "\n".join(facts[f].text + "\n" + facts[f].section for f in ids)
+            from studio.contents.editorial_domain import nums
+
+            if INJECTION.search(chapter.title) or not set(nums(chapter.title)) <= set(
+                nums(evidence)
             ):
                 raise ValueError("Unsupported chapter title")
             result.append({"title": chapter.title, "fact_ids": ids})

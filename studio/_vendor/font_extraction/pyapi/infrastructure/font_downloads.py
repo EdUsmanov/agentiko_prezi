@@ -13,10 +13,10 @@ from zipfile import BadZipFile, ZipFile
 
 import httpx
 
-from ..domain.font_names import base_font_family
-from ..pipeline.reference_fonts import _font_permissions, _may_repackage, _tables
-from .font_download_cache import FontDownloadCache
-from .open_fonts import GoogleFontsResolver
+from studio._vendor.font_extraction.pyapi.domain.font_names import base_font_family
+from studio._vendor.font_extraction.pyapi.pipeline.reference_fonts import _font_permissions, _may_repackage, _tables
+from studio._vendor.font_extraction.pyapi.infrastructure.font_download_cache import FontDownloadCache
+from studio._vendor.font_extraction.pyapi.infrastructure.open_fonts import GoogleFontsResolver
 
 logger = logging.getLogger(__name__)
 

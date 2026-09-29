@@ -260,10 +260,13 @@ class JobRuntime:
             )
 
     async def auto_generate(self, pid: str) -> None:
-        job = self.store.get(pid)
-        await asyncio.sleep(max(0, job["auto_generate_at"] - time.time()))
-        if self.store.get(pid).get("auto_generation") != "scheduled":
-            return
+        try:
+            job = self.store.get(pid)
+            await asyncio.sleep(max(0, job["auto_generate_at"] - time.time()))
+            if self.store.get(pid).get("auto_generation") != "scheduled":
+                return
+        except KeyError:
+            return  # The user deleted this scheduled package from history.
         try:
             if self.start_generation is None:
                 raise RuntimeError("Generation callback is not configured")
@@ -272,6 +275,8 @@ class JobRuntime:
                 automatic=True,
                 accept_adjusted_slide_count=bool(job.get("constraints", {}).get("confirm_plan")),
             )
+        except KeyError:
+            return
         except Exception as exc:
             detail = str(exc)
             self.store.update(pid, auto_generation="blocked", auto_error=redact(detail))

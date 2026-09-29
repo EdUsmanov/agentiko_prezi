@@ -167,7 +167,8 @@ def test_empty_and_single_variant_count():
     package = SimpleNamespace(template=PROFILE)
     assert ensure_diversity({}, package)["distinct"] == 0
     report = ensure_diversity({"only": [slide()]}, package)
-    assert report["distinct"] == 1 and not report["verified"]
+    assert report["distinct"] == 1 and report["verified"]
+    assert report["expected"] == 1 and report["findings"] == []
 
 
 def test_two_claim_visual_organizations_need_real_object_changes():
@@ -211,7 +212,7 @@ def test_two_claim_visual_organizations_need_real_object_changes():
     assert report["verified"] and report["distinct"] == 3
 
 
-def test_cosmetic_layout_choices_cannot_erase_a_working_structure():
+def test_cosmetic_layout_choices_cannot_erase_a_working_structure(template, tmp_path):
     from types import SimpleNamespace
     from studio.models import Box, Element, SlideScene, Finding
     from studio.checks.quality import candidate_regressions
@@ -242,7 +243,9 @@ def test_cosmetic_layout_choices_cannot_erase_a_working_structure():
         )
         for i, fid in enumerate(["a", "b"])
     ]
-    package = SimpleNamespace(template=SimpleNamespace(patterns=[]))
+    from studio.templates.parsing import analyze_template
+
+    package = SimpleNamespace(template=analyze_template(template, tmp_path / "profile"))
 
     def clean(scenes, package):
         return []

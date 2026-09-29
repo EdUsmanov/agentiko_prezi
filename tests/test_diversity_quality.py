@@ -16,7 +16,19 @@ def fixture_scene():
         body_zones=zones[:2],
         role="content",
     )
-    package = SimpleNamespace(template=SimpleNamespace(patterns=[pattern], width=960, height=540))
+    from studio.config import ROOT
+
+    package = SimpleNamespace(
+        template=SimpleNamespace(
+            patterns=[pattern],
+            width=960,
+            height=540,
+            font_roles={},
+            font_assets=[],
+            font="Play",
+            font_file=str(ROOT / "fonts/Play-Regular.ttf"),
+        )
+    )
     scene = SlideScene(
         title="Results",
         background="#ffffff",
@@ -122,11 +134,11 @@ def test_grouped_fact_aliases_cannot_hide_smaller_type(monkeypatch):
     assert not diversity.preserves_quality([scene], [candidate], package)
 
 
-def test_safe_in_zone_reflow_allowed(monkeypatch):
+def test_safe_text_in_zone_reflow_allowed(monkeypatch):
     package, scene, _ = fixture_scene()
     monkeypatch.setattr(diversity, "audit_scenes", lambda *_: [])
     candidate = scene.model_copy(deep=True)
-    candidate.elements[0].box.w *= 0.84
+    candidate.elements[1].box.w *= 0.84
     assert diversity.preserves_quality([scene], [candidate], package)
 
 
@@ -153,3 +165,22 @@ def test_all_diversity_paths_respect_quality_guard(prepared, monkeypatch):
     assert not report["verified"]
     assert not report["adjustments"]
     assert all(scenes == original for scenes in decks.values())
+
+
+def test_multiple_removed_cards_are_significant_together():
+    package, scene, _ = fixture_scene()
+    package.template.patterns[0].fields = [
+        {"role": "unused", "box": {"x": 500, "y": 80 + i * 100, "w": 360, "h": 45}}
+        for i in range(3)
+    ] + [{"role": "unused", "box": {"x": 30, "y": 510, "w": 100, "h": 15}}]
+    assert diversity.unused_body_regions(scene, package) == 3
+
+
+def test_nested_empty_card_shapes_count_once():
+    package, scene, zones = fixture_scene()
+    scene.elements = scene.elements[:1]
+    package.template.patterns[0].fields = [
+        {"role": "unused", "box": zones[1].model_dump()},
+        {"role": "unused", "box": {"x": 230, "y": 90, "w": 200, "h": 200}},
+    ]
+    assert diversity.unused_body_regions(scene, package) == 1
