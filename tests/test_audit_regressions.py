@@ -6,14 +6,14 @@ import pytest
 from fastapi.testclient import TestClient
 
 from studio.app import create_app
-from studio.audit import audit_scenes, repair_scenes
-from studio.composer import compose_variant
+from studio.checks.audit import audit_scenes, repair_scenes
+from studio.composition.composer import compose_variant
 from studio.config import Settings
-from studio.content import parse_content, numeric_column
+from studio.contents.parsing import parse_content, numeric_column
 from studio.models import Box, Element, TableData
-from studio.planner import extractive_plans, validate_plans, assign_compositions
-from studio.render import primitives
-from studio.store import Store
+from studio.contents.planner import extractive_plans, validate_plans, assign_compositions
+from studio.composition.render import primitives
+from studio.jobs.store import Store
 
 
 def test_visible_coverage_not_scene_metadata(prepared):
@@ -102,7 +102,7 @@ def test_invalid_content_length_returns_400(tmp_path, length):
 
 
 def test_deeppresenter_failure_never_silently_falls_back(prepared, monkeypatch):
-    import studio.deeppresenter as runtime
+    import studio.providers.deeppresenter as runtime
     from studio.pipeline import generate
 
     settings, store, package = prepared
@@ -161,14 +161,14 @@ def test_revision_preserves_tables_and_model_provenance(prepared):
 
 
 def test_later_count_instruction_wins():
-    from studio.content import parse_constraints
+    from studio.contents.parsing import parse_constraints
 
     result = parse_constraints(None, "", "Ровно 10 слайдов. Уточнение: до 5 слайдов.")
     assert (result.slides, result.count_mode) == (5, "maximum")
 
 
 def test_brief_reexpansion_keeps_unique_fact_ids(prepared):
-    from studio.author import expand_brief
+    from studio.contents.author import expand_brief
     from studio.models import Fact
     from types import SimpleNamespace
 
@@ -197,7 +197,7 @@ def test_mixed_placeholder_title_and_card_pattern(tmp_path):
     from pptx import Presentation
     from pptx.util import Pt
     from pptx.enum.shapes import MSO_SHAPE
-    from studio.native_template import native_patterns, source_slide
+    from studio.templates.native_template import native_patterns, source_slide
 
     prs = Presentation()
     prs.slide_width = Pt(960)
@@ -238,7 +238,7 @@ def test_picture_artwork_reduces_body_safe_area(tmp_path):
     from pptx import Presentation
     from pptx.util import Pt
     from pptx.enum.shapes import MSO_SHAPE
-    from studio.native_template import native_patterns
+    from studio.templates.native_template import native_patterns
     from io import BytesIO
     from PIL import Image, ImageDraw
 
@@ -263,7 +263,7 @@ def test_picture_artwork_reduces_body_safe_area(tmp_path):
 
 
 def test_critic_cannot_attribute_other_titles_or_facts(prepared):
-    from studio.pipeline import grounded_review
+    from studio.checks.review_grounding import grounded_review
 
     _, _, package = prepared
     plans = extractive_plans(package)
@@ -305,7 +305,7 @@ def test_layout_scoring_accounts_for_chart_fallback_table(prepared):
 
 
 def test_semantic_plan_cannot_pin_untested_physical_layout(prepared):
-    from studio.planner import planning_schema
+    from studio.contents.planner import planning_schema
 
     _, _, package = prepared
     plans = extractive_plans(package)
@@ -320,8 +320,8 @@ def test_semantic_plan_cannot_pin_untested_physical_layout(prepared):
 
 
 def test_dense_slide_does_not_veto_other_safe_diversity(prepared, monkeypatch):
-    import studio.diversity as diversity
-    from collections import Counter
+    import studio.checks.diversity as diversity
+    from studio.models import Finding
 
     _, _, package = prepared
     scenes = compose_variant(extractive_plans(package).variants[0], package)
@@ -333,33 +333,37 @@ def test_dense_slide_does_not_veto_other_safe_diversity(prepared, monkeypatch):
             if element.kind == "text" and element.role == "body":
                 element.box.h = 100
     baseline_width = next(e.box.w for e in scenes[0].elements if e.source_ids and e.role != "title")
-    blocked_title = scenes[0].title
     # Make only the first slide too dense to shrink; the others still have room.
     scenes[0].title = "DENSE"
-    blocked_title = "DENSE"
 
-    def checks(items, package):
-        return (
-            Counter({("dense", 1, None): 1})
-            if any(
-                s.title == blocked_title
-                and any(
-                    e.source_ids and e.role != "title" and e.box.w < baseline_width
-                    for e in s.elements
-                )
-                for s in items
+    def audit(items, package):
+        if any(
+            s.title == "DENSE"
+            and any(
+                e.source_ids and e.role != "title" and e.box.w < baseline_width for e in s.elements
             )
-            else Counter()
-        )
+            for s in items
+        ):
+            return [
+                Finding(
+                    code="text_overflow", severity="error", message="Dense slide overflow", slide=1
+                )
+            ]
+        return []
 
-    monkeypatch.setattr(diversity, "error_keys", checks)
-    # Exercise the reflow fallback specifically, without alternate native layouts.
+    monkeypatch.setattr(diversity, "audit_scenes", audit)
     package.template.patterns = []
+    dense_candidate = [s.model_copy(deep=True) for s in scenes]
+    next(e for e in dense_candidate[0].elements if e.source_ids and e.role != "title").box.w *= 0.84
+    assert not diversity.preserves_quality(scenes, dense_candidate, package)
+    safe_candidate = [s.model_copy(deep=True) for s in scenes]
+    next(e for e in safe_candidate[1].elements if e.source_ids and e.role != "title").box.w *= 0.84
+    assert diversity.preserves_quality(scenes, safe_candidate, package)
+
     decks = {
         k: [s.model_copy(deep=True) for s in scenes] for k in ("executive", "analytical", "story")
     }
     report = diversity.ensure_diversity(decks, package)
-    assert report["verified"]
-    assert all(c["strategy"] == "safe_slide_reflow" for c in report["adjustments"])
-    assert all(1 not in c["slides"] for c in report["adjustments"])
-    assert all(deck[0].model_dump() == scenes[0].model_dump() for deck in decks.values())
+    assert not report["verified"] and report["findings"]
+    assert report["adjustments"] == []
+    assert all(deck == scenes for deck in decks.values())

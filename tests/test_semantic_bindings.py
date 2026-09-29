@@ -1,11 +1,11 @@
-from studio.semantic_bindings import (
+from studio.contents.semantic_bindings import (
     content_groups,
     bind_groups,
     canonicalize_storyboard,
     object_contract,
 )
 from studio.models import Fact, SlidePlan, Box, TableData
-from studio.planner import extractive_plans
+from studio.contents.planner import extractive_plans
 
 
 def test_identical_prices_stay_with_their_entities(prepared):
@@ -80,7 +80,7 @@ def test_one_storyboard_does_not_allow_variant_rewrites(prepared):
 
 
 def test_physical_filter_precedes_specialized_preference(prepared):
-    from studio.contracts import candidates
+    from studio.composition.contracts import candidates
 
     _, _, p = prepared
     p.content.facts = [
@@ -149,7 +149,7 @@ def test_table_uses_a_fitting_field_instead_of_first_field(prepared):
     contract = object_contract(slide, p, pattern)
     assert contract["visuals"][0]["box"] == pattern.body_zones[1].model_dump()
     assert contract["binding"]["fields"][0]["shape_id"] == 3
-    from studio.semantic_bindings import binding_report
+    from studio.contents.semantic_bindings import binding_report
 
     assert binding_report(slide, p, pattern)["fields"][0]["shape_id"] == 3
 
@@ -171,7 +171,7 @@ def test_table_capacity_is_checked_after_text_reservation(prepared):
         {"role": "title", "index": 0, "shape_id": 1, "box": pattern.title_zone.model_dump()},
         {"role": "body", "index": 0, "shape_id": 2, "box": pattern.body_zones[0].model_dump()},
     ]
-    from studio.semantic_bindings import table_capacity
+    from studio.contents.semantic_bindings import table_capacity
 
     assert table_capacity(p.content.tables[0], pattern.body_zones[0], p.template) == 0
     with pytest.raises(ValueError, match="Таблица не помещается"):
@@ -238,7 +238,7 @@ def test_table_rejects_layout_when_no_field_is_readable(prepared):
 
 
 def test_metric_pattern_can_host_a_fitting_trend_table(prepared):
-    from studio.contracts import compatible
+    from studio.composition.contracts import compatible
 
     _, _, p = prepared
     pattern = p.template.patterns[0].model_copy(deep=True)
@@ -250,7 +250,7 @@ def test_metric_pattern_can_host_a_fitting_trend_table(prepared):
 
 
 def test_verified_title_only_divider_does_not_require_an_example_slide(prepared):
-    from studio.contracts import apply_meanings, compatible
+    from studio.composition.contracts import apply_meanings, compatible
 
     _, _, p = prepared
     pattern = p.template.patterns[0]
@@ -268,8 +268,8 @@ def test_verified_title_only_divider_does_not_require_an_example_slide(prepared)
 
 
 def test_native_composer_and_binding_report_use_the_same_table_field(prepared):
-    from studio.composer import compose_variant
-    from studio.semantic_bindings import binding_report
+    from studio.composition.composer import compose_variant
+    from studio.contents.semantic_bindings import binding_report
     from studio.models import VariantPlan
 
     _, _, p = prepared
@@ -292,7 +292,7 @@ def test_native_composer_and_binding_report_use_the_same_table_field(prepared):
 
 
 def test_shared_field_label_does_not_repeat_existing_subject_or_drop_evidence():
-    from studio.semantic_bindings import inline_group_text
+    from studio.contents.semantic_bindings import inline_group_text
 
     assert (
         inline_group_text("Ильф", ["Ильф превращает сложность в код."])

@@ -11,9 +11,9 @@ from fastapi.testclient import TestClient
 
 from studio import app as app_module, cache_version, pipeline
 from studio.config import Settings
-from studio.examples import index_examples, sources
-from studio.gateway import ModelGateway
-from studio.store import Store
+from studio.templates.examples import index_examples, sources
+from studio.providers.gateway import ModelGateway
+from studio.jobs.store import Store
 
 
 def seed(settings):
@@ -54,7 +54,7 @@ def test_startup_never_builds_or_reads_old_library(tmp_path, monkeypatch):
     before = {p: p.read_bytes() for p in (tmp_path / "references").rglob("*") if p.is_file()}
     monkeypatch.setattr(ModelGateway, "json_request", forbidden)
     monkeypatch.setattr(pipeline, "analyze_template", forbidden)
-    monkeypatch.setattr(app_module.asyncio, "create_subprocess_exec", forbidden)
+    monkeypatch.setattr("studio.jobs.runtime.asyncio.create_subprocess_exec", forbidden)
     app = app_module.create_app(settings)
     with TestClient(app) as client:
         assert client.get("/api/references").json() == rows
@@ -74,7 +74,9 @@ def test_startup_never_builds_or_reads_old_library(tmp_path, monkeypatch):
 
 
 @pytest.mark.parametrize("demo", [False, True])
-def test_prepare_uses_only_explicitly_selected_input(tmp_path, monkeypatch, demo):
+def test_prepare_uses_only_explicitly_selected_input(
+    tmp_path, monkeypatch, demo, preparation_worker
+):
     settings = Settings(data_dir=tmp_path)
     rows = seed(settings)
     seen = []
@@ -83,7 +85,7 @@ def test_prepare_uses_only_explicitly_selected_input(tmp_path, monkeypatch, demo
         seen.append((store.directory(jid) / "input.pptx").read_bytes())
         store.update(jid, "failed", error="Test stopped before real analysis")
 
-    monkeypatch.setattr(app_module, "prepare", prepare)
+    preparation_worker(prepare)
     monkeypatch.setattr(ModelGateway, "json_request", forbidden)
     with TestClient(app_module.create_app(settings)) as client:
         data = {"text": "Материал пользователя"}
@@ -101,13 +103,11 @@ def test_prepare_uses_only_explicitly_selected_input(tmp_path, monkeypatch, demo
     assert seen == [rows[1]["name"].encode() if demo else b"new user input"]
 
 
-def test_corrupt_optional_index_does_not_block_upload(tmp_path, monkeypatch):
+def test_corrupt_optional_index_does_not_block_upload(tmp_path, monkeypatch, preparation_worker):
     settings = Settings(data_dir=tmp_path)
     seed(settings)
     (tmp_path / "references/index.json").write_text("{broken")
-    monkeypatch.setattr(
-        app_module, "prepare", lambda store, jid, *args: store.update(jid, "failed")
-    )
+    preparation_worker(lambda store, jid, *args: store.update(jid, "failed"))
     with TestClient(app_module.create_app(settings)) as client:
         assert client.get("/api/references").json() == []
         response = client.post(
@@ -129,7 +129,7 @@ def test_demo_index_cannot_escape_root(tmp_path):
 
 def test_runtime_version_guard_is_preserved(tmp_path, monkeypatch):
     version = ["loaded"]
-    monkeypatch.setattr(app_module, "pipeline_version", lambda: version[0])
+    monkeypatch.setattr("studio.presentation_service.pipeline_version", lambda: version[0])
     with TestClient(app_module.create_app(Settings(data_dir=tmp_path))) as client:
         version[0] = "changed"
         assert client.get("/api/runtime").json()["restart_required"] is True
@@ -145,7 +145,7 @@ def test_runtime_version_guard_is_preserved(tmp_path, monkeypatch):
 def test_user_analysis_completes_with_broken_organizer_library(
     tmp_path, template, content, monkeypatch
 ):
-    import studio.template_analysis as analysis
+    import studio.templates.template_analysis as analysis
 
     settings = Settings(data_dir=tmp_path / "data")
     seed(settings)
@@ -173,7 +173,7 @@ def test_user_analysis_completes_with_broken_organizer_library(
 
 
 def test_planner_does_not_send_historical_organizer_knowledge(prepared):
-    from studio.planner import plan, extractive_plans
+    from studio.contents.planner import plan, extractive_plans
 
     _, _, package = prepared
     package.analysis["reference_knowledge"] = [{"private_organizer_marker": "must not leak"}]
@@ -197,7 +197,8 @@ def test_pipeline_hash_covers_adapter(monkeypatch, tmp_path):
     (tmp_path / "scripts/pptagent_runtime/Dockerfile").write_text("test")
     for name in ("requirements.lock", "pyproject.toml"):
         (tmp_path / name).write_text("test")
-    module = tmp_path / "studio/colors.py"
+    module = tmp_path / "studio/templates/colors.py"
+    module.parent.mkdir(parents=True)
     module.write_text("version1")
     monkeypatch.setattr(cache_version, "ROOT", tmp_path)
     before = cache_version.pipeline_version()

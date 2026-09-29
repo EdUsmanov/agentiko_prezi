@@ -1,10 +1,10 @@
 from pptx import Presentation
 from pptx.util import Pt
-from studio.template import analyze_template
-from studio.field_style import field_style
-from studio.composer import text_element
-from studio.fonts import element_font
-from studio.render import set_text
+from studio.templates.parsing import analyze_template
+from studio.templates.field_style import field_style
+from studio.composition.composer import text_element
+from studio.templates.fonts import element_font
+from studio.composition.render import set_text
 from studio.models import Box
 
 
@@ -50,9 +50,25 @@ def test_missing_field_face_is_explicit_not_claimed_exact(template, tmp_path):
     assert element_font(profile, element)[0] != "Unavailable Test Font"
 
 
+def test_subheading_fits_shallow_native_heading_zone(template, tmp_path):
+    from studio.templates.fonts import wrap_text
+
+    profile = analyze_template(template, tmp_path / "analysis")
+    profile.body_size = 48
+    profile.font_sizes = [48]
+    element = text_element("Выбор", Box(x=70, y=135, w=390, h=58), profile, "subheading", size=48)
+    assert element.size < 48
+    assert (
+        len(wrap_text(element.text, element_font(profile, element)[1], element.size, 390))
+        * element.size
+        * 1.25
+        <= element.box.h
+    )
+
+
 def test_table_compaction_uses_final_readable_size_and_keeps_field_origin(template, tmp_path):
     from studio.models import Element
-    from studio.table_style import compact_table
+    from studio.composition.table_style import compact_table
 
     profile = analyze_template(template, tmp_path / "analysis")
     table = Element(

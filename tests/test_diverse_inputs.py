@@ -4,13 +4,13 @@ import shutil
 
 import pytest
 
-from studio.audit import audit_scenes
-from studio.composer import compose_variant
+from studio.checks.audit import audit_scenes
+from studio.composition.composer import compose_variant
 from studio.pipeline import load_package, prepare
-from studio.planner import assign_compositions, extractive_plans, validate_plans
+from studio.contents.planner import assign_compositions, extractive_plans, validate_plans
 from studio.security import InputRejected
-from studio.store import Store
-from studio.template import analyze_template
+from studio.jobs.store import Store
+from studio.templates.parsing import analyze_template
 from test_support.inputs import make_template
 
 CASES = [

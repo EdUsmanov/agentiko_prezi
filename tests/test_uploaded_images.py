@@ -6,13 +6,13 @@ from zipfile import ZipFile
 import pytest
 from PIL import Image, PngImagePlugin, ImageDraw
 from fastapi.testclient import TestClient
-from studio.uploads import sanitize_image, bind_image_sections
+from studio.contents.uploads import sanitize_image, bind_image_sections
 from studio.config import Settings
 from studio.app import create_app
 from studio.security import InputRejected, scan_text
-from studio.planner import extractive_plans, plan
-from studio.composer import compose_variant
-from studio.audit import audit_scenes
+from studio.contents.planner import extractive_plans, plan
+from studio.composition.composer import compose_variant
+from studio.checks.audit import audit_scenes
 from studio.pipeline import load_package
 from tests.test_api import wait_job
 
@@ -49,7 +49,7 @@ def test_non_raster_rejected(raw, tmp_path):
 
 
 def test_oversize_animation_and_pixel_limit(tmp_path, monkeypatch):
-    import studio.uploads as uploads
+    import studio.contents.uploads as uploads
 
     monkeypatch.setattr(uploads, "MAX_PIXELS", 100)
     with pytest.raises(InputRejected, match="пикселей"):
@@ -159,7 +159,7 @@ def test_invalid_image_fails_upload_before_model(template, content, tmp_path):
 
 
 def test_remote_markdown_image_is_never_fetched():
-    from studio.content import parse_content
+    from studio.contents.parsing import parse_content
 
     content = parse_content("# Проект\nПолезный факт.\n![Фото](http://127.0.0.1/private)")
     assert len(content.facts) == 1
@@ -176,7 +176,7 @@ def test_missing_and_repeated_image_reference_is_explicit(tmp_path):
 
 def test_visual_model_response_cannot_add_commands():
     from pydantic import ValidationError
-    from studio.visual import VisualBatch
+    from studio.checks.visual import VisualBatch
 
     with pytest.raises(ValidationError):
         VisualBatch.model_validate(
@@ -190,7 +190,7 @@ def test_visual_model_response_cannot_add_commands():
 
 
 def test_extra_images_are_not_silently_lost(prepared, tmp_path):
-    from studio.uploads import assign_images
+    from studio.contents.uploads import assign_images
 
     settings, store, package = prepared
     package.constraints.slides = 1

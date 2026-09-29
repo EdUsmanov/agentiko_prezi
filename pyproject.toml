@@ -29,7 +29,7 @@ pythonpath = ["."]
 
 [tool.ruff]
 required-version = "==0.15.7"
-target-version = "py311"
+target-version = "py312"
 line-length = 100
 extend-exclude = ["studio/_vendor", "vendor", "data"]
 

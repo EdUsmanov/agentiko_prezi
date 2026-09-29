@@ -6,10 +6,10 @@ from types import SimpleNamespace
 
 import pytest
 
-from studio.content import parse_content
-from studio.editorial_domain import validate_plan
-from studio.editorial_patch_validation import numeric_evidence_hints
-from studio.editorial_repair import prepare_with_targeted_repairs
+from studio.contents.parsing import parse_content
+from studio.contents.editorial_domain import validate_plan
+from studio.contents.editorial_patch_validation import numeric_evidence_hints
+from studio.contents.editorial_repair import prepare_with_targeted_repairs
 from studio.models import Constraints
 
 
@@ -77,7 +77,6 @@ def test_numbering_exception_is_limited_to_process(purpose):
         (" Рост 50%.", "50"),
         (" Бюджет 100 рублей.", "100"),
         (" В 2026 году.", "2026"),
-        (" Первый запуск.", "1"),
     ],
 )
 def test_positional_label_does_not_exempt_numbers_in_claim(extra, number):
@@ -104,12 +103,13 @@ def test_numbering_does_not_allow_forged_citation():
 
 
 def test_targeted_repair_preserves_numbering_and_runs_semantic_review(monkeypatch, tmp_path):
-    from studio import narrative_layout
+    from studio.contents import narrative_layout
+    from studio.models import PreparationControl, SlideBudget
 
     monkeypatch.setattr(
         narrative_layout,
         "narrative_storyboard",
-        lambda package: package.analysis.update(slide_budget={"status": "adjusted"}),
+        lambda package: setattr(package.control, "slide_budget", SlideBudget(status="adjusted")),
     )
     content, correct = process_case()
     initial = deepcopy(correct)
@@ -120,6 +120,7 @@ def test_targeted_repair_preserves_numbering_and_runs_semantic_review(monkeypatc
         template=SimpleNamespace(patterns=[]),
         constraints=Constraints(slides=1, count_mode="exact", summarize=True),
         analysis={},
+        control=PreparationControl(),
     )
 
     class Gateway:
@@ -148,3 +149,57 @@ def test_targeted_repair_preserves_numbering_and_runs_semantic_review(monkeypatc
     assert gateway.stages == ["editorial_repair", "editorial_review"]
     assert len(package.analysis["editorial"]["repair_history"]) == 1
     assert [fact.text for fact in package.original_content.facts] == [f.text for f in content.facts]
+
+
+@pytest.mark.parametrize(
+    "title,text",
+    [
+        (
+            "Первые минуты хаоса",
+            "Первая реакция — сомнение в необходимости делать поспешные выводы.",
+        ),
+        ("Initial response", "The first reaction was to wait before drawing conclusions."),
+    ],
+)
+def test_worded_order_is_semantic_evidence_not_an_invented_measurement(title, text):
+    from studio.contents.editorial_domain import review_payload
+
+    source = parse_content("Сначала возникло сомнение: не стоит делать поспешные выводы.")
+    raw = {
+        "slides": [
+            {
+                "title": title,
+                "purpose": "content",
+                "bullets": [{"text": text, "evidence": [{"fact_id": source.facts[0].id}]}],
+            }
+        ]
+    }
+    accepted = validate_plan(raw, source, (1, 1))
+    assert numeric_evidence_hints(accepted, [1], source) == []
+    review = review_payload(accepted, source)
+    assert review["claims"][0]["text"] == text
+    assert review["claims"][0]["title"] == title
+    raw["slides"][0]["bullets"][0]["text"] += " За 1 минуту."
+    with pytest.raises(ValueError, match="Unsupported number"):
+        validate_plan(raw, source, (1, 1))
+
+
+def test_source_ordinal_still_grounds_literal_conversion():
+    source = parse_content("Пилот завершился в третьем квартале.")
+    raw = {
+        "slides": [
+            {
+                "title": "Квартал 3",
+                "purpose": "content",
+                "bullets": [
+                    {
+                        "text": "Пилот завершился в квартале 3.",
+                        "evidence": [{"fact_id": source.facts[0].id}],
+                    }
+                ],
+            }
+        ]
+    }
+    accepted = validate_plan(raw, source, (1, 1))
+    assert accepted["slides"][0]["title"] == "Квартал 3"
+    assert numeric_evidence_hints(accepted, [1], source) == []

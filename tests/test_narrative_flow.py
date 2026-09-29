@@ -1,9 +1,9 @@
 import asyncio
 from types import SimpleNamespace
 import pytest
-from studio.content import parse_content, parse_constraints
-from studio.narrative import validate_narrative, choose_visualization, prepare_narrative
-from studio.models import TableData
+from studio.contents.parsing import insufficient_material, parse_content, parse_constraints
+from studio.contents.narrative import validate_narrative, choose_visualization, prepare_narrative
+from studio.models import PreparationControl, SlideBudget, TableData
 
 
 def response(content, quotes=None, rows=None, relationship="none"):
@@ -26,6 +26,17 @@ def test_ranges_and_explicit_override():
         c = parse_constraints(None, "", "", preset)
         assert c.slides == count and c.summarize and c.confirm_plan
     assert parse_constraints(None, "", "ровно 7 слайдов", "mini").slides == 7
+
+
+def test_short_brief_reports_missing_material_before_model_analysis():
+    brief = parse_content("О создании автодизайнера командой из трёх человек для хакатона.")
+    assert "Добавьте отдельные факты" in insufficient_material(
+        brief, parse_constraints(None, "жюри", "", "large")
+    )
+    detailed = parse_content(
+        "\n".join(f"Факт {i}: этап проекта описан отдельно." for i in range(12))
+    )
+    assert insufficient_material(detailed, parse_constraints(None, "жюри", "", "large")) is None
 
 
 def test_continuous_prose_and_lowercase_clauses_keep_numeric_tokens():
@@ -72,12 +83,12 @@ def test_chart_selection(rows, relation, expected):
 
 
 def test_narrative_keeps_original_and_builds_provenance(monkeypatch):
-    from studio import narrative_layout as narrative
+    from studio.contents import narrative_layout as narrative
 
     monkeypatch.setattr(
         narrative,
         "narrative_storyboard",
-        lambda p: p.analysis.update(slide_budget={"status": "adjusted", "planned": 1}),
+        lambda p: setattr(p.control, "slide_budget", SlideBudget(status="adjusted", planned=1)),
     )
     c = parse_content("Север — 25%. Юг — 75%.")
     source = c.model_copy(deep=True)
@@ -87,6 +98,7 @@ def test_narrative_keeps_original_and_builds_provenance(monkeypatch):
         constraints=parse_constraints(1, "", "", "mini"),
         template=SimpleNamespace(patterns=[]),
         analysis={},
+        control=PreparationControl(),
     )
 
     class Gateway:
@@ -125,7 +137,9 @@ def test_narrative_keeps_original_and_builds_provenance(monkeypatch):
     assert p.analysis["editorial"]["provenance"][0]["evidence"][1]["fact_id"] == "f2"
 
 
-def test_revision_reads_original_instead_of_previous_summary(prepared, monkeypatch):
+def test_revision_reads_original_instead_of_previous_summary(
+    prepared, monkeypatch, preparation_worker
+):
     import time
     from fastapi.testclient import TestClient
     from studio import app as module
@@ -143,8 +157,8 @@ def test_revision_reads_original_instead_of_previous_summary(prepared, monkeypat
         captured.append((content_model.model_dump(), slides, base.model_dump()))
         store.update(jid, "ready", analysis={}, auto_generation="cancelled")
 
-    monkeypatch.setattr(module, "prepare", fake_prepare)
-    monkeypatch.setattr(module, "load_package", lambda *_: package)
+    preparation_worker(fake_prepare)
+    monkeypatch.setattr("studio.presentation_service.load_package", lambda *_: package)
     with TestClient(module.create_app(settings)) as client:
         reply = client.post(
             f"/api/packages/{package.id}/revise",
@@ -177,13 +191,17 @@ def test_due_timer_accepts_proposal_once_and_records_choice(tmp_path, monkeypatc
         auto_generate_at=time.time() - 1,
     )
     package = SimpleNamespace(
+        input_mode="content",
         constraints=SimpleNamespace(confirm_plan=True, slides=10),
-        analysis={
-            "planned_slides": 7,
-            "slide_budget": {"status": "adjusted", "message": "Предложено 7"},
-        },
+        analysis={},
+        control=PreparationControl(
+            planned_slides=7,
+            slide_budget=SlideBudget(status="adjusted", message="Предложено 7"),
+        ),
     )
-    monkeypatch.setattr(module, "load_package", lambda *_: package)
+    monkeypatch.setattr(
+        application.state.presentation_service, "load_operation", lambda *_: package
+    )
     calls = []
 
     class Pipe:
@@ -203,7 +221,7 @@ def test_due_timer_accepts_proposal_once_and_records_choice(tmp_path, monkeypatc
         store.update(args[3], "completed")
         return Process()
 
-    monkeypatch.setattr(module.asyncio, "create_subprocess_exec", spawn)
+    monkeypatch.setattr("studio.jobs.runtime.asyncio.create_subprocess_exec", spawn)
     with TestClient(application) as client:
         for _ in range(100):
             job = store.get(pid)

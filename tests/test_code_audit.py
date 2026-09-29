@@ -2,15 +2,16 @@
 
 import asyncio
 import sqlite3
-import threading
 import time
 
 import httpx
 import pytest
 from fastapi.testclient import TestClient
 from studio import app as api
+from studio import presentation_service as application_module
+from studio.jobs import runtime as runtime_module
 from studio.config import Settings
-from studio.store import Store
+from studio.jobs.store import Store
 
 
 def test_database_connection_closes_and_transaction_rolls_back(tmp_path):
@@ -30,22 +31,31 @@ def test_database_connection_closes_and_transaction_rolls_back(tmp_path):
 
 
 def test_shutdown_cannot_publish_late_preparation_or_rearm_autostart(tmp_path, monkeypatch):
-    started = threading.Event()
-    release = threading.Event()
-    finished = threading.Event()
+    processes = []
 
-    def slow_prepare(store, jid, *args):
-        store.update(jid, "running")
-        started.set()
-        try:
-            assert release.wait(5)
-            store.update(
-                jid, "ready", auto_generation="scheduled", auto_generate_at=time.time() + 60
-            )
-        finally:
-            finished.set()
+    class Child:
+        pid = 123456
+        returncode = None
 
-    monkeypatch.setattr(api, "prepare", slow_prepare)
+        def __init__(self):
+            self.stopped = asyncio.Event()
+            self.stdout = asyncio.StreamReader()
+            processes.append(self)
+
+        async def wait(self):
+            await self.stopped.wait()
+            return self.returncode
+
+        def kill(self):
+            self.returncode = -9
+            self.stdout.feed_eof()
+            self.stopped.set()
+
+    async def spawn(*args, **kwargs):
+        return Child()
+
+    monkeypatch.setattr(runtime_module.asyncio, "create_subprocess_exec", spawn)
+    monkeypatch.setattr(runtime_module, "kill_worker", lambda process: process.kill())
     application = api.create_app(Settings(data_dir=tmp_path))
 
     async def check():
@@ -61,23 +71,29 @@ def test_shutdown_cannot_publish_late_preparation_or_rearm_autostart(tmp_path, m
                     )
                     assert response.status_code == 202
                     jid = response.json()["id"]
-                    assert await asyncio.to_thread(started.wait, 2)
-            release.set()
-            assert await asyncio.to_thread(finished.wait, 2)
+                    for _ in range(100):
+                        if processes:
+                            break
+                        await asyncio.sleep(0.01)
+                    assert processes
             job = application.state.store.get(jid)
             assert job["state"] == "cancelled"
             assert job.get("auto_generation") != "scheduled"
+            assert processes[0].returncode == -9
+            application.state.store.update(jid, "ready", auto_generation="scheduled")
+            assert application.state.store.get(jid)["state"] == "cancelled"
         finally:
-            release.set()
+            for process in processes:
+                process.kill()
 
     asyncio.run(check())
 
 
 def test_unexpected_preparation_failure_reaches_terminal_state(tmp_path, monkeypatch):
-    def crash(*args):
+    async def crash(*args, **kwargs):
         raise OSError("test-only storage failure")
 
-    monkeypatch.setattr(api, "prepare", crash)
+    monkeypatch.setattr(runtime_module.asyncio, "create_subprocess_exec", crash)
     application = api.create_app(Settings(data_dir=tmp_path))
     with TestClient(application) as client:
         response = client.post(
@@ -92,16 +108,17 @@ def test_unexpected_preparation_failure_reaches_terminal_state(tmp_path, monkeyp
             time.sleep(0.01)
         assert job["state"] == "failed"
         assert any(
-            e["event"] == "preparation.supervisor_failed"
-            for e in application.state.store.events(jid)
+            e["event"] == "worker.supervisor_failed" for e in application.state.store.events(jid)
         )
 
 
 def test_generation_refuses_mixed_loaded_and_disk_code(tmp_path, monkeypatch):
-    monkeypatch.setattr(api, "pipeline_version", lambda: "loaded")
+    monkeypatch.setattr(application_module, "pipeline_version", lambda: "loaded")
     application = api.create_app(Settings(data_dir=tmp_path))
     with TestClient(application) as client:
-        monkeypatch.setattr(api, "pipeline_version", lambda: "changed")
+        monkeypatch.setattr(
+            application.state.presentation_service, "version_operation", lambda: "changed"
+        )
         response = client.post("/api/generate", json={"package_id": "a" * 32})
         assert response.status_code == 503
         assert not application.state.store.recent()

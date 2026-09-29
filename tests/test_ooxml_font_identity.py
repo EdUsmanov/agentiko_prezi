@@ -4,11 +4,11 @@ from fontTools.ttLib import TTFont
 from pptx import Presentation
 from pptx.util import Pt
 from studio.config import ROOT
-from studio.font_identity import ooxml_face, apply_ooxml_font
-from studio.fonts import resolve_font
+from studio.templates.font_identity import ooxml_face, apply_ooxml_font
+from studio.templates.fonts import resolve_font
 from studio.models import Box, Element
-from studio.render import set_text
-from studio.export_audit import _face
+from studio.composition.render import set_text
+from studio.checks.export_audit import _face
 
 
 def test_bold_face_is_family_plus_flag_not_a_fictitious_family():
@@ -77,7 +77,7 @@ def test_calibri_bold_native_render_does_not_fall_back(tmp_path):
     path = resolve_font("Calibri Bold")
     if not path:
         pytest.skip("optional local Calibri integration test")
-    from studio.office import executable, to_pdf
+    from studio.composition.office import executable, to_pdf
 
     if not executable():
         pytest.skip("LibreOffice unavailable")

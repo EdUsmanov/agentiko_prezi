@@ -6,8 +6,8 @@ import pytest
 from pptx import Presentation
 from pypdf import PdfReader
 from studio.pipeline import generate, load_package
-from studio.planner import extractive_plans, validate_plans
-from studio.content import parse_content, numeric_column
+from studio.contents.planner import extractive_plans, validate_plans
+from studio.contents.parsing import parse_content, numeric_column
 
 
 def test_three_variants_exports_and_coverage(prepared):
@@ -94,8 +94,8 @@ def test_no_default_padding(prepared):
 
 
 def test_small_generic_footer_uses_readable_template_color(prepared):
-    from studio.composer import compose
-    from studio.template_geometry import contrast, minimum_text_contrast
+    from studio.composition.composer import compose
+    from studio.templates.template_geometry import contrast, minimum_text_contrast
 
     _, _, package = prepared
     package.template.background = "#FFFFFF"
@@ -111,7 +111,7 @@ def test_small_generic_footer_uses_readable_template_color(prepared):
 
 
 def test_one_slide_table_still_has_three_variants(prepared):
-    from studio.composer import compose_variant
+    from studio.composition.composer import compose_variant
 
     _, _, package = prepared
     package.content = parse_content(
@@ -126,7 +126,7 @@ def test_one_slide_table_still_has_three_variants(prepared):
 
 
 def test_schema_constrains_count_and_source_ids(prepared):
-    from studio.planner import planning_schema
+    from studio.contents.planner import planning_schema
 
     _, _, package = prepared
     schema = planning_schema(package)

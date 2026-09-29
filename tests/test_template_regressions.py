@@ -8,12 +8,12 @@ from pptx import Presentation
 from pptx.dml.color import RGBColor
 from pptx.enum.shapes import MSO_SHAPE
 from pptx.util import Pt
-from studio.content import parse_content
+from studio.contents.parsing import parse_content
 from studio.models import ContextualAudit
-from studio.planner import plan, extractive_plans, validate_plans
-from studio.composer import compose_variant
-from studio.render import render_pptx
-from studio.template import analyze_template
+from studio.contents.planner import plan, extractive_plans, validate_plans
+from studio.composition.composer import compose_variant
+from studio.composition.render import render_pptx
+from studio.templates.parsing import analyze_template
 
 
 def test_markdown_rules_not_facts():
@@ -157,7 +157,7 @@ def test_cached_template_layer_tampering_is_rejected(prepared):
 
 
 def test_office_does_not_receive_api_credentials(tmp_path, monkeypatch):
-    from studio import office
+    from studio.composition import office
 
     monkeypatch.setenv("LLM_API_KEY", "DO-NOT-SEND")
     monkeypatch.setattr(office, "executable", lambda: "/fake/soffice")
@@ -176,7 +176,7 @@ def test_office_does_not_receive_api_credentials(tmp_path, monkeypatch):
 
 
 def test_deadline_kills_dedicated_worker_group(monkeypatch):
-    from studio import app
+    from studio.jobs import runtime as app
 
     if app.os.name != "posix":
         pytest.skip("POSIX process groups")
@@ -186,18 +186,21 @@ def test_deadline_kills_dedicated_worker_group(monkeypatch):
     assert calls == [(12345, app.signal.SIGKILL)]
 
 
-@pytest.mark.parametrize(
-    "content",
-    ["# Проект\n" + "\n".join(f"## Этап {i}\nИсходный факт {i}." for i in range(1, 13))],
-    ids=["roomy"],
-)
-def test_variants_differ_in_visible_content_geometry(prepared):
+def test_variant_diversity_reports_limit_without_losing_source_content(prepared):
     _, _, package = prepared
-    from studio.diversity import ensure_diversity, geometry_signature
+    from studio.checks.diversity import ensure_diversity, geometry_signature
 
-    decks = {v.key: compose_variant(v, package) for v in extractive_plans(package).variants}
-    assert ensure_diversity(decks, package)["verified"]
-    signatures = []
+    plans = extractive_plans(package)
+    assert [len(s.fact_ids) for s in plans.variants[0].slides] == [4, 2, 2, 2, 2]
+    decks = {v.key: compose_variant(v, package) for v in plans.variants}
+    before = deepcopy(decks)
+    report = ensure_diversity(decks, package)
+    assert len({geometry_signature(scenes) for scenes in decks.values()}) == 3
+    assert not report["verified"] and report["distinct"] < 3 and report["findings"]
+    assert decks == before
+    expected = {fact.id for fact in package.content.facts}
     for scenes in decks.values():
-        signatures.append(geometry_signature(scenes))
-    assert len(set(signatures)) == 3
+        assert {fid for scene in scenes for fid in scene.source_ids} == expected
+        assert {
+            fid for scene in scenes for element in scene.elements for fid in element.source_ids
+        } == expected

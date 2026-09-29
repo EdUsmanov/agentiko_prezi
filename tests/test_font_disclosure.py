@@ -1,13 +1,13 @@
 from pptx import Presentation
 from pptx.util import Pt
 from studio.config import ROOT
-from studio.font_disclosure import (
+from studio.templates.font_disclosure import (
     substitutions,
     exported_substitutions,
     warnings,
     preparation_substitutions,
 )
-from studio.export_audit import repair_symbols
+from studio.checks.export_audit import repair_symbols
 
 
 def test_disclosure_is_only_for_replaced_symbols():

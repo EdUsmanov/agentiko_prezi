@@ -3,13 +3,13 @@ from types import SimpleNamespace
 from zipfile import ZipFile
 import pytest
 from studio.models import SlidePlan, Box, TableData
-from studio.content import parse_content
-from studio.contracts import compatible, apply_meanings
-from studio.document import structure_document
-from studio.storyboard import prepare_storyboard
-from studio.planner import extractive_plans, validate_plans, assign_compositions
-from studio.composer import compose_variant
-from studio.audit import audit_scenes
+from studio.contents.parsing import parse_content
+from studio.composition.contracts import compatible, apply_meanings
+from studio.contents.document import structure_document
+from studio.contents.storyboard import prepare_storyboard
+from studio.contents.planner import extractive_plans, validate_plans, assign_compositions
+from studio.composition.composer import compose_variant
+from studio.checks.audit import audit_scenes
 
 
 def test_plain_headings_and_visual_directives_are_not_body(prepared):
@@ -112,8 +112,8 @@ def test_storyboard_reserves_cover_and_dividers_before_planner(prepared):
 
 @pytest.mark.parametrize("kind", ["bar", "column", "line", "pie"])
 def test_real_editable_chart_type_and_data(prepared, tmp_path, kind):
-    from studio.charts import make_chart
-    from studio.render import render_pptx
+    from studio.composition.charts import make_chart
+    from studio.composition.render import render_pptx
     from studio.models import SlideScene
     from pptx import Presentation
     from pptx.enum.chart import XL_CHART_TYPE, XL_LABEL_POSITION
@@ -154,7 +154,7 @@ def test_real_editable_chart_type_and_data(prepared, tmp_path, kind):
 
 
 def test_refinement_rejects_unrelated_or_wrong_purpose_edits(prepared):
-    from studio.refinement import apply_edits, LayoutEdit
+    from studio.checks.refinement import apply_edits, LayoutEdit
 
     _, _, p = prepared
     plans = assign_compositions(extractive_plans(p), p)
@@ -170,7 +170,7 @@ def test_refinement_rejects_unrelated_or_wrong_purpose_edits(prepared):
 
 
 def test_multi_series_chart_preserves_all_columns(prepared):
-    from studio.charts import make_chart
+    from studio.composition.charts import make_chart
 
     _, _, p = prepared
     table = TableData(
@@ -194,7 +194,7 @@ def test_multi_series_chart_preserves_all_columns(prepared):
 def test_refinement_adopts_only_reviewed_improvement(
     prepared, tmp_path, monkeypatch, improves, model_edits
 ):
-    import studio.refinement as refinement
+    import studio.checks.refinement as refinement
 
     _, _, p = prepared
     p.content = parse_content(
@@ -277,7 +277,7 @@ def test_refinement_adopts_only_reviewed_improvement(
 
 
 def test_refinement_reserves_deadline_without_calling_model(prepared, tmp_path):
-    from studio.refinement import refine
+    from studio.checks.refinement import refine
 
     _, _, p = prepared
 
@@ -295,7 +295,7 @@ def test_refinement_reserves_deadline_without_calling_model(prepared, tmp_path):
 
 
 def test_template_timeout_retries_only_the_same_batch(prepared):
-    from studio.analysis import analyze_meaning
+    from studio.templates.template_analysis import analyze_meaning
 
     _, _, p = prepared
     pattern = p.template.patterns[0]
@@ -327,14 +327,14 @@ def test_template_timeout_retries_only_the_same_batch(prepared):
 
 
 def test_incomplete_template_induction_cannot_reach_planner(prepared, monkeypatch):
-    import studio.analysis as analysis
+    import studio.preparation.intelligence as analysis
 
     _, store, p = prepared
 
     async def failed(*args, **kwargs):
         return {"status": "failed", "method": "text_and_geometry", "patterns": []}
 
-    monkeypatch.setattr(analysis, "analyze_meaning", failed)
+    monkeypatch.setattr("studio.templates.template_analysis.analyze_meaning", failed)
     gateway = SimpleNamespace(settings=SimpleNamespace(mode="api", model_id="test"))
     with pytest.raises(ValueError, match="непроверенному каталогу"):
         asyncio.run(
@@ -345,7 +345,7 @@ def test_incomplete_template_induction_cannot_reach_planner(prepared, monkeypatc
 
 
 def test_title_only_cover_is_available_to_design(prepared):
-    from studio.deeppresenter import CompositionEnvironment
+    from studio.providers.deeppresenter import CompositionEnvironment
 
     _, _, p = prepared
     cover = p.template.patterns[0].model_copy(deep=True)

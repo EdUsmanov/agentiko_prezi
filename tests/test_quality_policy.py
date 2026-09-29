@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 import pytest
-from studio.quality import candidate_regressions, quality_report, meaningful_diversity
+from studio.checks.quality import candidate_regressions, quality_report, meaningful_diversity
 from studio.models import Box, Element, SlideScene
 
 
@@ -68,7 +68,7 @@ def test_title_without_fact_id_and_data_area_are_protected():
     assert codes == {"readability_regression", "data_area_regression"}
 
 
-def test_tiny_movements_or_only_one_of_three_content_slides_do_not_count():
+def test_translation_does_not_count_as_new_composition():
     originals = [scene() for _ in range(3)]
     second = [s.model_copy(deep=True) for s in originals]
     profile = SimpleNamespace(width=960, height=540)
@@ -78,7 +78,7 @@ def test_tiny_movements_or_only_one_of_three_content_slides_do_not_count():
     second[0].elements[1].box.x += 180
     assert not meaningful_diversity({"a": originals, "b": second}, profile)["verified"]
     second[1].elements[1].box.x += 180
-    assert meaningful_diversity({"a": originals, "b": second}, profile)["verified"]
+    assert not meaningful_diversity({"a": originals, "b": second}, profile)["verified"]
 
 
 @pytest.fixture
@@ -112,7 +112,7 @@ def saved_european():
 
 
 def test_european_repair_rejects_real_20_to_12_candidate(saved_european):
-    from studio.refinement import apply_edits, LayoutEdit
+    from studio.checks.refinement import apply_edits, LayoutEdit
 
     package, plans, decks = saved_european
     with pytest.raises(ValueError, match="quality"):
@@ -127,7 +127,7 @@ def test_european_repair_rejects_real_20_to_12_candidate(saved_european):
 
 
 def test_european_design_reverts_same_real_candidate(saved_european):
-    from studio.deeppresenter import CompositionEnvironment, Assignment
+    from studio.providers.deeppresenter import CompositionEnvironment, Assignment
 
     package, plans, _ = saved_european
     env = CompositionEnvironment(package, plans)
@@ -143,7 +143,7 @@ def test_exported_geometry_ignores_titles_and_rejects_one_point_motion():
     from pptx import Presentation
     from pptx.util import Pt
     from studio.models import Fact, SlidePlan, VariantPlan
-    from studio.export_audit import content_scenes
+    from studio.checks.export_audit import content_scenes
 
     facts = [Fact(id=f"f{i}", text=f"Evidence {i}") for i in range(3)]
     package = SimpleNamespace(
@@ -170,14 +170,15 @@ def test_exported_geometry_ignores_titles_and_rejects_one_point_motion():
     assert not meaningful_diversity({"a": before, "b": after}, package.template)["verified"]
     for slide in list(prs.slides)[:2]:
         slide.shapes[1].left += Pt(180)
-    assert meaningful_diversity(
+    assert not meaningful_diversity(
         {"a": before, "b": content_scenes(prs, variant, package)}, package.template
     )["verified"]
 
 
-def test_diversity_accumulates_safe_layout_changes_across_slides(monkeypatch):
+def test_diversity_does_not_rewrite_slides_just_to_move_content(monkeypatch):
     from studio.models import Pattern, Fact
-    from studio import diversity, composer
+    from studio.checks import diversity
+    from studio.composition import composer
 
     title = Box(x=20, y=10, w=800, h=60)
     left = Box(x=20, y=120, w=350, h=200)
@@ -230,6 +231,6 @@ def test_diversity_accumulates_safe_layout_changes_across_slides(monkeypatch):
         "analytical": [s.model_copy(deep=True) for s in scenes],
     }
     report = diversity.ensure_diversity(decks, package)
-    assert report["verified"]
-    assert report["adjustments"][0]["strategy"] == "alternate_native_layouts"
-    assert len(report["adjustments"][0]["slides"]) == 2
+    assert not report["verified"]
+    assert not report["adjustments"]
+    assert decks["analytical"] == scenes

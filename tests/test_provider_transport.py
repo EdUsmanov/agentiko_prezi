@@ -4,7 +4,7 @@ import sys
 from types import SimpleNamespace
 import httpx
 import pytest
-from studio.provider_transport import ProviderGate, completion, retry_delay
+from studio.providers.provider_transport import ProviderGate, completion, retry_delay
 
 
 def test_gate_coordinates_independent_instances_and_releases_on_cancel(tmp_path):
@@ -113,7 +113,7 @@ def test_gate_coordinates_separate_processes(tmp_path):
     child = """
 import asyncio, sys
 from types import SimpleNamespace
-from studio.provider_transport import ProviderGate
+from studio.providers.provider_transport import ProviderGate
 async def check():
     try:
         async with asyncio.timeout(.3):
@@ -169,7 +169,7 @@ def test_retry_header_is_bounded():
 
 
 def test_429_retry_budget_is_finite(monkeypatch):
-    from studio import provider_transport as transport
+    from studio.providers import provider_transport as transport
 
     original = asyncio.sleep
 
@@ -200,7 +200,7 @@ def test_429_retry_budget_is_finite(monkeypatch):
 
 @pytest.mark.parametrize("success_on", [3, 4, None])
 def test_transient_connection_failures_use_bounded_backoff(monkeypatch, success_on):
-    from studio import provider_transport as transport
+    from studio.providers import provider_transport as transport
 
     delays = []
 
@@ -239,7 +239,7 @@ def test_transient_connection_failures_use_bounded_backoff(monkeypatch, success_
 
 
 def test_network_retry_does_not_exceed_remaining_budget(monkeypatch):
-    from studio import provider_transport as transport
+    from studio.providers import provider_transport as transport
 
     async def no_sleep(_):
         pytest.fail("No budget for backoff")

@@ -8,10 +8,11 @@ from fastapi.testclient import TestClient
 from PIL import Image
 
 from studio.config import Settings
-from studio.store import Store
+from studio.models import PreparationControl
+from studio.jobs.store import Store
 from studio.diagnostics import configure, scope, event, capture_stream
 from studio.app import create_app
-from studio import app as app_module
+from studio.jobs import runtime as runtime_module
 from studio import cache_version as library
 
 
@@ -21,14 +22,14 @@ def test_unlimited_is_default(tmp_path):
 
 
 def test_server_code_not_analysis_fingerprint(tmp_path, monkeypatch):
-    (tmp_path / "studio").mkdir()
+    (tmp_path / "studio/templates").mkdir(parents=True)
     (tmp_path / "studio/app.py").write_text("server v1")
-    (tmp_path / "studio/template.py").write_text("analysis v1")
+    (tmp_path / "studio/templates/parsing.py").write_text("analysis v1")
     monkeypatch.setattr(library, "ROOT", tmp_path)
     first = library.analysis_version()
     (tmp_path / "studio/app.py").write_text("server v2")
     assert library.analysis_version() == first
-    (tmp_path / "studio/template.py").write_text("analysis v2")
+    (tmp_path / "studio/templates/parsing.py").write_text("analysis v2")
     assert library.analysis_version() != first
 
 
@@ -65,7 +66,7 @@ def test_cancel_and_autostart_share_atomic_boundary(tmp_path):
             assert not final.get("generation_id")
 
 
-def test_prepare_callback_does_not_rearm_cancelled_countdown(tmp_path, monkeypatch):
+def test_prepare_callback_does_not_rearm_cancelled_countdown(tmp_path, preparation_worker):
     def prepared(store, jid, *args):
         store.update(
             jid,
@@ -76,7 +77,7 @@ def test_prepare_callback_does_not_rearm_cancelled_countdown(tmp_path, monkeypat
         )
         store.cancel_auto_generation(jid)
 
-    monkeypatch.setattr(app_module, "prepare", prepared)
+    preparation_worker(prepared)
     application = create_app(Settings(data_dir=tmp_path))
     with TestClient(application) as client:
         response = client.post(
@@ -165,7 +166,7 @@ def test_job_journal_shows_latest_events_and_download_keeps_history(tmp_path):
         )
 
 
-def test_preparation_schedules_sixty_seconds_and_cancel(tmp_path, monkeypatch):
+def test_preparation_schedules_sixty_seconds_and_cancel(tmp_path, preparation_worker):
     def prepared(store, jid, *args):
         store.update(
             jid,
@@ -178,7 +179,7 @@ def test_preparation_schedules_sixty_seconds_and_cancel(tmp_path, monkeypatch):
             auto_generate_at=time.time() + 60,
         )
 
-    monkeypatch.setattr(app_module, "prepare", prepared)
+    preparation_worker(prepared)
     application = create_app(Settings(data_dir=tmp_path))
     # Existing API does upload validation in prepare; this test isolates scheduling.
     with TestClient(application) as client:
@@ -206,10 +207,13 @@ def test_restart_resumes_due_autostart_once(tmp_path, monkeypatch):
         package["id"], "ready", auto_generation="scheduled", auto_generate_at=time.time() - 1
     )
     monkeypatch.setattr(
-        app_module,
-        "load_package",
+        application.state.presentation_service,
+        "load_operation",
         lambda *a: SimpleNamespace(
-            analysis={}, constraints=SimpleNamespace(confirm_plan=False, slides=5)
+            input_mode="content",
+            control=PreparationControl(),
+            analysis={},
+            constraints=SimpleNamespace(confirm_plan=False, slides=5),
         ),
     )
     calls = []
@@ -232,7 +236,7 @@ def test_restart_resumes_due_autostart_once(tmp_path, monkeypatch):
         store.update(jid, "completed")
         return Process()
 
-    monkeypatch.setattr(app_module.asyncio, "create_subprocess_exec", spawn)
+    monkeypatch.setattr(runtime_module.asyncio, "create_subprocess_exec", spawn)
     with TestClient(application) as client:
         for _ in range(100):
             job = client.get("/api/jobs/" + package["id"]).json()
@@ -273,7 +277,7 @@ def test_failed_generation_allows_explicit_retry_but_not_paid_auto_retry(tmp_pat
 
 
 def test_zone_coordinates_match_protected_regions(monkeypatch):
-    from studio import portable_templates as portable
+    from studio.templates import portable_templates as portable
 
     seen = {}
 
@@ -294,9 +298,9 @@ def test_zone_coordinates_match_protected_regions(monkeypatch):
 
 
 def test_peer_background_does_not_modify_input_and_fields(template, tmp_path):
-    from studio.template import analyze_template
-    from studio.portable_templates import extract_backgrounds, clean_editable_source
-    from studio.powerpoint import open_presentation
+    from studio.templates.parsing import analyze_template
+    from studio.templates.portable_templates import extract_backgrounds, clean_editable_source
+    from studio.composition.powerpoint import open_presentation
 
     source = template.read_bytes()
     output = tmp_path / "peer"
@@ -322,7 +326,7 @@ def test_peer_background_does_not_modify_input_and_fields(template, tmp_path):
 
 def test_blank_svg_card_is_distinguished_from_source_illustration(tmp_path):
     from zipfile import ZipFile
-    from studio.portable_templates import _solid_svg_panel
+    from studio.templates.portable_templates import _solid_svg_panel
 
     path = tmp_path / "panels.zip"
     with ZipFile(path, "w") as archive:

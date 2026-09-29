@@ -7,14 +7,14 @@ import pytest
 from pptx import Presentation
 from pptx.util import Pt
 from pptx.enum.shapes import MSO_SHAPE
-from studio.content import parse_content
+from studio.contents.parsing import parse_content
 from studio.config import Settings
 from studio.models import Box
-from studio.composer import fact_elements
-from studio.render import render_pptx
-from studio.native_template import title_bounds
-from studio.gateway import ModelGateway
-from studio.visual import review_visuals
+from studio.composition.composer import fact_elements
+from studio.composition.render import render_pptx
+from studio.templates.native_template import title_bounds
+from studio.providers.gateway import ModelGateway
+from studio.checks.visual import review_visuals
 
 
 def test_markdown_list_and_emphasis_survive():
@@ -36,8 +36,8 @@ def test_title_bound_by_badge_not_oversized_placeholder():
 
 
 def test_editable_native_bullets_and_bold_heading(prepared, tmp_path):
-    from studio.planner import extractive_plans
-    from studio.composer import compose_variant
+    from studio.contents.planner import extractive_plans
+    from studio.composition.composer import compose_variant
 
     _, store, package = prepared
     scenes = compose_variant(extractive_plans(package).variants[0], package)

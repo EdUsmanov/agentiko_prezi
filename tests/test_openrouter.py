@@ -4,7 +4,7 @@ from dataclasses import replace
 import httpx
 import pytest
 from studio.config import Settings
-from studio.gateway import ModelGateway, ModelPolicyError
+from studio.providers.gateway import ModelGateway, ModelPolicyError
 
 
 def settings(tmp_path, **extra):
@@ -165,9 +165,9 @@ def test_no_key_or_route_fails_before_request(tmp_path):
 
 
 def test_provider_selection_invalidates_all_model_caches(tmp_path):
-    from studio.induction import validated_request
-    from studio import review_cache
-    from studio.template_cache import TemplateCache
+    from studio.providers.induction import validated_request
+    from studio.checks import review_cache
+    from studio.templates.template_cache import TemplateCache
 
     s = settings(tmp_path)
 

@@ -1,8 +1,8 @@
 import pytest
 from studio.models import Box, Fact, TableData, SlidePlan
-from studio.semantic_bindings import object_contract, table_region
-from studio.composer import compose
-from studio.render import chart_fits
+from studio.contents.semantic_bindings import object_contract, table_region
+from studio.composition.composer import compose
+from studio.composition.render import chart_fits
 
 
 def chart_case(prepared):
@@ -85,7 +85,7 @@ def test_chart_uses_explicit_illustration_container_and_keeps_body_field(prepare
     assert contract["visuals"][0]["shape_id"] == 900
     assert contract["visuals"][0]["box"] == illustration.model_dump()
     from types import SimpleNamespace
-    from studio.native_template import intersects
+    from studio.templates.native_template import intersects
 
     with_image = object_contract(slide, package, pattern, [SimpleNamespace(id="photo")])
     boxes = [Box.model_validate(v["box"]) for v in with_image["visuals"]]
@@ -99,7 +99,7 @@ def test_chart_uses_explicit_illustration_container_and_keeps_body_field(prepare
 
 
 def test_table_with_short_caption_uses_available_height_without_tiny_type(prepared):
-    from studio.audit import repair_scenes, audit_scenes
+    from studio.checks.audit import repair_scenes, audit_scenes
 
     package, _, pattern, slide = chart_case(prepared)
     pattern.body_zones = [Box(x=40, y=140, w=850, h=380)]
@@ -132,7 +132,7 @@ def test_table_with_short_caption_uses_available_height_without_tiny_type(prepar
     assert actual.box.y + actual.box.h <= body.box.y
     assert body.box.y + body.box.h <= pattern.body_zones[0].y + pattern.body_zones[0].h
     # Final generation reporting must use the same measured region as composition.
-    from studio.semantic_bindings import binding_report
+    from studio.contents.semantic_bindings import binding_report
 
     report = binding_report(slide, package, pattern)
     assert report["fields"][0]["table_id"] == table.id

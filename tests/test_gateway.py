@@ -3,7 +3,7 @@ import json
 import httpx
 import pytest
 from studio.config import Settings
-from studio.gateway import ModelGateway
+from studio.providers.gateway import ModelGateway
 
 
 def settings(tmp_path):

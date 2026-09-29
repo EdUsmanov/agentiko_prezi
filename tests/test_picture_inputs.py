@@ -5,14 +5,14 @@ from xml.etree import ElementTree as ET
 import pytest
 from pptx import Presentation
 from pptx.util import Pt
-from studio.pictures import A, P, R, SVG, is_picture, embedded_picture_blob
-from studio.powerpoint import open_presentation
+from studio.composition.pictures import A, P, R, SVG, is_picture, embedded_picture_blob
+from studio.composition.powerpoint import open_presentation
 from studio.security import PPTX_MAIN, POTX_MAIN
-from studio.template import analyze_template, walk_shapes
-from studio.analysis import template_inventory
-from studio.render import render_pptx
-from studio.composer import compose_variant
-from studio.planner import extractive_plans
+from studio.templates.parsing import analyze_template, walk_shapes
+from studio.templates.template_analysis import template_inventory
+from studio.composition.render import render_pptx
+from studio.composition.composer import compose_variant
+from studio.contents.planner import extractive_plans
 
 PNG = base64.b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jTQAAAABJRU5ErkJggg=="

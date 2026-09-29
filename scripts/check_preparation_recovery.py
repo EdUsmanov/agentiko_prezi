@@ -10,7 +10,7 @@ import tempfile
 from studio.config import Settings, ROOT
 from studio.models import PreparedPackage, Fact
 from studio.pipeline import prepare, load_package
-from studio.store import Store
+from studio.jobs.store import Store
 
 
 def main():
@@ -66,7 +66,7 @@ def main():
         "seconds": result.get("analysis_seconds"),
     }
     if result["state"] == "ready":
-        from studio.document import structure_document
+        from studio.contents.document import structure_document
 
         class CacheProbe:
             def __init__(self):

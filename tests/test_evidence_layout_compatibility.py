@@ -1,5 +1,5 @@
 import pytest
-from studio.contracts import compatible
+from studio.composition.contracts import compatible
 from studio.models import Pattern, SlidePlan
 
 

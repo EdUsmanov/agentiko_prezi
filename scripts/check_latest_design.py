@@ -7,17 +7,17 @@ import argparse
 import asyncio
 import json
 from studio.config import Settings, ROOT
-from studio.store import Store
+from studio.jobs.store import Store
 from studio.pipeline import load_package
 from studio.models import ContentModel, Plans
-from studio.template import analyze_template
-from studio.native_template import compile_backgrounds
-from studio.planner import assign_compositions
-from studio.composer import compose_variant
-from studio.audit import repair_scenes, audit_scenes
-from studio.render import render_variant
-from studio.visual import review_visuals
-from studio.gateway import ModelGateway
+from studio.templates.parsing import analyze_template
+from studio.templates.native_template import compile_backgrounds
+from studio.contents.planner import assign_compositions
+from studio.composition.composer import compose_variant
+from studio.checks.audit import repair_scenes, audit_scenes
+from studio.composition.render import render_variant
+from studio.checks.visual import review_visuals
+from studio.providers.gateway import ModelGateway
 
 
 def main():
@@ -48,8 +48,8 @@ def main():
         Plans.model_validate_json((old / "plans.json").read_text()), package
     )
     if args.sections or args.reuse_sections:
-        from studio.sections import prepare_sections, add_dividers
-        from studio.planner import validate_plans
+        from studio.contents.sections import prepare_sections, add_dividers
+        from studio.contents.planner import validate_plans
 
         if args.reuse_sections:
             package.analysis["section_groups"] = json.loads((out / "regression.json").read_text())[
@@ -60,7 +60,7 @@ def main():
         plans = validate_plans(add_dividers(plans, package), package)
     (out / "profile.json").write_text(package.template.model_dump_json(indent=2))
     (out / "plans.json").write_text(plans.model_dump_json(indent=2))
-    from studio.diversity import ensure_diversity
+    from studio.checks.diversity import ensure_diversity
 
     decks = {v.key: compose_variant(v, package) for v in plans.variants}
     for scenes in decks.values():

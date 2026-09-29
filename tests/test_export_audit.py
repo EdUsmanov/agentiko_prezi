@@ -1,6 +1,6 @@
 from pptx import Presentation
 from pptx.util import Pt
-from studio.export_audit import contains_text, repair_symbols, geometry, slide_text
+from studio.checks.export_audit import contains_text, repair_symbols, geometry, slide_text
 
 
 def test_fact_matching_does_not_accept_numeric_prefix():
@@ -49,7 +49,7 @@ def test_actual_geometry_repair_changes_no_text_or_box(prepared):
 
 
 def test_content_geometry_ignores_text_and_ids_but_detects_position():
-    from studio.export_audit import content_geometry_signature
+    from studio.checks.export_audit import content_geometry_signature
 
     prs = Presentation()
     slide = prs.slides.add_slide(prs.slide_layouts[6])

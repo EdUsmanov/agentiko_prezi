@@ -1,6 +1,6 @@
 from pathlib import Path
 import pytest
-from studio.artifacts import publish_variants, PublicationRollbackError
+from studio.composition.artifacts import publish_variants, PublicationRollbackError
 
 
 def seed(root, keys=("executive", "analytical")):

@@ -38,6 +38,8 @@ def analysis_version():
     """
     excluded = {
         "app.py",
+        "presentation_service.py",
+        "runtime.py",
         "cli.py",
         "worker.py",
         "store.py",
@@ -50,6 +52,7 @@ def analysis_version():
         for p in (ROOT / "studio").rglob("*")
         if p.suffix in (".py", ".mjs")
         and p.name not in excluded
+        and p.relative_to(ROOT / "studio").parts[0] != "api"
         and not p.name.startswith("pptagent")
         and "deeppresenter" not in p.parts
     ]
@@ -75,6 +78,8 @@ def dependency_version(names):
     files = []
     for name in names:
         path = ROOT / name
+        if not path.exists():
+            raise FileNotFoundError(f"Cache dependency does not exist: {name}")
         files.extend(
             p for p in path.rglob("*") if p.is_file() and "__pycache__" not in p.parts
         ) if path.is_dir() else files.append(path)
@@ -89,50 +94,56 @@ def dependency_version(names):
 
 TEMPLATE_DEPENDENCIES = [
     "studio/cache_version.py",
-    "studio/text_layout.py",
-    "studio/export_audit.py",
-    "studio/charts.py",
-    "studio/chart_layout.py",
-    "studio/table_style.py",
-    "studio/metrics.py",
-    "studio/template_analysis.py",
-    "studio/template_cache.py",
-    "studio/template.py",
-    "studio/template_geometry.py",
-    "studio/shape_geometry.py",
-    "studio/native_surface.py",
-    "studio/pptx_text.py",
-    "studio/content_sources.py",
-    "studio/native_template.py",
-    "studio/template_adaptation.py",
-    "studio/portable_templates.py",
-    "studio/text_zone_review.py",
-    "studio/raster_review.py",
-    "studio/artwork.py",
-    "studio/colors.py",
-    "studio/pictures.py",
+    "studio/composition/text_layout.py",
+    "studio/composition/text_composer.py",
+    "studio/checks/export_audit.py",
+    "studio/composition/charts.py",
+    "studio/composition/chart_layout.py",
+    "studio/composition/table_style.py",
+    "studio/composition/metrics.py",
+    "studio/templates/template_analysis.py",
+    "studio/templates/template_resources.py",
+    "studio/preparation/intelligence.py",
+    "studio/preparation",
+    "studio/templates/template_cache.py",
+    "studio/templates/parsing.py",
+    "studio/templates/template_geometry.py",
+    "studio/composition/shape_geometry.py",
+    "studio/composition/native_surface.py",
+    "studio/composition/pptx_text.py",
+    "studio/contents/content_sources.py",
+    "studio/templates/native_template.py",
+    "studio/templates/table_templates.py",
+    "studio/templates/template_adaptation.py",
+    "studio/templates/portable_templates.py",
+    "studio/checks/text_zone_review.py",
+    "studio/checks/raster_review.py",
+    "studio/templates/artwork.py",
+    "studio/templates/colors.py",
+    "studio/composition/pictures.py",
     "studio/models.py",
-    "studio/contracts.py",
+    "studio/composition/contracts.py",
     "studio/security.py",
     "studio/security_gate.py",
-    "studio/powerpoint.py",
-    "studio/render.py",
-    "studio/office.py",
-    "studio/field_style.py",
-    "studio/fonts.py",
-    "studio/font_coverage.py",
-    "studio/font_identity.py",
-    "studio/font_extraction.py",
-    "studio/font_disclosure.py",
-    "studio/induction.py",
-    "studio/gateway.py",
-    "studio/archetype_catalog.py",
-    "studio/native_style.py",
+    "studio/composition/powerpoint.py",
+    "studio/composition/render.py",
+    "studio/composition/office.py",
+    "studio/templates/field_style.py",
+    "studio/templates/fonts.py",
+    "studio/templates/font_coverage.py",
+    "studio/templates/font_identity.py",
+    "studio/templates/font_extraction.py",
+    "studio/templates/font_disclosure.py",
+    "studio/providers/induction.py",
+    "studio/providers/gateway.py",
+    "studio/templates/archetype_catalog.py",
+    "studio/templates/native_style.py",
     "studio/_vendor/portable_background_extractor",
     "studio/_vendor/portable_text_zone_finder",
     "studio/_vendor/color_extraction",
     "studio/_vendor/font_extraction",
     "prompts/template_analyst.md",
+    "prompts/template_resources.md",
     "prompts/text_zone.md",
     "prompts/background_raster.md",
     "config/archetypes.json",
@@ -146,87 +157,96 @@ def template_version():
     return dependency_version(TEMPLATE_DEPENDENCIES)
 
 
+STAGE_BASE_DEPENDENCIES = [
+    "studio/cache_version.py",
+    "studio/providers/induction.py",
+    "studio/providers/gateway.py",
+    "studio/models.py",
+    "studio/templates/archetype_catalog.py",
+    "studio/checks/repair_errors.py",
+    "studio/generation/results.py",
+    "studio/composition/layout_edits.py",
+    "studio/checks/repair_policy.py",
+    "studio/security.py",
+    "studio/security_gate.py",
+    "studio/config.py",
+    "config/reasoning.json",
+    "config/policy.json",
+]
+
+STAGE_DEPENDENCIES = {
+    "author": ["studio/contents/author.py"],
+    "template_resources": ["studio/templates/template_resources.py"],
+    "template_analyst": [
+        "studio/templates/template_analysis.py",
+        "studio/templates/colors.py",
+        "studio/templates/archetype_catalog.py",
+        "config/archetypes.json",
+    ],
+    "text_zone": ["studio/checks/text_zone_review.py", "studio/_vendor/portable_text_zone_finder"],
+    "table_headers": ["studio/contents/editorial_tables.py"],
+    "editorial": [
+        "studio/contents/editorial_domain.py",
+        "studio/contents/narrative_data.py",
+        "studio/contents/narrative_layout.py",
+        "studio/contents/editorial.py",
+        "studio/contents/editorial_repair.py",
+        "studio/contents/editorial_outline.py",
+        "studio/contents/parsing.py",
+        "studio/contents/narrative.py",
+    ],
+    "editorial_outline": [
+        "studio/contents/editorial_domain.py",
+        "studio/contents/narrative_data.py",
+        "studio/contents/narrative_layout.py",
+        "studio/contents/editorial_outline.py",
+        "studio/contents/editorial.py",
+    ],
+    "editorial_slides": [
+        "studio/contents/editorial_domain.py",
+        "studio/contents/narrative_data.py",
+        "studio/contents/narrative_layout.py",
+        "studio/contents/editorial_outline.py",
+        "studio/contents/editorial.py",
+    ],
+    "editorial_review": [
+        "studio/contents/editorial_domain.py",
+        "studio/contents/narrative_data.py",
+        "studio/contents/narrative_layout.py",
+        "studio/contents/editorial.py",
+        "studio/contents/editorial_repair.py",
+    ],
+    "editorial_repair": [
+        "studio/contents/editorial_domain.py",
+        "studio/contents/narrative_data.py",
+        "studio/contents/narrative_layout.py",
+        "studio/contents/editorial.py",
+        "studio/contents/editorial_repair.py",
+        "studio/contents/editorial_patch_validation.py",
+    ],
+    "visual_critic": [
+        "studio/checks/visual.py",
+        "studio/contents/uploads.py",
+        "studio/diagnostics.py",
+    ],
+    "critic": [
+        "studio/checks/content_review.py",
+        "studio/generation/reviews.py",
+        "studio/checks/review_grounding.py",
+    ],
+    "document": ["studio/contents/document.py"],
+    "sections": ["studio/contents/sections.py", "studio/contents/section_metadata.py"],
+    "content_archetypes": [
+        "studio/contents/archetypes.py",
+        "studio/templates/archetype_catalog.py",
+        "config/archetypes.json",
+    ],
+}
+
+
 def stage_version(stage):
-    base = [
-        "studio/cache_version.py",
-        "studio/induction.py",
-        "studio/gateway.py",
-        "studio/models.py",
-        "studio/repair_errors.py",
-        "studio/stage_results.py",
-        "studio/layout_edits.py",
-        "studio/repair_policy.py",
-        "studio/security.py",
-        "studio/security_gate.py",
-        "studio/config.py",
-        "config/reasoning.json",
-        "config/policy.json",
-        "prompts/" + stage + ".md",
-    ]
-    dependencies = {
-        "template_analyst": [
-            "studio/template_analysis.py",
-            "studio/colors.py",
-            "studio/archetype_catalog.py",
-            "config/archetypes.json",
-        ],
-        "text_zone": ["studio/text_zone_review.py", "studio/_vendor/portable_text_zone_finder"],
-        "table_headers": ["studio/editorial_tables.py"],
-        "editorial": [
-            "studio/editorial_domain.py",
-            "studio/narrative_data.py",
-            "studio/narrative_layout.py",
-            "studio/editorial.py",
-            "studio/editorial_repair.py",
-            "studio/editorial_outline.py",
-            "studio/content.py",
-            "studio/narrative.py",
-        ],
-        "editorial_outline": [
-            "studio/editorial_domain.py",
-            "studio/narrative_data.py",
-            "studio/narrative_layout.py",
-            "studio/editorial_outline.py",
-            "studio/editorial.py",
-        ],
-        "editorial_slides": [
-            "studio/editorial_domain.py",
-            "studio/narrative_data.py",
-            "studio/narrative_layout.py",
-            "studio/editorial_outline.py",
-            "studio/editorial.py",
-        ],
-        "editorial_review": [
-            "studio/editorial_domain.py",
-            "studio/narrative_data.py",
-            "studio/narrative_layout.py",
-            "studio/editorial.py",
-            "studio/editorial_repair.py",
-        ],
-        "editorial_repair": [
-            "studio/editorial_domain.py",
-            "studio/narrative_data.py",
-            "studio/narrative_layout.py",
-            "studio/editorial.py",
-            "studio/editorial_repair.py",
-            "studio/editorial_patch_validation.py",
-        ],
-        "visual_critic": ["studio/visual.py", "studio/uploads.py", "studio/diagnostics.py"],
-        "critic": [
-            "studio/content_review.py",
-            "studio/generation_reviews.py",
-            "studio/review_grounding.py",
-        ],
-        "document": ["studio/document.py"],
-        "sections": ["studio/sections.py", "studio/section_metadata.py"],
-        "content_archetypes": [
-            "studio/archetypes.py",
-            "studio/archetype_catalog.py",
-            "config/archetypes.json",
-        ],
-    }
-    return (
-        dependency_version(base + dependencies[stage])
-        if stage in dependencies
-        else analysis_version()
+    if stage not in STAGE_DEPENDENCIES:
+        return analysis_version()
+    return dependency_version(
+        STAGE_BASE_DEPENDENCIES + STAGE_DEPENDENCIES[stage] + [f"prompts/{stage}.md"]
     )

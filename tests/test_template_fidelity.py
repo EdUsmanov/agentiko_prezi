@@ -4,14 +4,14 @@ import pytest
 from pptx import Presentation
 from pptx.util import Pt, Inches
 from pptx.dml.color import RGBColor
-from studio.native_style import native_styles
-from studio.native_template import native_patterns
-from studio.content import parse_content
+from studio.templates.native_style import native_styles
+from studio.templates.native_template import native_patterns
+from studio.contents.parsing import parse_content
 from studio.models import Pattern, Box
-from studio.sections import prepare_sections, add_dividers
-from studio.planner import extractive_plans, assign_compositions, validate_plans
-from studio.composer import compose_variant
-from studio.audit import audit_scenes
+from studio.contents.sections import prepare_sections, add_dividers
+from studio.contents.planner import extractive_plans, assign_compositions, validate_plans
+from studio.composition.composer import compose_variant
+from studio.checks.audit import audit_scenes
 
 
 def test_effective_shape_colors_and_empty_layout(template, tmp_path):
@@ -49,7 +49,7 @@ def test_small_brand_label_is_not_main_heading(template):
     assert p.title_size == 36 and len(p.body_zones) == 1
 
 
-def test_single_native_zone_not_split_and_colors_preserved(prepared):
+def test_variant_bodies_stay_inside_native_zone_and_preserve_colors(prepared):
     _, _, p = prepared
     p.content = parse_content("# Topic\nOne fact.\nSecond fact.\nThird fact.")
     p.constraints.slides = 1
@@ -68,13 +68,22 @@ def test_single_native_zone_not_split_and_colors_preserved(prepared):
     plan = assign_compositions(extractive_plans(p), p)
     for v in plan.variants:
         scene = compose_variant(v, p)[0]
-        assert all(e.box.x == 50 and e.box.w == 700 for e in scene.elements if e.role == "body")
+        body = [e for e in scene.elements if e.role == "body"]
+        assert body
+        assert all(
+            e.box.x >= 50
+            and e.box.x + e.box.w <= 750
+            and e.box.y >= 150
+            and e.box.y + e.box.h <= 450
+            for e in body
+        )
+        assert {fid for e in body for fid in e.source_ids} == set(v.slides[0].fact_ids)
         assert all(e.color == "#154A67" for e in scene.elements if e.kind == "text")
 
 
 def test_bullet_uses_text_color_and_size(prepared):
     from studio.models import Element
-    from studio.render import set_text
+    from studio.composition.render import set_text
 
     _, _, p = prepared
     prs = Presentation()

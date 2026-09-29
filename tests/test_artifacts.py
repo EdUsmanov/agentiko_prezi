@@ -1,6 +1,6 @@
 from zipfile import ZipFile
 
-from studio.artifacts import package_results, public_path
+from studio.composition.artifacts import package_results, public_path
 
 
 def test_archive_only_publishes_known_deliverables(tmp_path):
@@ -14,7 +14,7 @@ def test_archive_only_publishes_known_deliverables(tmp_path):
     (tmp_path / "refinement-1/deck.pptx").write_bytes(b"obsolete")
     package_results(tmp_path)
     with ZipFile(tmp_path / "presentations.zip") as archive:
-        assert set(archive.namelist()) == {"manifest.json", "executive/deck.pptx"}
+        assert set(archive.namelist()) == {"reports/manifest.json", "executive.pptx"}
 
 
 def test_public_files_reject_symlinks_and_traversal(tmp_path):

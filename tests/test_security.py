@@ -1,8 +1,8 @@
 from zipfile import ZipFile
 import pytest
 from studio.security import validate_pptx, InputRejected
-from studio.content import parse_content, parse_constraints
-from studio.gateway import validate_model_policy, ModelPolicyError
+from studio.contents.parsing import parse_content, parse_constraints
+from studio.providers.gateway import validate_model_policy, ModelPolicyError
 from studio.config import Settings
 
 
@@ -28,6 +28,15 @@ def test_xxe(tmp_path):
         )
     with pytest.raises(InputRejected):
         validate_pptx(path)
+
+
+def test_ole_embedding_is_accepted(template, tmp_path):
+    path = tmp_path / "with-ole.pptx"
+    with ZipFile(template) as source, ZipFile(path, "w") as target:
+        for entry in source.infolist():
+            target.writestr(entry, source.read(entry))
+        target.writestr("ppt/embeddings/oleObject1.bin", b"embedded artwork")
+    assert validate_pptx(path) == []
 
 
 def test_injection_not_promoted_to_constraints():

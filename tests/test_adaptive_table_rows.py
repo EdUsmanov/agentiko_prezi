@@ -5,12 +5,20 @@ from types import SimpleNamespace
 import pytest
 from pptx import Presentation
 from studio.config import ROOT
-from studio.models import Box, Element, SlideScene, Constraints, ContentModel, Fact
-from studio.template import analyze_template
-from studio.table_style import column_widths, row_heights
-from studio.fonts import element_font, table_cell_fits
-from studio.audit import audit_scenes, repair_scenes
-from studio.render import render_pptx, render_html, render_pdf
+from studio.models import (
+    PreparationControl,
+    Box,
+    Element,
+    SlideScene,
+    Constraints,
+    ContentModel,
+    Fact,
+)
+from studio.templates.parsing import analyze_template
+from studio.composition.table_style import column_widths, row_heights
+from studio.templates.fonts import element_font, table_cell_fits
+from studio.checks.audit import audit_scenes, repair_scenes
+from studio.composition.render import render_pptx, render_html, render_pdf
 
 
 @pytest.mark.parametrize(
@@ -61,6 +69,7 @@ def test_multiline_header_does_not_shrink_numeric_rows(template, tmp_path, font,
         template=profile,
         images=[],
         analysis={},
+        control=PreparationControl(),
         constraints=Constraints(slides=1),
         content=ContentModel(title="Progress", facts=[Fact(id="f1", text="Data")]),
     )
@@ -106,7 +115,7 @@ def test_multiline_header_does_not_shrink_numeric_rows(template, tmp_path, font,
         assert "Процент" in text and f"{50 + rows_count - 1}%" in text
         textpage.close()
         page.close()
-    from studio.export_audit import geometry
+    from studio.checks.export_audit import geometry
 
     assert not any(
         f["code"] == "pptx_table_overflow"
@@ -154,6 +163,7 @@ def test_tall_body_rows_and_real_overflow_remain_visible(template, tmp_path):
         template=profile,
         images=[],
         analysis={},
+        control=PreparationControl(),
         constraints=Constraints(slides=1),
         content=ContentModel(title="Dense", facts=[Fact(id="f1", text="Data")]),
     )

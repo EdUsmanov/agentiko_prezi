@@ -2,9 +2,9 @@ import asyncio
 import json
 from types import SimpleNamespace
 import pytest
-from studio.analysis import analyze_meaning
-from studio.content import parse_content
-from studio.document import structure_document
+from studio.templates.template_analysis import analyze_meaning
+from studio.contents.parsing import parse_content
+from studio.contents.document import structure_document
 
 
 def meaning(pid):
@@ -158,7 +158,7 @@ def test_failure_diagnostics_persist_without_provider_body(prepared, monkeypatch
         raise ValueError("Не удалось проверить макеты")
 
     monkeypatch.setattr(pipeline, "ModelGateway", Gateway)
-    monkeypatch.setattr(pipeline, "prepare_intelligence", fail)
+    monkeypatch.setattr("studio.preparation.orchestrator.prepare_template_result", fail)
     pipeline.prepare(store, p.id, "Факт один.\nФакт два.", "", "", 2, replace(settings, mode="api"))
     job = store.get(p.id)
     assert job["state"] == "failed" and "ValueError" in job["error"]
@@ -169,7 +169,7 @@ def test_failure_diagnostics_persist_without_provider_body(prepared, monkeypatch
 
 
 def test_partial_template_excludes_unverified_geometry(prepared, monkeypatch):
-    import studio.analysis as analysis
+    import studio.preparation.intelligence as analysis
 
     _, store, p = prepared
     usable = next(x for x in p.template.patterns if x.title_zone and x.body_zones)
@@ -188,12 +188,12 @@ def test_partial_template_excludes_unverified_geometry(prepared, monkeypatch):
         assert package.analysis["warnings"]
         raise RuntimeError("test reached document")
 
-    from studio import template_analysis
+    from studio.templates import template_analysis
 
     monkeypatch.setattr(template_analysis, "analyze_meaning", partial)
-    import studio.document
+    import studio.contents.document
 
-    monkeypatch.setattr(studio.document, "structure_document", stop)
+    monkeypatch.setattr(studio.contents.document, "structure_document", stop)
     gateway = SimpleNamespace(settings=SimpleNamespace(mode="api", model_id="test"))
     with pytest.raises(RuntimeError, match="test reached document"):
         asyncio.run(
@@ -204,8 +204,8 @@ def test_partial_template_excludes_unverified_geometry(prepared, monkeypatch):
 
 
 def test_document_failure_still_reaches_validated_planning(prepared):
-    from studio.analysis import prepare_intelligence
-    from studio.planner import extractive_plans, validate_plans
+    from studio.preparation.intelligence import prepare_intelligence
+    from studio.contents.planner import extractive_plans, validate_plans
 
     _, store, p = prepared
     original = [f.text for f in p.content.facts]
@@ -236,9 +236,9 @@ def test_document_failure_still_reaches_validated_planning(prepared):
 
 
 def test_checkpoint_invalidates_input_model_and_pipeline(tmp_path, monkeypatch):
-    from studio.induction import validated_request
+    from studio.providers.induction import validated_request
     import studio.cache_version as library
-    from studio.document import DocumentRoles
+    from studio.contents.document import DocumentRoles
 
     monkeypatch.setattr(library, "stage_version", lambda stage: "v1")
 
@@ -282,7 +282,7 @@ def test_checkpoint_invalidates_input_model_and_pipeline(tmp_path, monkeypatch):
 
 
 def test_cancelled_model_request_is_not_retried():
-    from studio.induction import validated_request
+    from studio.providers.induction import validated_request
 
     class Gateway:
         settings = SimpleNamespace(mode="api")

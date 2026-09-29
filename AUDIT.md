@@ -52,7 +52,7 @@
 
 ## Что эти проверки не доказывают
 
-Итоги последнего ревью и исправлений — [CODE_AUDIT.md](CODE_AUDIT.md), измерения — [TEST_REPORT.md](TEST_REPORT.md). Ограниченный новый runtime не эквивалентен полному DeepPresenter Research/HTML/VLM продукту.
+Итоги последнего ревью и исправлений — [CODE_AUDIT.md](docs/history/CODE_AUDIT.md), измерения — [TEST_REPORT.md](docs/history/TEST_REPORT.md). Ограниченный новый runtime не эквивалентен полному DeepPresenter Research/HTML/VLM продукту.
 
 При наличии LibreOffice PDF/PNG получаются из готового PPTX; это устраняет расхождение источника предпросмотра, но само по себе не оценивает дизайн. Эти тесты не включают автоматическое сравнение с PowerPoint, OCR-совпадение, оценку качества живой VLM, полноценный adversarial eval и все браузеры/ОС. Проверка Chromium не подтверждает Safari и Firefox. Новый model-repair покрыт контрактными тестами; сетевую проверку необходимо отличать от локальной. Соблюдение font family в XML не гарантирует установленный шрифт на машине получателя.
 

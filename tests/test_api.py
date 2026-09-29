@@ -1,8 +1,13 @@
 import time
+import asyncio
+from types import SimpleNamespace
 import pytest
 from fastapi.testclient import TestClient
 from studio.app import create_app
+from studio.presentation_service import PresentationService, ApplicationError
 from studio.config import Settings
+from studio.jobs.store import Store
+from studio.contents.uploads import MAX_IMAGE_BYTES
 
 
 def wait_job(client, jid):
@@ -13,6 +18,143 @@ def wait_job(client, jid):
             return result
         time.sleep(0.05)
     raise AssertionError("job did not finish")
+
+
+def test_image_reads_follow_validation_and_total_limit(tmp_path, monkeypatch):
+    import studio.presentation_service as application_module
+
+    calls = []
+    payload = b"x" * MAX_IMAGE_BYTES
+
+    def image(name):
+        async def read(limit):
+            assert limit == MAX_IMAGE_BYTES + 1
+            calls.append(name)
+            return payload
+
+        return name, read
+
+    service = PresentationService(
+        Settings(data_dir=tmp_path),
+        Store(tmp_path),
+        SimpleNamespace(prepare=lambda *a, **k: None),
+        version_operation=lambda: "fixed",
+    )
+
+    async def template_chunks():
+        yield b"pptx"
+
+    with pytest.raises(ApplicationError) as invalid:
+        asyncio.run(
+            service.prepare(
+                text="Материал",
+                reference_id="also-selected",
+                template_name="sample.pptx",
+                template_chunks=template_chunks(),
+                images=[image("one.png")],
+            )
+        )
+    assert invalid.value.kind == "invalid"
+    assert calls == []
+
+    monkeypatch.setattr(
+        application_module,
+        "sanitize_image",
+        lambda raw, name, directory, index: SimpleNamespace(
+            name=name, model_dump=lambda: {"name": name}
+        ),
+    )
+    monkeypatch.setattr(application_module, "bind_image_sections", lambda assets, text: assets)
+    with pytest.raises(ApplicationError) as too_many:
+        asyncio.run(
+            service.prepare(
+                text="Материал",
+                template_name="sample.pptx",
+                template_chunks=template_chunks(),
+                images=[image(f"{i}.png") for i in range(5)],
+            )
+        )
+    assert too_many.value.kind == "invalid"
+    assert calls == ["0.png", "1.png", "2.png", "3.png"]
+
+
+def test_template_is_analyzed_on_upload_and_reused_for_content(tmp_path, template, content):
+    app = create_app(Settings(data_dir=tmp_path / "early"))
+    with TestClient(app) as client:
+        upload = client.post(
+            "/api/templates/analyze",
+            files={"template": ("sample.pptx", template.read_bytes())},
+        )
+        assert upload.status_code == 202, upload.text
+        analyzed = wait_job(client, upload.json()["id"])
+        assert analyzed["kind"] == "template" and analyzed["state"] == "ready", analyzed
+        assert analyzed["template_cache"]["saved"] is True
+        assert "auto_generation" not in analyzed
+        assert not (app.state.store.directory(analyzed["id"]) / "package.json").exists()
+        assert not (app.state.store.directory(analyzed["id"]) / "analysis-input.json").exists()
+
+        prepared = client.post(
+            "/api/prepare",
+            data={"text": content, "template_job_id": analyzed["id"], "slides": 5},
+        )
+        assert prepared.status_code == 202, prepared.text
+        ready = wait_job(client, prepared.json()["id"])
+        assert ready["state"] == "ready", ready
+        assert ready["analysis"]["template_cache"]["hit"] is True
+        assert ready["content"]["facts"] > 0
+        assert (
+            app.state.store.directory(ready["id"]) / "input.pptx"
+        ).read_bytes() == template.read_bytes()
+
+
+def test_prepare_waits_for_background_template(tmp_path):
+    from studio.jobs.runtime import JobRuntime
+
+    store = Store(tmp_path)
+    template = store.create("template")
+    preparation = store.create("preparation")
+    runtime = JobRuntime(Settings(data_dir=tmp_path), store)
+
+    async def check():
+        gate = asyncio.Event()
+
+        async def analyze_template():
+            await gate.wait()
+            store.update(template["id"], "ready")
+
+        template_task = asyncio.create_task(analyze_template())
+        runtime.template_tasks[template["id"]] = template_task
+        called = []
+
+        async def supervise(job):
+            called.append(job["id"])
+            store.update(job["id"], "ready")
+
+        runtime._supervise = supervise
+        task = asyncio.create_task(runtime._run_prepare(preparation["id"], template["id"]))
+        await asyncio.sleep(0)
+        assert called == []
+        gate.set()
+        await task
+        assert called == [preparation["id"]]
+
+    asyncio.run(check())
+
+
+def test_early_font_wait_does_not_start_generation(tmp_path, monkeypatch):
+    from studio.jobs import worker
+
+    store = Store(tmp_path)
+    job = store.create("template")
+    monkeypatch.setattr(
+        worker,
+        "preanalyze_template",
+        lambda store, jid, settings: store.update(jid, "waiting_fonts", missing_fonts=["missing"]),
+    )
+    worker.run_job(store, job["id"], Settings(data_dir=tmp_path))
+    result = store.get(job["id"])
+    assert result["state"] == "waiting_fonts"
+    assert "auto_generation" not in result
 
 
 @pytest.mark.parametrize("extension", ["pptx", "potx", "POTX"])

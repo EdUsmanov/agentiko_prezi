@@ -1,10 +1,10 @@
 from copy import deepcopy
 from types import SimpleNamespace
 import pytest
-from studio.content import parse_content
-from studio.editorial import validate_plan, apply_plan, EditorialPlan
-from studio.editorial_repair import apply_replacements, validation_targets
-from studio.editorial_tables import validate_headers
+from studio.contents.parsing import parse_content
+from studio.contents.editorial import validate_plan, apply_plan, EditorialPlan
+from studio.contents.editorial_repair import apply_replacements, validation_targets
+from studio.contents.editorial_tables import validate_headers
 from studio.models import TableData
 
 
@@ -101,9 +101,9 @@ def test_header_recovery_cannot_invent_units():
 def test_target_selection_and_uniform_region_artwork_guard(tmp_path):
     from PIL import Image, ImageDraw
     from studio.models import Box
-    from studio.template_adaptation import uniform_region
+    from studio.templates.template_adaptation import uniform_region
 
-    from studio.repair_errors import PlanValidationError, RepairIssue
+    from studio.checks.repair_errors import PlanValidationError, RepairIssue
 
     error = PlanValidationError(
         [
@@ -131,7 +131,7 @@ def test_target_selection_and_uniform_region_artwork_guard(tmp_path):
 def test_compact_list_and_large_year_labels_are_separate_fields():
     from pptx import Presentation
     from pptx.util import Pt
-    from studio.native_template import native_patterns
+    from studio.templates.native_template import native_patterns
 
     prs = Presentation()
     prs.slide_width = Pt(720)
@@ -162,7 +162,7 @@ def test_compact_list_and_large_year_labels_are_separate_fields():
 
 
 def test_duplicate_classifications_require_identical_meaning():
-    from studio.analysis import normalize_meanings
+    from studio.templates.template_analysis import normalize_meanings
 
     one = {
         "pattern_id": "native-slide-3",
@@ -178,7 +178,7 @@ def test_duplicate_classifications_require_identical_meaning():
 def test_chart_band_expansion_preserves_title_and_artwork(tmp_path):
     from PIL import Image, ImageDraw
     from studio.models import Pattern, Box
-    from studio.template_adaptation import derive_data_patterns, uniform_region
+    from studio.templates.template_adaptation import derive_data_patterns, uniform_region
 
     path = tmp_path / "art.png"
     im = Image.new("RGB", (720, 405), "blue")
@@ -213,7 +213,7 @@ def test_chart_band_expansion_preserves_title_and_artwork(tmp_path):
 
 
 def test_explicit_chart_requests_are_output_requirements():
-    from studio.editorial_repair import requested_chart_types
+    from studio.contents.editorial_repair import requested_chart_types
 
     assert requested_chart_types(
         "Покажи долю линейным графиком, а места отдельной столбчатой диаграммой."
@@ -224,14 +224,14 @@ def test_explicit_chart_requests_are_output_requirements():
 
 def test_existing_plan_can_receive_scoped_quality_feedback(monkeypatch):
     import asyncio
-    from studio import narrative_layout as narrative
-    from studio.editorial import prepare_editorial
-    from studio.models import Constraints
+    from studio.contents import narrative_layout as narrative
+    from studio.contents.editorial import prepare_editorial
+    from studio.models import Constraints, PreparationControl, SlideBudget
 
     monkeypatch.setattr(
         narrative,
         "narrative_storyboard",
-        lambda p: p.analysis.update(slide_budget={"status": "adjusted"}),
+        lambda p: setattr(p.control, "slide_budget", SlideBudget(status="adjusted")),
     )
     source = parse_content("Пилот ускоряет обработку. Экономия не гарантирована.")
     first = dict(claim("Пилот"), purpose="cover")
@@ -243,6 +243,7 @@ def test_existing_plan_can_receive_scoped_quality_feedback(monkeypatch):
         template=SimpleNamespace(patterns=[]),
         constraints=Constraints(slides=2, count_mode="exact", summarize=True),
         analysis={},
+        control=PreparationControl(),
     )
 
     class Gateway:
@@ -287,7 +288,7 @@ def test_existing_plan_can_receive_scoped_quality_feedback(monkeypatch):
 def test_derived_header_moves_only_to_proven_empty_band(tmp_path):
     from PIL import Image, ImageDraw
     from studio.models import Pattern, Box
-    from studio.template_adaptation import reposition_derived_titles, uniform_region
+    from studio.templates.template_adaptation import reposition_derived_titles, uniform_region
 
     path = tmp_path / "art.png"
     im = Image.new("RGB", (720, 405), "blue")
@@ -319,11 +320,11 @@ def test_derived_header_moves_only_to_proven_empty_band(tmp_path):
 
 def test_readable_native_chart_wraps_dates_by_available_width(tmp_path):
     from pptx import Presentation
-    from studio.charts import render_chart
+    from studio.composition.charts import render_chart
     from studio.models import Element, Box
 
     # Use a bundled exact font, including on clean Linux installations.
-    from studio.template import analyze_template
+    from studio.templates.parsing import analyze_template
 
     prs = Presentation()
     slide = prs.slides.add_slide(prs.slide_layouts[6])
@@ -365,7 +366,7 @@ def test_export_accepts_wrapped_categories_but_rejects_changed_data():
     from pptx.chart.data import CategoryChartData
     from pptx.enum.chart import XL_CHART_TYPE
     from pptx.util import Pt
-    from studio.export_audit import inspect_content
+    from studio.checks.export_audit import inspect_content
     from studio.models import SlidePlan
 
     prs = Presentation()
@@ -397,7 +398,7 @@ def test_export_accepts_wrapped_categories_but_rejects_changed_data():
 
 
 def test_stacked_chart_requirement_and_editorial_plan_preserve_all_series():
-    from studio.editorial_repair import requested_chart_types
+    from studio.contents.editorial_repair import requested_chart_types
 
     assert requested_chart_types("Накопительная столбчатая диаграмма") == ["column_stacked"]
     assert requested_chart_types("Столбчатая диаграмма с накоплением") == ["column_stacked"]
@@ -429,7 +430,7 @@ def test_stacked_chart_requirement_and_editorial_plan_preserve_all_series():
 
 
 def test_detailed_review_diagnostic_preserves_negative_verdict():
-    from studio.editorial import validate_review
+    from studio.contents.editorial import validate_review
 
     message = "The stated conclusion loses an essential qualification from the source. " * 8
     raw = {
@@ -454,8 +455,11 @@ def test_detailed_review_diagnostic_preserves_negative_verdict():
 
 
 def test_cover_repair_schema_and_validator_keep_one_grounded_subtitle():
-    from studio.editorial_repair import EditorialPatch
-    from studio.editorial_patch_validation import constrain_patch_schema, validate_repaired_plan
+    from studio.contents.editorial_repair import EditorialPatch
+    from studio.contents.editorial_patch_validation import (
+        constrain_patch_schema,
+        validate_repaired_plan,
+    )
 
     content = parse_content("Project overview. Values are illustrative. Team delivers software.")
     previous = EditorialPlan.model_validate(

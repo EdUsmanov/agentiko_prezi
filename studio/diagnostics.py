@@ -62,7 +62,7 @@ def background_work():
 
 
 def exception(name, error):
-    from .repair_errors import RepairFailure
+    from studio.checks.repair_errors import RepairFailure
 
     details = {"repair_issues": error.public()} if isinstance(error, RepairFailure) else {}
     event(

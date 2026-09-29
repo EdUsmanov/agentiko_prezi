@@ -3,12 +3,12 @@
 from copy import deepcopy
 from types import SimpleNamespace
 import pytest
-from studio.models import Box, Element, SlideScene
-from studio.template import analyze_template
-from studio.template_adaptation import derive_safe_cover_patterns
-from studio.table_style import column_widths
-from studio.fonts import element_font, table_cell_fits
-from studio.render import render_pptx, render_html
+from studio.models import PreparationControl, Box, Element, SlideScene
+from studio.templates.parsing import analyze_template
+from studio.templates.template_adaptation import derive_safe_cover_patterns
+from studio.composition.table_style import column_widths
+from studio.templates.fonts import element_font, table_cell_fits
+from studio.composition.render import render_pptx, render_html
 
 
 @pytest.mark.parametrize("width,height", [(720, 405), (960, 540), (800, 600)])
@@ -145,13 +145,14 @@ def test_table_columns_share_geometry_across_audit_and_exports(template, tmp_pat
         source_ids=["f1"],
         layout="table",
     )
-    from studio.audit import audit_scenes, repair_scenes
+    from studio.checks.audit import audit_scenes, repair_scenes
     from studio.models import Constraints, ContentModel, Fact
 
     package = SimpleNamespace(
         template=p,
         images=[],
         analysis={},
+        control=PreparationControl(),
         constraints=Constraints(slides=1),
         content=ContentModel(title="Summary", facts=[Fact(id="f1", text="Source")]),
     )
@@ -177,10 +178,10 @@ def test_table_columns_share_geometry_across_audit_and_exports(template, tmp_pat
 
 
 def test_data_layout_retries_geometry_before_rewriting_source(template, tmp_path):
-    from studio.content import parse_content
+    from studio.contents.parsing import parse_content
     from studio.models import Constraints, SlidePlan, VariantPlan
-    from studio.composer import compose_slide, _compose_slide
-    from studio.audit import audit_scenes, repair_scenes
+    from studio.composition.composer import compose_slide, _compose_slide
+    from studio.checks.audit import audit_scenes, repair_scenes
 
     p = analyze_template(template, tmp_path / "profile")
     p.assets = []
@@ -207,6 +208,7 @@ def test_data_layout_retries_geometry_before_rewriting_source(template, tmp_path
         original_content=content,
         images=[],
         analysis={},
+        control=PreparationControl(),
         constraints=Constraints(slides=1),
     )
     variant = VariantPlan(
@@ -234,8 +236,8 @@ def test_data_layout_retries_geometry_before_rewriting_source(template, tmp_path
 @pytest.mark.parametrize("width", [300, 420, 640])
 def test_chart_caption_space_is_checked_before_native_export(template, tmp_path, width):
     from studio.models import TableData, SlidePlan
-    from studio.charts import make_chart, chart_caption_layout, render_chart
-    from studio.render import chart_fits
+    from studio.composition.charts import make_chart, chart_caption_layout, render_chart
+    from studio.composition.render import chart_fits
     from pptx import Presentation
 
     p = analyze_template(template, tmp_path / "profile")
@@ -265,7 +267,7 @@ def test_chart_caption_space_is_checked_before_native_export(template, tmp_path,
     visible = "\n".join(s.text for s in slide.shapes if s.has_text_frame)
     for i in range(1, 7):
         assert f"{50 + i}%" in visible
-    from studio.export_audit import inspect_content
+    from studio.checks.export_audit import inspect_content
     from studio.models import VariantPlan, ContentModel
 
     variant = VariantPlan(

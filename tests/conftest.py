@@ -3,7 +3,7 @@ from pptx import Presentation
 from pptx.util import Inches, Pt
 from pptx.dml.color import RGBColor
 from studio.config import Settings
-from studio.store import Store
+from studio.jobs.store import Store
 from studio.pipeline import prepare, load_package
 
 
@@ -62,3 +62,34 @@ def prepared(tmp_path, template, content):
     prepare(store, job["id"], content, "Команда", "", 5)
     assert store.get(job["id"])["state"] == "ready", store.get(job["id"])
     return settings, store, load_package(store, job["id"])
+
+
+@pytest.fixture
+def preparation_worker(monkeypatch):
+    """Exercise HTTP persisted requests while replacing only process execution."""
+    import json
+    from studio.models import ContentModel, Constraints
+    from studio.jobs.runtime import JobRuntime
+
+    def install(operation):
+        async def supervise(runtime, job):
+            payload = json.loads((runtime.store.directory(job["id"]) / "request.json").read_text())
+            operation(
+                runtime.store,
+                job["id"],
+                payload["text"],
+                payload["audience"],
+                payload["instructions"],
+                payload["slides"],
+                runtime.settings,
+                ContentModel.model_validate(payload["content_model"])
+                if payload.get("content_model")
+                else None,
+                Constraints.model_validate(payload["base_constraints"])
+                if payload.get("base_constraints")
+                else None,
+            )
+
+        monkeypatch.setattr(JobRuntime, "_supervise", supervise)
+
+    return install

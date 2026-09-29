@@ -2,7 +2,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from studio import diversity
+from studio.checks import diversity
 from studio.models import Box, Element, Finding, Pattern, SlideScene
 
 
@@ -139,8 +139,8 @@ def test_evidence_cannot_be_squeezed_into_a_small_fraction_of_its_area(monkeypat
 
 
 def test_all_diversity_paths_respect_quality_guard(prepared, monkeypatch):
-    from studio.composer import compose_variant
-    from studio.planner import extractive_plans
+    from studio.composition.composer import compose_variant
+    from studio.contents.planner import extractive_plans
 
     _, _, package = prepared
     original = compose_variant(extractive_plans(package).variants[0], package)

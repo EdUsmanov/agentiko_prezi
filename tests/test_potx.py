@@ -2,10 +2,10 @@ from zipfile import ZipFile
 from pptx import Presentation
 from pptx.util import Pt
 import pytest
-from studio.powerpoint import open_presentation
+from studio.composition.powerpoint import open_presentation
 from studio.security import InputRejected, PPTX_MAIN, POTX_MAIN, presentation_content_type
-from studio.template import analyze_template
-from studio.analysis import template_inventory
+from studio.templates.parsing import analyze_template
+from studio.templates.template_analysis import template_inventory
 
 
 def test_real_potx_open_preserves_source_and_design(potx, template, tmp_path):
@@ -58,10 +58,10 @@ def test_layout_only_potx_supported(tmp_path, template):
     assert any(p.title_zone and p.body_zones for p in profile.patterns)
     assert template_inventory(target, profile)["slides"] == []
     from studio.models import PreparedPackage, Constraints
-    from studio.content import parse_content
-    from studio.planner import extractive_plans
-    from studio.composer import compose_variant
-    from studio.render import render_pptx
+    from studio.contents.parsing import parse_content
+    from studio.contents.planner import extractive_plans
+    from studio.composition.composer import compose_variant
+    from studio.composition.render import render_pptx
 
     package = PreparedPackage(
         id="test",
@@ -98,7 +98,7 @@ def test_disguised_unsupported_main_type_rejected(potx, tmp_path, main_type):
 
 
 def test_index_potx_preserves_original_container(potx, tmp_path):
-    from studio.examples import index_examples
+    from studio.templates.examples import index_examples
     from studio.config import Settings
 
     settings = Settings(data_dir=tmp_path / "index")

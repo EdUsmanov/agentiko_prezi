@@ -3,7 +3,7 @@ from pathlib import Path
 import json
 import os
 from .config import Settings
-from .examples import index_examples
+from studio.templates.examples import index_examples
 
 
 def main():

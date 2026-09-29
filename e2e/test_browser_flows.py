@@ -227,4 +227,8 @@ def test_provider_failure_is_generic_in_panel_and_detailed_in_log(browser_page, 
         expect(page.locator("#diagnostics-dialog")).to_be_visible()
         expect(page.locator("#diagnostics-output")).to_contain_text("HTTPStatusError")
         expect(page.locator("#diagnostics-output")).to_contain_text("401")
+        if stage == "analysis":
+            # Preparation waits for the selected template job and propagates its failure.
+            # A terminal authorization error is not silently retried by the dependent job.
+            assert replay.calls == [{"stage": "template_analyst", "status": 401}]
         replay.assert_consumed()

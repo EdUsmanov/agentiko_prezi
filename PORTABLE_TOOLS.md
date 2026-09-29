@@ -18,7 +18,7 @@ Host dependencies are declared in the application's pyproject.toml / requirement
 
 ## Adapter contract
 
-studio/portable_templates.py is the ONLY host adapter. The original packages
+studio/templates/portable_templates.py is the ONLY host adapter. The original packages
 remain unchanged. Cleanup uses the peer's background classifier and extractor.
 Authored text-field surfaces (fills/geometry) and inherited placeholder providers
 are retained while sample wording is cleared. PPTAgent editing keeps native

@@ -6,22 +6,30 @@ from types import SimpleNamespace
 
 import pytest
 
-from studio.content import parse_content
-from studio.editorial import EditorialPlan, validate_plan
-from studio.editorial_patch_validation import (
+from studio.contents.parsing import parse_content
+from studio.contents.editorial import EditorialPlan, validate_plan
+from studio.contents.editorial_patch_validation import (
     shortening_contracts,
     validate_contracts,
     validate_repaired_plan,
 )
-from studio.editorial_repair import prepare_with_targeted_repairs, validation_targets
-from studio.models import Box, Constraints, Element, Finding, SlideScene
-from studio.repair_errors import (
+from studio.contents.editorial_repair import prepare_with_targeted_repairs, validation_targets
+from studio.models import (
+    Box,
+    Constraints,
+    Element,
+    Finding,
+    PreparationControl,
+    SlideBudget,
+    SlideScene,
+)
+from studio.checks.repair_errors import (
     LayoutCapacityError,
     PlanValidationError,
     RepairIssue,
     validation_issues,
 )
-from studio.repair_policy import scene_fit_feedback
+from studio.checks.repair_policy import scene_fit_feedback
 
 
 def claim(text, fact="f1"):
@@ -176,7 +184,7 @@ def test_geometry_contract_preserves_fitting_neighbor_title_and_data():
 
 @pytest.mark.parametrize("mixed", [False, True])
 def test_unresolved_table_failure_never_calls_editorial_model(monkeypatch, mixed):
-    from studio import narrative_layout as narrative
+    from studio.contents import narrative_layout as narrative
 
     source = parse_content("Original evidence.")
     package = SimpleNamespace(
@@ -185,6 +193,7 @@ def test_unresolved_table_failure_never_calls_editorial_model(monkeypatch, mixed
         template=SimpleNamespace(patterns=[]),
         constraints=Constraints(slides=1, count_mode="exact", include_cover=False, summarize=True),
         analysis={},
+        control=PreparationControl(),
     )
     findings = [
         Finding(code="table_overflow", severity="error", message="Data cells need space", element=1)
@@ -197,7 +206,9 @@ def test_unresolved_table_failure_never_calls_editorial_model(monkeypatch, mixed
     monkeypatch.setattr(
         narrative,
         "narrative_storyboard",
-        lambda p: p.analysis.update(slide_budget={"status": "needs_input", "fit_issues": [row]}),
+        lambda p: setattr(
+            p.control, "slide_budget", SlideBudget(status="needs_input", fit_issues=[row])
+        ),
     )
 
     class Gateway:
@@ -221,7 +232,7 @@ def test_unresolved_table_failure_never_calls_editorial_model(monkeypatch, mixed
 
 
 def test_real_small_template_stops_with_data_diagnostic_without_rewriting(template, tmp_path):
-    from studio.template import analyze_template
+    from studio.templates.parsing import analyze_template
 
     profile = analyze_template(template, tmp_path / "profile")
     profile.width = 400
@@ -241,6 +252,7 @@ def test_real_small_template_stops_with_data_diagnostic_without_rewriting(templa
         images=[],
         constraints=Constraints(slides=1, count_mode="exact", include_cover=False, summarize=True),
         analysis={},
+        control=PreparationControl(),
     )
     raw = {
         "slides": [
@@ -265,7 +277,7 @@ def test_real_small_template_stops_with_data_diagnostic_without_rewriting(templa
 
 def test_repair_issue_is_recorded_in_redacted_job_log(tmp_path):
     from studio.diagnostics import scope, exception
-    from studio.store import Store
+    from studio.jobs.store import Store
 
     store = Store(tmp_path)
     job = store.create("preparation", {})
@@ -293,7 +305,7 @@ def test_repair_issue_is_recorded_in_redacted_job_log(tmp_path):
 def test_layout_alternative_is_bounded_and_respects_explicit_choice(
     prepared, monkeypatch, explicit, purpose, expected_calls
 ):
-    from studio import composer
+    from studio.composition import composer
     from studio.models import VariantPlan, SlidePlan
 
     _, _, package = prepared
@@ -356,6 +368,7 @@ def test_analysis_failure_report_keeps_machine_readable_reason(prepared, monkeyp
     import json
     from dataclasses import replace
     from studio import pipeline
+    from studio.preparation.contracts import TemplateAnalysisResult
 
     settings, store, package = prepared
 
@@ -379,7 +392,13 @@ def test_analysis_failure_report_keeps_machine_readable_reason(prepared, monkeyp
             ]
         )
 
+    async def template_result(*args):
+        return TemplateAnalysisResult(
+            package.template, package.analysis, package.manifest["template_layers"]
+        )
+
     monkeypatch.setattr(pipeline, "ModelGateway", Gateway)
+    monkeypatch.setattr("studio.preparation.orchestrator.prepare_template_result", template_result)
     monkeypatch.setattr(pipeline, "prepare_intelligence", fail)
     pipeline.prepare(
         store, package.id, "One fact. Another fact.", "", "", 2, replace(settings, mode="api")

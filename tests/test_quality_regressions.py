@@ -4,11 +4,11 @@ from types import SimpleNamespace
 import httpx
 import pytest
 
-from studio.content import parse_content
-from studio.document import visualization
+from studio.contents.parsing import parse_content
+from studio.contents.document import visualization
 from studio.models import TableData, SlidePlan
-from studio.charts import chart_projection
-from studio.quality_gate import require_publishable
+from studio.composition.charts import chart_projection
+from studio.checks.quality_gate import require_publishable
 
 
 def test_table_markdown_is_not_numeric_data():
@@ -49,8 +49,8 @@ def test_metric_cards_are_editable_and_preserve_every_cell(prepared, tmp_path):
     from pptx import Presentation
     from pptx.util import Pt
     from studio.models import Element, Box, VariantPlan
-    from studio.metrics import metric_elements, render_metric_cards
-    from studio.export_audit import inspect_content
+    from studio.composition.metrics import metric_elements, render_metric_cards
+    from studio.checks.export_audit import inspect_content
 
     _, _, package = prepared
     table = TableData(
@@ -113,7 +113,7 @@ def test_chart_projection_preserves_mixed_units_and_totals():
 
 
 def test_chart_fallback_keeps_original_table(prepared):
-    from studio.charts import make_chart
+    from studio.composition.charts import make_chart
     from studio.models import Box
 
     _, _, package = prepared
@@ -153,8 +153,8 @@ def test_known_error_is_not_published_as_needs_review():
 
 
 def test_explicit_slide_structure_does_not_call_role_model(prepared):
-    from studio.document import structure_document
-    from studio.archetypes import analyze_content_archetypes
+    from studio.contents.document import structure_document
+    from studio.contents.archetypes import analyze_content_archetypes
 
     _, _, package = prepared
     package.content = parse_content(
@@ -179,7 +179,7 @@ def test_explicit_slide_structure_does_not_call_role_model(prepared):
 
 
 def test_explicit_author_plan_is_validated_without_rewriting(prepared):
-    from studio.planner import extractive_plans, plan
+    from studio.contents.planner import extractive_plans, plan
 
     _, _, package = prepared
     original = extractive_plans(package)
@@ -205,7 +205,7 @@ def test_explicit_author_plan_is_validated_without_rewriting(prepared):
 
 def test_thinking_budget_uses_provider_contract_not_reasoning_effort(tmp_path):
     from studio.config import Settings
-    from studio.gateway import ModelGateway
+    from studio.providers.gateway import ModelGateway
 
     settings = Settings(
         data_dir=tmp_path,
@@ -249,7 +249,7 @@ def test_thinking_budget_uses_provider_contract_not_reasoning_effort(tmp_path):
 
 def test_visual_control_disables_thinking_but_keeps_multimodal_model(tmp_path):
     from studio.config import Settings
-    from studio.gateway import ModelGateway
+    from studio.providers.gateway import ModelGateway
 
     settings = Settings(
         data_dir=tmp_path,

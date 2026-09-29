@@ -1,14 +1,12 @@
-from .preparation import preparation_diagnostics as preparation_diagnostics
-from .generation_reviews import review_exported_content as review_exported_content
-from .review_grounding import grounded_review as grounded_review
 from pathlib import Path
+import json
 import subprocess
 from .config import ROOT, Settings
 from .models import PreparedPackage
 from .security import digest
-from .template import analyze_template
-from .gateway import ModelGateway
-from .analysis import prepare_intelligence
+from studio.templates.parsing import analyze_template
+from studio.providers.gateway import ModelGateway
+from studio.preparation.intelligence import prepare_intelligence
 from .security_gate import check_package
 
 
@@ -42,17 +40,41 @@ def prepare(
     settings=None,
     content_model=None,
     base_constraints=None,
+    input_mode="content",
+    draft=None,
+    allowed_fact_ids=None,
 ):
-    from .preparation import PreparationRequest, PreparationServices, run_preparation
+    from .preparation.contracts import PreparationRequest, PreparationServices
+    from .preparation.orchestrator import run_preparation
 
     request = PreparationRequest(
-        text, audience, instructions, slides, content_model, base_constraints
+        text,
+        audience,
+        instructions,
+        slides,
+        content_model,
+        base_constraints,
+        input_mode,
+        draft,
+        allowed_fact_ids,
     )
     services = PreparationServices(
         analyze_template, prepare_intelligence, ModelGateway, versions, revision
     )
     return run_preparation(
         store, job_id, request, settings or Settings(data_dir=store.root), services
+    )
+
+
+def preanalyze_template(store, job_id, settings=None):
+    from .preparation.contracts import PreparationServices
+    from .preparation.orchestrator import run_template_preanalysis
+
+    services = PreparationServices(
+        analyze_template, prepare_intelligence, ModelGateway, versions, revision
+    )
+    return run_template_preanalysis(
+        store, job_id, settings or Settings(data_dir=store.root), services
     )
 
 
@@ -63,6 +85,8 @@ def load_package(store, package_id):
     raw = (store.directory(package_id) / "package.json").read_bytes()
     if digest(raw) != job["package_hash"]:
         raise ValueError("Подготовленный пакет был изменён после анализа")
+    if json.loads(raw).get("schema_version") != 2:
+        raise ValueError("Формат подготовленного пакета устарел. Повторите подготовку материалов")
     package = PreparedPackage.model_validate_json(raw)
     if digest((store.directory(package_id) / "input.pptx").read_bytes()) != package.template.sha256:
         raise ValueError("Исходный шаблон изменён после анализа")
@@ -87,6 +111,14 @@ def load_package(store, package_id):
         layer = store.directory(package_id) / relative
         if not layer.is_file() or digest(layer.read_bytes()) != sha:
             raise ValueError("Фоновый слой изменён после анализа. Повторите подготовку.")
+    if package.template.resources:
+        source = Path(package.template.resource_source).resolve()
+        if source != (store.directory(package_id) / "input.pptx").resolve():
+            raise ValueError("Источник ресурсов не совпадает с загруженным шаблоном")
+        for resource in package.template.resources:
+            preview = Path(resource.preview_path).resolve()
+            if not preview.is_relative_to(store.root) or not preview.is_file():
+                raise ValueError("Ресурс шаблона недоступен. Повторите подготовку")
     check_package(package, store.directory(package_id) / "input.pptx")
     return package
 
@@ -101,7 +133,32 @@ async def generate(store, job_id, settings):
 
 
 async def _generate(store, job_id, settings, gateway):
-    from .generation import run_generation
+    from .generation.flow import run_generation
 
-    package = load_package(store, store.get(job_id)["package_id"])
+    job = store.get(job_id)
+    if job.get("operation") == "repair":
+        from .generation.repair import run_repair
+
+        return await run_repair(
+            store,
+            job_id,
+            settings,
+            gateway,
+            load_package(store, job["package_id"]),
+            versions(),
+            revision(),
+        )
+    package = load_package(store, job["package_id"])
+    if package.input_mode == "brief":
+        source = store.get(package.id)
+        from studio.contents.brief import assert_draft_matches_package, draft_hash
+
+        assert_draft_matches_package(package)
+
+        if (
+            package.draft is None
+            or source.get("approved_package_hash") != source.get("package_hash")
+            or source.get("approved_draft_hash") != draft_hash(package.draft)
+        ):
+            raise ValueError("Утвердите план и текст краткого брифа перед генерацией")
     return await run_generation(store, job_id, settings, gateway, package, versions(), revision())

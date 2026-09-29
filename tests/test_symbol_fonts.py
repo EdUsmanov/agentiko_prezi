@@ -1,7 +1,7 @@
 from pptx import Presentation
 from studio.config import ROOT
-from studio.fonts import check_glyphs, font_runs, symbol_font, text_width, pdf_font
-from studio.render import set_text
+from studio.templates.fonts import check_glyphs, font_runs, symbol_font, text_width, pdf_font
+from studio.composition.render import set_text
 from studio.models import Element, Box
 from reportlab.pdfbase import pdfmetrics
 import pytest

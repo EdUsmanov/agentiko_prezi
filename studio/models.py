@@ -1,6 +1,8 @@
 from typing import Literal
-from pydantic import BaseModel, ConfigDict, Field
-from .archetype_catalog import Archetype
+from pydantic import BaseModel, ConfigDict, Field, JsonValue
+from studio.templates.archetype_catalog import Archetype
+
+JsonObject = dict[str, JsonValue]
 
 
 class StrictModel(BaseModel):
@@ -47,6 +49,7 @@ class UploadedImage(StrictModel):
     height: int
     section: str = ""
     caption: str = ""
+    presentation: Literal["plain", "device"] = "plain"
 
 
 class Constraints(StrictModel):
@@ -65,6 +68,46 @@ class Box(StrictModel):
     y: float
     w: float
     h: float
+
+
+class TableBorder(StrictModel):
+    color: str = ""
+    width: float = Field(default=0, ge=0)
+    opacity: float = Field(default=1, ge=0, le=1)
+
+
+class TableCellStyle(StrictModel):
+    fill: str = ""
+    fill_opacity: float = Field(default=0, ge=0, le=1)
+    color: str = ""
+    font_size: float = Field(default=0, ge=0)
+    bold: bool = False
+    margins: list[float] = Field(default_factory=list, max_length=4)
+    borders: dict[Literal["L", "R", "T", "B"], TableBorder] = Field(default_factory=dict)
+
+
+class TableTemplate(StrictModel):
+    """Reusable cell geometry and styling; source sample text is never stored."""
+
+    box: Box
+    column_widths: list[float]
+    row_heights: list[float]
+    cells: list[list[TableCellStyle]]
+    source_shape_id: int = Field(default=0, ge=0)
+
+
+class TemplateResource(StrictModel):
+    schema_version: Literal[1] = 1
+    id: str
+    kind: Literal["icon", "device_frame"]
+    source_slide: int = Field(ge=1)
+    shape_ids: list[int] = Field(min_length=1)
+    box: Box
+    preview_path: str
+    description: str = ""
+    tags: list[str] = Field(default_factory=list)
+    confidence: float = Field(default=0, ge=0, le=1)
+    screen_box: Box | None = None
 
 
 class Pattern(StrictModel):
@@ -97,6 +140,7 @@ class Pattern(StrictModel):
     graphic_edges: list[tuple[int, int]] = Field(default_factory=list, max_length=160)
     number_zones: list[Box | None] = Field(default_factory=list)
     table_style: dict = Field(default_factory=dict)
+    table_template: TableTemplate | None = None
     purpose: Archetype | Literal["unknown", "service", "reference"] = "unknown"
     reusable: bool = True
     reference_image: str = ""
@@ -114,6 +158,8 @@ class Asset(StrictModel):
 
 class TemplateProfile(StrictModel):
     background_source: str = ""
+    resource_source: str = ""
+    resources: list[TemplateResource] = Field(default_factory=list)
     sha256: str
     name: str
     width: float
@@ -174,8 +220,49 @@ class Plans(StrictModel):
     variants: list[VariantPlan] = Field(min_length=3, max_length=3)
 
 
+class DraftBullet(StrictModel):
+    text: str = Field(min_length=1, max_length=4000)
+    fact_ids: list[str] = Field(default_factory=list, max_length=300)
+    proposed: bool = False
+
+
+class DraftSlide(StrictModel):
+    title: str = Field(min_length=1, max_length=240)
+    purpose: Archetype | Literal["auto"] = "content"
+    bullets: list[DraftBullet] = Field(min_length=1, max_length=30)
+
+
+class BriefDraft(StrictModel):
+    schema_version: Literal[1] = 1
+    slides: list[DraftSlide] = Field(min_length=1, max_length=30)
+
+
+class SlideBudget(StrictModel):
+    status: Literal["exact", "adjusted", "needs_input", "ready", "ok", "sufficient"]
+    requested: int | None = None
+    count_mode: str | None = None
+    planned: int | None = None
+    required: int | None = None
+    cover: int | None = None
+    dividers: int | None = None
+    content_slides: int | None = None
+    requested_range: list[int] | None = None
+    fit_issues: list[JsonObject] = Field(default_factory=list)
+    message: str = ""
+
+
+class PreparationControl(StrictModel):
+    """Execution decisions sealed with the package, separate from audit diagnostics."""
+
+    model_mode: Literal["", "api", "extractive"] = ""
+    planning_status: Literal["", "needs_input", "completed", "degraded"] = ""
+    planning_source: str = ""
+    planned_slides: int | None = None
+    slide_budget: SlideBudget | None = None
+
+
 class PreparedPackage(StrictModel):
-    schema_version: int = 1
+    schema_version: Literal[2] = 2
     id: str
     created_at: str
     template: TemplateProfile
@@ -186,6 +273,10 @@ class PreparedPackage(StrictModel):
     analysis: dict = Field(default_factory=dict)
     prepared_plans: Plans | None = None
     images: list[UploadedImage] = Field(default_factory=list)
+    input_mode: Literal["content", "brief"] = "content"
+    draft: BriefDraft | None = None
+    brief_evidence: ContentModel | None = None
+    control: PreparationControl = Field(default_factory=PreparationControl)
 
 
 class Element(StrictModel):
@@ -201,6 +292,7 @@ class Element(StrictModel):
     body_fill_opacity: float = Field(default=0, ge=0, le=1)
     bold: bool = False
     field_style: dict = Field(default_factory=dict)
+    table_template: TableTemplate | None = None
     role: str = "body"
     rows: list[list[str]] = Field(default_factory=list)
     labels: list[str] = Field(default_factory=list)
@@ -209,6 +301,7 @@ class Element(StrictModel):
     unit: str = ""
     image_path: str = ""
     image_id: str = ""
+    resource_id: str = ""
     source_ids: list[str] = Field(default_factory=list)
     background_hint: str = ""
     bullet: bool = False
@@ -253,3 +346,30 @@ class ContextualFinding(StrictModel):
     code: str
     severity: Literal["warning", "error"]
     message: str
+
+
+class AuditFinding(StrictModel):
+    id: str
+    source: str
+    variant: Literal["executive", "analytical", "story"] | None = None
+    slide: int | None = Field(default=None, ge=1, le=30)
+    code: str
+    severity: Literal["info", "warning", "error"]
+    message: str
+    action: Literal["change_layout", "readable_chart"] | None = None
+    unsupported_reason: str = ""
+    element: int | None = None
+    scene_box: Box | None = None
+    repaired: bool = False
+
+
+class FinalAuditSnapshot(StrictModel):
+    schema_version: Literal[1] = 1
+    generation_id: str
+    package_id: str
+    findings: list[AuditFinding]
+    quality_report: JsonObject
+    parent_generation_id: str | None = None
+    selected_finding_ids: list[str] = Field(default_factory=list)
+    generated_at: float
+    files: dict[str, str] = Field(default_factory=dict)

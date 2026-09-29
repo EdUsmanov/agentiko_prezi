@@ -1,10 +1,20 @@
 import asyncio
 from copy import deepcopy
+import json
 from types import SimpleNamespace
 import pytest
-from studio.content import parse_content
-from studio.editorial import validate_plan, validate_review, apply_plan, prepare_editorial
-from studio.models import Constraints
+from pptx import Presentation
+from studio.contents.parsing import parse_content
+from studio.contents.editorial import validate_plan, validate_review, apply_plan, prepare_editorial
+from studio.models import (
+    ContentModel,
+    Constraints,
+    Fact,
+    PreparationControl,
+    SlidePlan,
+    TableData,
+    VariantPlan,
+)
 
 
 def text_fit_issue():
@@ -71,6 +81,118 @@ def test_selection_can_omit_secondary_numeric_detail_without_losing_original():
     assert p.analysis["editorial"]["provenance"][0]["evidence"][0]["fact_id"] == "f1"
 
 
+def test_editorial_sources_reach_pptx_notes_and_evidence(prepared, tmp_path):
+    from studio.composition.composer import compose_variant
+    from studio.composition.evidence import write_evidence
+    from studio.composition.render import render_pptx
+
+    _, store, package = prepared
+    source = ContentModel(
+        title="Пилот",
+        facts=[
+            Fact(id="f1", text="Команда проводит пилот."),
+            Fact(id="draft1", text="Предлагается согласовать критерии.", source="model_proposal"),
+            Fact(
+                id="approved-1-1",
+                text="Пользователь утвердил критерии.",
+                source="user_approved_draft",
+            ),
+        ],
+    )
+    plan = {
+        "slides": [
+            {
+                "title": "Пилот",
+                "purpose": "content",
+                "source_table_id": None,
+                "rows": [],
+                "bullets": [
+                    {
+                        "text": "Команда проводит пилот.",
+                        "group": "",
+                        "evidence": [{"fact_id": "f1"}],
+                    },
+                    {
+                        "text": "Предлагается согласовать критерии.",
+                        "group": "",
+                        "evidence": [{"fact_id": "draft1"}],
+                    },
+                    {
+                        "text": "Пользователь утвердил критерии.",
+                        "group": "",
+                        "evidence": [{"fact_id": "approved-1-1"}],
+                    },
+                    {
+                        "text": "Команда может согласовать критерии.",
+                        "group": "",
+                        "evidence": [{"fact_id": "f1"}, {"fact_id": "draft1"}],
+                    },
+                ],
+            }
+        ],
+        "omitted": [],
+    }
+    apply_plan(package, plan, {}, (1, 1), source_content=source)
+    assert [(f.text, f.source) for f in package.content.facts] == [
+        ("Команда проводит пилот.", "user_text"),
+        ("Предлагается согласовать критерии.", "model_proposal"),
+        ("Пользователь утвердил критерии.", "user_approved_draft"),
+        ("Команда может согласовать критерии.", "model_proposal"),
+    ]
+
+    slide = SlidePlan(title="Пилот", fact_ids=[f.id for f in package.content.facts])
+    scenes = compose_variant(VariantPlan(key="executive", title="Пилот", slides=[slide]), package)
+    output = tmp_path / "sources.pptx"
+    render_pptx(scenes, package.template, store.directory(package.id) / "input.pptx", output)
+    notes = Presentation(output).slides[0].notes_slide.notes_text_frame.text
+    assert "[summary-1-2] model_proposal" in notes
+    assert "[summary-1-3] user_approved_draft" in notes
+    assert "[summary-1-1] user_text" in notes
+
+    for key in ("executive", "analytical", "story"):
+        folder = tmp_path / key
+        folder.mkdir()
+        (folder / "slide-1.png").write_bytes(b"preview")
+        (folder / "slides.json").write_text(json.dumps([scenes[0].model_dump(mode="json")]))
+    manifest = {
+        "run_id": "source-test",
+        "variants": [{"key": key, "title": key} for key in ("executive", "analytical", "story")],
+        "quality_report": {"status": "passed_checks", "errors": 0, "warnings": 0, "findings": []},
+    }
+    evidence = write_evidence(tmp_path, manifest, package).read_text()
+    assert "<th>model_proposal</th><td>2</td>" in evidence
+    assert "<th>user_approved_draft</th><td>1</td>" in evidence
+    assert "<th>user_text</th><td>1</td>" in evidence
+
+
+def test_editorial_table_fact_keeps_derived_table_source():
+    source = ContentModel(
+        title="Данные",
+        facts=[Fact(id="f1", text="Данные доступны.")],
+        tables=[TableData(id="t1", headers=["Группа", "Заявки"], rows=[["Север", "12"]])],
+    )
+    package = SimpleNamespace(content=source, original_content=source, analysis={})
+    plan = {
+        "slides": [
+            {
+                "title": "Данные",
+                "purpose": "content",
+                "bullets": [
+                    {"text": "Данные доступны.", "group": "", "evidence": [{"fact_id": "f1"}]}
+                ],
+                "source_table_id": "t1",
+                "source_columns": [],
+                "chart_type": "table",
+                "relationship": "table",
+                "rows": [],
+            }
+        ],
+        "omitted": [],
+    }
+    apply_plan(package, plan, {}, (1, 1), source_content=source)
+    assert package.content.facts[-1].source == package.content.tables[0].id == "summary-data-1"
+
+
 def test_exact_count_is_binding_and_every_omission_is_accounted_for():
     with pytest.raises(ValueError, match="Count"):
         validate_plan(plan(), source(), (2, 2))
@@ -82,7 +204,7 @@ def test_exact_count_is_binding_and_every_omission_is_accounted_for():
     accepted = validate_plan(raw, source(), (1, 1))
     assert [o["fact_id"] for o in accepted["omitted"]] == ["f3"]
     assert raw["omitted"][0]["fact_id"] == "f1"  # No mutation of the model reply.
-    from studio.editorial import review_payload
+    from studio.contents.editorial import review_payload
 
     payload = review_payload(accepted, source())
     assert len(payload["source"]["facts"]) == 3
@@ -113,10 +235,12 @@ def test_review_cannot_skip_a_claim_or_invent_missing_evidence():
 
 
 def test_semantic_reviewer_forces_editor_to_restore_essential_caveat(monkeypatch):
-    from studio import narrative_layout as narrative
+    from studio.contents import narrative_layout as narrative
 
     def fit(p):
-        p.analysis["slide_budget"] = {"status": "adjusted", "planned": 1}
+        from studio.models import SlideBudget
+
+        p.control.slide_budget = SlideBudget(status="adjusted", planned=1)
 
     monkeypatch.setattr(narrative, "narrative_storyboard", fit)
     p = SimpleNamespace(
@@ -125,6 +249,7 @@ def test_semantic_reviewer_forces_editor_to_restore_essential_caveat(monkeypatch
         template=SimpleNamespace(patterns=[]),
         constraints=Constraints(slides=1, count_mode="exact", summarize=True),
         analysis={},
+        control=PreparationControl(),
     )
 
     class Gateway:
@@ -161,13 +286,15 @@ def test_semantic_reviewer_forces_editor_to_restore_essential_caveat(monkeypatch
 
 
 def test_geometry_retry_passes_real_field_limits_and_keeps_original_source(monkeypatch):
-    from studio import narrative_layout as narrative
+    from studio.contents import narrative_layout as narrative
 
     fits = []
 
     def fit(p):
         fits.append(True)
-        p.analysis["slide_budget"] = (
+        from studio.models import SlideBudget
+
+        p.control.slide_budget = SlideBudget.model_validate(
             {
                 "status": "needs_input",
                 "message": "Card too small",
@@ -184,6 +311,7 @@ def test_geometry_retry_passes_real_field_limits_and_keeps_original_source(monke
         template=SimpleNamespace(patterns=[]),
         constraints=Constraints(slides=1, count_mode="exact", summarize=True),
         analysis={},
+        control=PreparationControl(),
     )
 
     class Gateway:
@@ -219,13 +347,15 @@ def test_geometry_retry_passes_real_field_limits_and_keeps_original_source(monke
 
 
 def test_rejected_summary_is_never_committed_and_corrections_survive(monkeypatch):
-    from studio import narrative_layout as narrative
+    from studio.contents import narrative_layout as narrative
 
     fits = []
 
     def fit(p):
         fits.append(True)
-        p.analysis["slide_budget"] = (
+        from studio.models import SlideBudget
+
+        p.control.slide_budget = SlideBudget.model_validate(
             {"status": "adjusted"}
             if len(fits) == 1
             else {
@@ -242,6 +372,7 @@ def test_rejected_summary_is_never_committed_and_corrections_survive(monkeypatch
         template=SimpleNamespace(patterns=[]),
         constraints=Constraints(slides=1, count_mode="exact", summarize=True),
         analysis={},
+        control=PreparationControl(),
     )
 
     class Gateway:
@@ -278,7 +409,7 @@ def test_rejected_summary_is_never_committed_and_corrections_survive(monkeypatch
                 "narrative_coherent": True,
             }
 
-    from studio.induction import InductionFailure
+    from studio.providers.induction import InductionFailure
 
     gateway = Gateway()
     with pytest.raises(InductionFailure):
@@ -362,7 +493,7 @@ def test_spelled_ordinals_ground_numeric_step_labels():
 
 
 def test_timeline_requires_grounded_time_labels_and_numbers():
-    from studio.editorial_patch_validation import numeric_evidence_hints
+    from studio.contents.editorial_patch_validation import numeric_evidence_hints
 
     c = parse_content("Волк сдул дом. Волк сломал шалаш. Поросята спрятались в норе.")
     raw = {

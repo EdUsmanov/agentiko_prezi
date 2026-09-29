@@ -8,7 +8,7 @@ import pytest
 
 
 def test_template_snapshot_reuses_artifacts_not_content_and_rejects_tamper(prepared, tmp_path):
-    from studio.template_cache import TemplateCache
+    from studio.templates.template_cache import TemplateCache
 
     settings, store, p = prepared
     source = store.directory(p.id)
@@ -45,9 +45,39 @@ def test_template_snapshot_reuses_artifacts_not_content_and_rejects_tamper(prepa
     )
 
 
+def test_template_cache_resolves_symlinked_artifact_paths(prepared, tmp_path):
+    from studio.templates.template_cache import TemplateCache
+
+    settings, store, package = prepared
+    source = store.directory(package.id).resolve()
+    pattern = next(p for p in package.template.patterns if p.background_image)
+    alias = tmp_path / "alias"
+    try:
+        alias.symlink_to(source, target_is_directory=True)
+    except OSError:
+        pytest.skip("Symlinks unavailable")
+    profile = package.template.model_copy(deep=True)
+    changed = next(p for p in profile.patterns if p.id == pattern.id)
+    changed.background_image = str(
+        alias / Path(pattern.background_image).resolve().relative_to(source)
+    )
+    cache = TemplateCache(replace(settings, data_dir=tmp_path / "alias-cache"))
+    assert cache.save(
+        profile,
+        source,
+        {"template_semantics": {"status": "completed"}, "text_zone_review": {"patterns": []}},
+    )
+    destination = tmp_path / "restored"
+    destination.mkdir()
+    shutil.copyfile(source / "input.pptx", destination / "input.pptx")
+    restored, _ = cache.restore(destination / "input.pptx", destination)
+    actual = next(p for p in restored.patterns if p.id == pattern.id)
+    assert Path(actual.background_image).is_relative_to(destination)
+
+
 def test_repeat_prepare_uses_template_cache_but_new_source_content(prepared, monkeypatch):
     from studio import pipeline
-    from studio.template_cache import TemplateCache
+    from studio.templates.template_cache import TemplateCache
 
     settings, store, p = prepared
     assert TemplateCache(settings).save(
@@ -67,8 +97,8 @@ def test_repeat_prepare_uses_template_cache_but_new_source_content(prepared, mon
         lambda *a, **k: pytest.fail("Repeated technical template analysis"),
     )
 
-    async def intelligence(package, path, gateway, progress):
-        assert package.analysis.pop("_template_snapshot")["template_semantics"]["status"] in (
+    async def intelligence(package, path, gateway, progress, template_result):
+        assert template_result.analysis["template_semantics"]["status"] in (
             "completed",
             "not_run",
         )
@@ -82,8 +112,8 @@ def test_repeat_prepare_uses_template_cache_but_new_source_content(prepared, mon
 
 
 def test_compose_one_slide_equals_full_variant_and_cache_copies(prepared, monkeypatch):
-    from studio import composer
-    from studio.planner import extractive_plans
+    from studio.composition import composer
+    from studio.contents.planner import extractive_plans
 
     _, _, p = prepared
     variant = extractive_plans(p).variants[0]
@@ -105,9 +135,15 @@ def test_stage_version_ignores_unrelated_application_changes(tmp_path, monkeypat
     from studio import cache_version
 
     monkeypatch.setattr(cache_version, "ROOT", tmp_path)
-    (tmp_path / "studio").mkdir()
-    (tmp_path / "prompts").mkdir()
-    target = tmp_path / "studio/template_analysis.py"
+    for name in (
+        cache_version.STAGE_BASE_DEPENDENCIES
+        + cache_version.STAGE_DEPENDENCIES["template_analyst"]
+        + ["prompts/template_analyst.md"]
+    ):
+        dependency = tmp_path / name
+        dependency.parent.mkdir(parents=True, exist_ok=True)
+        dependency.write_text("dependency v1")
+    target = tmp_path / "studio/templates/template_analysis.py"
     target.write_text("classifier v1")
     (tmp_path / "studio/app.py").write_text("server v1")
     initial = cache_version.stage_version("template_analyst")
@@ -117,17 +153,34 @@ def test_stage_version_ignores_unrelated_application_changes(tmp_path, monkeypat
     assert cache_version.stage_version("template_analyst") != initial
 
 
+def test_author_version_includes_shared_archetype_schema(tmp_path, monkeypatch):
+    from studio import cache_version
+
+    monkeypatch.setattr(cache_version, "ROOT", tmp_path)
+    for name in (
+        cache_version.STAGE_BASE_DEPENDENCIES
+        + cache_version.STAGE_DEPENDENCIES["author"]
+        + ["prompts/author.md"]
+    ):
+        dependency = tmp_path / name
+        dependency.parent.mkdir(parents=True, exist_ok=True)
+        dependency.write_text("dependency v1")
+    initial = cache_version.stage_version("author")
+    (tmp_path / "studio/templates/archetype_catalog.py").write_text("changed schema")
+    assert cache_version.stage_version("author") != initial
+
+
 def test_editorial_truncation_switches_to_checkpointed_outline(monkeypatch, tmp_path):
-    from studio.editorial import prepare_editorial
-    from studio import narrative_layout as narrative
-    from studio.content import parse_content
-    from studio.models import Constraints
-    from studio.gateway import ModelResponseTruncated
+    from studio.contents.editorial import prepare_editorial
+    from studio.contents import narrative_layout as narrative
+    from studio.contents.parsing import parse_content
+    from studio.models import Constraints, PreparationControl, SlideBudget
+    from studio.providers.gateway import ModelResponseTruncated
 
     monkeypatch.setattr(
         narrative,
         "narrative_storyboard",
-        lambda p: p.analysis.update(slide_budget={"status": "adjusted"}),
+        lambda p: setattr(p.control, "slide_budget", SlideBudget(status="adjusted")),
     )
     p = SimpleNamespace(
         content=parse_content("Один факт. Второй факт."),
@@ -135,6 +188,7 @@ def test_editorial_truncation_switches_to_checkpointed_outline(monkeypatch, tmp_
         template=SimpleNamespace(patterns=[]),
         constraints=Constraints(slides=2, count_mode="exact", summarize=True),
         analysis={},
+        control=PreparationControl(),
     )
 
     class Gateway:
@@ -185,7 +239,7 @@ def test_editorial_truncation_switches_to_checkpointed_outline(monkeypatch, tmp_
 
 
 def test_visual_repair_rechecks_only_changed_pixels(prepared, tmp_path):
-    from studio.visual import review_visuals
+    from studio.checks.visual import review_visuals
 
     _, _, p = prepared
     folder = tmp_path / "executive"

@@ -1,5 +1,5 @@
 from PIL import Image
-from studio.artwork import constrain_body_zones
+from studio.templates.artwork import constrain_body_zones
 from studio.models import Box, Pattern
 
 
@@ -74,12 +74,12 @@ def test_background_compilation_applies_constraints_and_persists_diagnostics(
 ):
     import json
     import pytest
-    from studio.office import executable
+    from studio.composition.office import executable
 
     if not executable():
         pytest.skip("LibreOffice unavailable")
-    import studio.artwork as artwork
-    from studio.native_template import compile_backgrounds
+    import studio.templates.artwork as artwork
+    from studio.templates.native_template import compile_backgrounds
 
     _, store, package = prepared
     calls = []

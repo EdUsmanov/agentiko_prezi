@@ -3,6 +3,7 @@ from pathlib import Path
 import os
 import json
 from urllib.parse import urlsplit
+from typing import Literal
 
 ROOT = Path(__file__).resolve().parent.parent
 POLICY = json.loads((ROOT / "config/policy.json").read_text())
@@ -33,6 +34,7 @@ def model_base_url():
 class Settings:
     data_dir: Path
     mode: str = "extractive"
+    execution_kind: Literal["live", "replay"] = "live"
     base_url: str = ""
     model_id: str = ""
     api_key: str = field(default="", repr=False)
@@ -78,7 +80,7 @@ class Settings:
         base_url = model_base_url()
         openrouter = urlsplit(base_url).hostname == "openrouter.ai"
         return cls(
-            data_dir=Path(os.getenv("STUDIO_DATA_DIR", str(ROOT / "data"))).resolve(),
+            data_dir=Path(os.getenv("STUDIO_DATA_DIR", str(ROOT / "data" / "v2"))).resolve(),
             mode=os.getenv("STUDIO_MODEL_MODE", "extractive"),
             base_url=base_url,
             model_id=os.getenv("STUDIO_MODEL_ID") or os.getenv("LLM_MODEL", ""),

@@ -63,6 +63,7 @@ def application(directory: Path, *, cassette: Path | None = None):
         settings = replace(
             settings,
             mode="api",
+            execution_kind="replay",
             base_url=f"http://127.0.0.1:{provider.server_port}/v1",
             model_id="fixture-27b",
             parameters_b=27,
