@@ -136,20 +136,26 @@ def test_chart_fallback_keeps_original_table(prepared):
     assert element.rows == [table.headers] + table.rows
 
 
-def test_known_error_is_not_published_as_needs_review():
-    with pytest.raises(ValueError, match="не опубликованы"):
-        require_publishable(
+def test_known_error_is_published_as_needs_review():
+    manifest = {
+        "errors": 1,
+        "variants": [
             {
-                "errors": 1,
-                "variants": [
-                    {
-                        "key": "story",
-                        "findings": [{"severity": "error", "code": "text_overflow", "slide": 2}],
-                    }
-                ],
+                "key": "story",
+                "findings": [{"severity": "error", "code": "text_overflow", "slide": 2}],
             }
-        )
-    require_publishable({"errors": 0, "visual_audit": {"findings": [{"severity": "warning"}]}})
+        ],
+    }
+    report = require_publishable(manifest)
+    assert report["status"] == "needs_review"
+    assert report["errors"] == 1
+    assert report["findings"][0]["code"] == "text_overflow"
+    assert manifest["quality_report"] == report
+    assert require_publishable({"errors": 1})["status"] == "needs_review"
+    warning_report = require_publishable(
+        {"errors": 0, "visual_audit": {"findings": [{"severity": "warning"}]}}
+    )
+    assert warning_report["status"] == "needs_review"
 
 
 def test_explicit_slide_structure_does_not_call_role_model(prepared):

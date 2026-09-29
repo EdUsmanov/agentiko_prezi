@@ -211,7 +211,7 @@ def quality_report(manifest):
         )
     errors = max(int(manifest.get("errors", 0)), sum(f["severity"] == "error" for f in findings))
     warnings = sum(f["severity"] == "warning" for f in findings)
-    status = "blocked" if errors else "needs_review" if warnings else "passed_checks"
+    status = "needs_review" if errors or warnings else "passed_checks"
     return {
         "status": status,
         "errors": errors,

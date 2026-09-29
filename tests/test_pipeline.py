@@ -52,6 +52,38 @@ def test_three_variants_exports_and_coverage(prepared):
         assert sum(n.endswith(".pptx") for n in z.namelist()) == 3
 
 
+def test_final_audit_errors_keep_downloadable_decks(prepared, monkeypatch):
+    from studio.checks import export_audit
+
+    settings, store, package = prepared
+    original = export_audit.audit_export
+
+    def report_missing_fact(path, variant, prepared_package):
+        return original(path, variant, prepared_package) + [
+            {
+                "severity": "error",
+                "code": "pptx_fact_coverage",
+                "slide": 1,
+                "message": "Факт не найден в готовом PPTX",
+            }
+        ]
+
+    monkeypatch.setattr(export_audit, "audit_export", report_missing_fact)
+    job = store.create("generation", {"package_id": package.id, "deadline_at": time.time() + 300})
+    asyncio.run(generate(store, job["id"], settings))
+
+    result = store.get(job["id"])
+    assert result["state"] == "needs_review"
+    assert result["quality_report"]["errors"] == 3
+    assert sum(
+        f["code"] == "pptx_fact_coverage" for f in result["quality_report"]["findings"]
+    ) == 3
+    root = store.directory(job["id"])
+    with ZipFile(root / "presentations.zip") as archive:
+        assert sum(name.endswith(".pptx") for name in archive.namelist()) == 3
+    assert len(Presentation(root / "executive" / "deck.pptx").slides) == 5
+
+
 def test_package_is_immutable(prepared):
     _, store, package = prepared
     path = store.directory(package.id) / "package.json"

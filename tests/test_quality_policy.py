@@ -43,14 +43,17 @@ def test_warning_from_every_source_reaches_status_and_report(source):
     assert report["findings"][0]["message"] == "Low contrast"
 
 
-def test_incomplete_review_and_error_cannot_be_completed():
+def test_incomplete_review_and_error_require_review():
     value = manifest()
     value["visual_audit"]["checked"] = 0
     assert quality_report(value)["status"] == "needs_review"
     value["variants"][0]["findings"] = [
         {"severity": "error", "code": "missing_fact", "message": "Missing"}
     ]
-    assert quality_report(value)["status"] == "blocked"
+    report = quality_report(value)
+    assert report["status"] == "needs_review"
+    assert report["errors"] == 1
+    assert any(f["code"] == "missing_fact" for f in report["findings"])
 
 
 def scene():

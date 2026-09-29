@@ -1,4 +1,4 @@
-"""Publish only after the quality gate; serialize existing manifest/API shapes here."""
+"""Publish finished exports with their quality report and review status."""
 
 import json
 import time
@@ -212,8 +212,8 @@ def publish_generation(
             "method": "source_variant_slide_code_element_message_severity_multiset",
             "selected_method": "conservative_source_variant_slide_code_presence",
         }
-    # This is the post-automatic-repair state. Keep it even if the publication
-    # gate rejects the draft; public downloads remain closed for failed jobs.
+    # Save the post-automatic-repair state before packaging so review can use
+    # the same findings even if a later technical failure interrupts publication.
     from studio.checks.review_snapshot import build_snapshot, save_snapshot
 
     (directory / "audit-input.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2))
@@ -263,7 +263,7 @@ def publish_artifacts(
     deadline_seconds: float | None,
     package: PreparedPackage | None = None,
 ) -> None:
-    """Retain failure evidence, but build downloadable archives only after the gate."""
+    """Record final findings and package completed exports, including review cases."""
     (directory / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2))
     from studio.checks.quality_gate import require_publishable
 

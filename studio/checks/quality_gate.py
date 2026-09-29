@@ -1,11 +1,11 @@
-"""Publication gate using the same report as manifest and UI."""
+"""Finalize the quality report before publishing reviewable files."""
 
 from studio.diagnostics import event
 from studio.checks.quality import quality_report
 
 
 class QualityGateRejected(ValueError):
-    """A complete, reviewable audit rejected publication of draft files."""
+    """Legacy failure type retained for review of older blocked jobs."""
 
 
 def require_publishable(manifest):
@@ -17,8 +17,5 @@ def require_publishable(manifest):
     if report["errors"]:
         for finding in report["findings"]:
             if finding["severity"] == "error":
-                event("quality.rejected", level="error", finding=finding)
-        raise QualityGateRejected(
-            f"Проверка результата обнаружила {report['errors']} ошибок. Готовые презентации не опубликованы. "
-            "Черновики и подробный отчёт сохранены для диагностики; причины доступны в журнале."
-        )
+                event("quality.needs_review", level="error", finding=finding)
+    return report

@@ -195,3 +195,37 @@ def test_publication_orders_gate_and_both_archives_before_completion(tmp_path, m
     assert calls == ["gate", "zip", "zip"]
     assert manifest["elapsed_seconds"] == 5
     assert manifest["within_deadline"] is True
+
+
+def test_final_quality_error_still_packages_reviewable_exports(tmp_path, monkeypatch):
+    import json
+    from studio.generation.publication import publish_artifacts
+
+    archives = []
+    monkeypatch.setattr(
+        "studio.generation.publication.package_results", lambda _: archives.append("zip")
+    )
+    manifest = {
+        "errors": 1,
+        "variants": [
+            {
+                "key": "executive",
+                "findings": [
+                    {
+                        "severity": "error",
+                        "code": "coverage",
+                        "slide": 1,
+                        "message": "Факт отсутствует на слайде",
+                    }
+                ],
+            }
+        ],
+    }
+
+    publish_artifacts(tmp_path, manifest, GenerationDeadline(None), 0, None)
+
+    assert archives == ["zip", "zip"]
+    saved = json.loads((tmp_path / "manifest.json").read_text())
+    assert saved["quality_report"]["status"] == "needs_review"
+    assert saved["quality_report"]["errors"] == 1
+    assert saved["quality_report"]["findings"][0]["code"] == "coverage"
