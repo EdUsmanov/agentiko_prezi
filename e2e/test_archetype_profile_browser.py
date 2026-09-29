@@ -71,10 +71,11 @@ def test_archetype_reports_in_saved_packages(browser_page, tmp_path):
                 auto_generation="disabled",
             )
         page.goto(url)
-        page.locator("#nav-history").click()
         for name, _, message in cases:
             row = page.locator(".history-item").filter(has=page.get_by_text(name, exact=True))
-            row.get_by_role("button", name="Использовать пакет").click()
+            row.click()
+            if page.locator("#analysis-details").get_attribute("open") is None:
+                page.locator("#analysis-details > summary").click()
             expect(
                 page.locator(".analysis-checks dt")
                 .filter(has_text="Архетипы содержания")

@@ -47,10 +47,10 @@ asyncio.run(main())
         assert page.request.get(url + "/api/jobs").json() == []
         page.locator("#reference").select_option(rows[1]["id"])
         expect(page.locator("#saved-design")).to_contain_text("Second.potx")
-        expect(page.locator("#variant-count")).to_have_value("1")
-        expect(page.locator(".variant-description:visible")).to_have_count(1)
+        expect(page.locator('input[name="variant-count"][value="1"]')).to_be_checked()
         page.locator("#content").fill(BRIEF)
         expect(page.locator("#saved-design")).to_contain_text("Second.potx")
+        page.locator("#extra-settings > summary").click()
         page.locator("#slides").select_option("mini")
         page.locator("#instructions").fill("Ровно 3 слайда")
         with page.expect_response(
@@ -59,6 +59,7 @@ asyncio.run(main())
             page.locator("#prepare-button").click()
         pid = response.value.json()["id"]
         expect(page.locator("#generate-button")).to_be_enabled(timeout=120_000)
+        expect(page.locator(".analysis-variant-card:visible")).to_have_count(1)
         saved = page.request.get(url + "/api/jobs/" + pid).json()
         assert saved["auto_generation"] == "manual" and "auto_generate_at" not in saved
         assert saved["analysis"]["template_cache"]["hit"] is True
@@ -82,9 +83,10 @@ asyncio.run(main())
         assert done["deadline_at"] - done["created"] == 300
         with ZipFile(settings.data_dir / "jobs" / jid / "presentations.zip") as z:
             assert len([name for name in z.namelist() if name.endswith(".pptx")]) == 1
+        page.locator("#new-presentation").click()
         page.locator("#reference").select_option("")
         expect(page.locator("#saved-design")).to_be_hidden()
-        expect(page.locator(".variant-description:visible")).to_have_count(3)
+        expect(page.locator('input[name="variant-count"][value="3"]')).to_be_checked()
         page.locator("#template").set_input_files(first)
         expect(page.locator("#profile-empty")).to_be_visible()
         expect(page.locator("#prep-state")).to_have_text("Ожидает анализа")

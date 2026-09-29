@@ -6,7 +6,7 @@
   <title>VK Forma — генерация презентаций</title>
   <link rel="stylesheet" href="/static/style.css?v=20260928d">
   <link rel="stylesheet" href="/static/workflow.css?v=20260929n">
-  <script type="module" src="/static/app.js?v=20260929q"></script>
+  <script type="module" src="/static/app.js?v=20260929merge1"></script>
 </head>
 <body>
   <aside class="rail">
@@ -36,6 +36,10 @@
       <section class="editor panel">
         <div class="section-heading"><h2>Материалы</h2><button type="button" class="text-button" id="demo">Загрузить демотекст</button></div>
         <form id="prepare-form">
+          <div class="form-field" id="reference-field" hidden>
+            <label class="field-label" for="reference">Готовые шаблоны</label>
+            <select class="form-control" id="reference" name="reference_id"><option value="">Загрузить свой шаблон</option></select>
+          </div>
           <div class="form-field" id="template-field">
             <label class="field-label" for="template">Шаблон презентации</label>
             <label class="form-control dropzone" id="dropzone" for="template">
@@ -97,6 +101,7 @@
           <div id="profile-empty" class="empty-profile">
             <h3>Шаблон ещё не загружен</h3><p>После анализа здесь появятся его шрифты, цвета и макеты.</p>
           </div>
+          <div id="saved-design" hidden></div>
           <div id="reuse-profile" class="reuse-profile" hidden></div>
           <div class="variant-guide" id="variant-guide">
             <h3>Презентации по вашему материалу</h3>
