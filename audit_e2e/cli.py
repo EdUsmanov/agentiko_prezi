@@ -104,6 +104,11 @@ def run_experiment(args):
     if args.mode == "live" and (args.max_requests is None or args.timeout is None):
         raise ValueError("live requires --max-requests and --timeout (total run wall seconds)")
     cases = load_cases(args.suite)
+    from .presentation_diversity import VERSION as presentation_policy
+
+    for case in cases:
+        case["presentation_diversity_policy"] = presentation_policy
+        case["export_consistency_policy"] = "source-anchor-format-agreement-1"
     if args.case:
         requested = set(args.case)
         cases = [case for case in cases if case["id"] in requested]
@@ -329,7 +334,7 @@ def parser():
     commands = root.add_subparsers(dest="command", required=True)
     run = commands.add_parser("run", help="One bounded replay or live experiment")
     run.add_argument("--mode", choices=("replay", "live"), required=True)
-    run.add_argument("--suite", choices=("core", "extended"), default="core")
+    run.add_argument("--suite", choices=("core", "extended", "development"), default="core")
     run.add_argument(
         "--case", action="append", help="Explicit subset; never reported as the full suite"
     )
@@ -358,13 +363,88 @@ def parser():
     calibration.add_argument(
         "--controls-only", action="store_true", help="Build fixtures with no LLM calls"
     )
+    inventory = commands.add_parser("inventory", help="Inspect source and native template coverage")
+    inventory.add_argument("--output", type=Path)
+    defects = commands.add_parser(
+        "build-defects", help="Build native bad-export controls and measure deterministic detection"
+    )
+    defects.add_argument("--output", type=Path, required=True)
+    defects.add_argument("--category", action="append")
+    defects.add_argument("--timeout", type=positive, required=True)
+    challenge = commands.add_parser(
+        "challenge-status", help="Validate a sealed private corpus; aggregate output only"
+    )
+    challenge.add_argument("--root", type=Path, required=True)
+    challenge.add_argument("--identity", help="Previously recorded seal identity")
     return root
 
 
 def main(argv=None):
     args = parser().parse_args(argv)
     try:
-        if args.command == "run":
+        if args.command == "challenge-status":
+            from .challenge import aggregate_status as challenge_status
+
+            document = challenge_status(args.root, expected_manifest_identity=args.identity)
+            print(json.dumps(document, ensure_ascii=False))
+            return 0 if document.get("status") == "ready" else 2
+        elif args.command == "build-defects":
+            from .defect_corpus import build_defect_corpus
+            from .runtime import _hard_deadline
+
+            build_source = source_snapshot()
+            build_environment = environment()
+            with _hard_deadline(args.timeout):
+                document = build_defect_corpus(
+                    args.output.resolve(), categories=args.category, validate=True
+                )
+            outcomes = document["matrix"].get("counts", {})
+            detector_status = (
+                "failed"
+                if any(
+                    outcomes.get(key, 0) for key in ("missed", "false_positive", "false_success")
+                )
+                else "inconclusive"
+                if not outcomes or outcomes.get("inconclusive", 0)
+                else "passed"
+            )
+            identity = {
+                "scope": "native_control_build_no_model_calls",
+                "source_snapshot": build_source,
+                "source_unchanged": build_source["tree_sha256"] == source_snapshot()["tree_sha256"],
+                "environment": build_environment,
+                "manifest_path": document["manifest_path"],
+                "counts": document["counts"],
+                "detector_status": detector_status,
+            }
+            if not identity["source_unchanged"]:
+                detector_status = aggregate_status([detector_status, "inconclusive"])
+            identity["status"] = detector_status
+            write_json(args.output / "build.json", identity)
+            print(
+                json.dumps(
+                    {
+                        "build_status": "completed",
+                        "detector_status": detector_status,
+                        **{
+                            key: document[key]
+                            for key in ("manifest_path", "labels_path", "validation_path", "counts")
+                        },
+                    },
+                    ensure_ascii=False,
+                    default=str,
+                )
+            )
+            return EXIT_CODES[detector_status]
+        elif args.command == "inventory":
+            from .development_inventory import inventory_report
+
+            document = inventory_report()
+            if args.output:
+                write_json(args.output, document)
+            print(json.dumps(document, ensure_ascii=False, indent=2))
+            return 0
+        elif args.command == "run":
             directory, document = run_experiment(args)
         elif args.command == "judge":
             directory, original = read_run(args.run)

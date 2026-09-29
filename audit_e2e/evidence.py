@@ -217,7 +217,11 @@ def _template_evidence(case, bundle_dir):
     origin = case.get("template_origin", "real_external_template")
     metadata = {
         "origin": origin,
-        "source_origin": "synthetic_analog" if case.get("synthetic") else "external_template",
+        "source_origin": "owned_native_synthetic"
+        if origin == "owned_native_synthetic"
+        else "synthetic_analog"
+        if case.get("synthetic")
+        else "external_template",
         "source": case.get("template_source", {}).get("source"),
         "format": case.get("template_source", {}).get("format"),
         "sha256": case.get("source_hashes", {}).get(
@@ -235,6 +239,9 @@ def _template_evidence(case, bundle_dir):
         "previews": [],
         "preview_status": "unavailable",
     }
+    for key in ("template_family_id", "template_material_id", "template_feature_evidence"):
+        if key in case:
+            metadata[key.removeprefix("template_")] = case[key]
     selected = case.get("template_preview_slides", [1])[:4]
     if not selected:
         metadata["preview_status"] = "not_requested"
@@ -396,6 +403,13 @@ def build_bundle(case, result_dir, bundle_dir):
             "pdf_page_count": len(pdf_reader.pages),
             "slides": slides,
         }
+        html_source = variant_source / "deck.html"
+        if html_source.is_file():
+            from .export_consistency import html_text
+
+            html = _safe_copy(html_source, image_dir / "deck.html")
+            variants[key]["html"] = _relative(html, bundle_dir)
+            variants[key]["html_text"] = html_text(html.read_text(encoding="utf-8"))
 
     slide_contract = case.get("slide_contract") or {
         "target": case.get("slides"),
@@ -409,6 +423,8 @@ def build_bundle(case, result_dir, bundle_dir):
         "expected_variant_ids": list(case.get("variants", [])),
         "expected_slide_count": case.get("slides"),
         "slide_contract": slide_contract,
+        "presentation_diversity_policy": case.get("presentation_diversity_policy"),
+        "export_consistency_policy": case.get("export_consistency_policy"),
         "source": source,
         "reference": case.get(
             "reference",
@@ -835,14 +851,44 @@ def audit_bundle(bundle, bundle_dir):
                     )
 
     template = bundle.get("template", {})
-    if template.get("fidelity_applicability") == "external_template" and not template.get(
-        "previews"
-    ):
+    if template.get("fidelity_applicability") in {
+        "external_template",
+        "owned_native_template",
+    } and not template.get("previews"):
         add(
             "template_fidelity",
-            "External source template previews are unavailable",
+            "Source template previews are unavailable",
             severity="inconclusive",
             source=template.get("source"),
+        )
+    export_consistency = None
+    if bundle.get("export_consistency_policy") or any(
+        r.get("kind") == "text_export_agreement"
+        for r in bundle.get("reference", {}).get("requirements", [])
+    ):
+        from .export_consistency import assess_export_consistency
+
+        export_consistency = assess_export_consistency(bundle)
+        if export_consistency["status"] != "passed":
+            add(
+                "export_consistency",
+                "Source anchors cannot be verified consistently across exports",
+                severity=export_consistency["status"],
+                assessment=export_consistency,
+            )
+    presentation_diversity = None
+    if bundle.get("presentation_diversity_policy") or any(
+        r.get("kind") == "presentation_diversity"
+        for r in bundle.get("reference", {}).get("requirements", [])
+    ):
+        from .presentation_diversity import assess_presentation_diversity
+
+        presentation_diversity = assess_presentation_diversity(bundle)
+        add(
+            "presentation_diversity",
+            "Three deliveries require independent organization and composition evidence",
+            severity=presentation_diversity["status"],
+            assessment=presentation_diversity,
         )
     if any(item.get("severity") == "failed" for item in findings):
         status = "failed"
@@ -850,4 +896,9 @@ def audit_bundle(bundle, bundle_dir):
         status = "inconclusive"
     else:
         status = "passed"
-    return {"status": status, "findings": findings, "diagnostics": diagnostics}
+    result = {"status": status, "findings": findings, "diagnostics": diagnostics}
+    if export_consistency is not None:
+        result["export_consistency"] = export_consistency
+    if presentation_diversity is not None:
+        result["presentation_diversity"] = presentation_diversity
+    return result

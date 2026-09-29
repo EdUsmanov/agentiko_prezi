@@ -244,3 +244,40 @@ def test_deadline_interrupts_work_and_missing_replay_never_falls_back(tmp_path):
     assert result["model_requests"] == 0
     assert result["status"] == "inconclusive"
     assert not (tmp_path / "result" / "server" / "settings.json").exists()
+
+
+def test_offline_author_preserves_long_native_table_without_oversized_caption():
+    from audit_e2e.build_cassettes import authored_response
+    from studio.contents.editorial_domain import validate_plan
+    from studio.contents.parsing import parse_content
+
+    rows = "\n".join(f"| Room {i} | {i + 20} |" for i in range(40))
+    content = parse_content(
+        "# Room inventory\n## Overview\nThe inventory records available seats.\n"
+        "## Seat counts\n| Room | Seats |\n|---|---|\n" + rows
+    )
+    response = authored_response(
+        "editorial", {"source": content.model_dump(mode="json"), "slide_range": [2, 2]}
+    )
+    plan = validate_plan(response, content, (2, 2), require_cover=True)
+    assert plan["slides"][1]["source_table_id"] == content.tables[0].id
+    assert len(content.tables[0].rows) == 40
+    assert plan["slides"][1]["bullets"][0]["text"] == "Seat counts"
+
+
+def test_ineffective_editorial_repair_requires_explicit_failure_capture():
+    from audit_e2e.build_cassettes import authored_response
+    from studio.contents.editorial_repair import apply_replacements
+
+    slide = {
+        "title": "Source fact",
+        "purpose": "content",
+        "bullets": [{"text": "The source records 12 days.", "evidence": [{"fact_id": "f1"}]}],
+    }
+    data = {"previous_plan": {"slides": [slide], "omitted": []}, "allowed_slide_indices": [1]}
+    with pytest.raises(ValueError, match="Unreviewed synthetic stage"):
+        authored_response("editorial_repair", data)
+    patch = authored_response("editorial_repair", data, capture_failure=True)
+    applied = apply_replacements(data["previous_plan"], patch, [1])
+    assert applied["slides"][0]["title"] == slide["title"]
+    assert applied["slides"][0]["bullets"][0]["text"] == slide["bullets"][0]["text"]

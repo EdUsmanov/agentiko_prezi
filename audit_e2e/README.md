@@ -18,7 +18,9 @@ excluded from Git, Docker build context, source packages and source snapshots.
 Historical runs and the external template corpus remain under `test-results/`
 so their recorded paths and sealed evidence remain valid. Pass a historical
 run's full path to `judge` or `compare`. Recorded validation is in
-[VALIDATION_2026-09-29.md](VALIDATION_2026-09-29.md).
+[VALIDATION_2026-09-29.md](VALIDATION_2026-09-29.md). The expanded development corpus,
+full replay results and detector gaps are recorded in
+[VALIDATION_DIVERSITY_2026-09-29.md](VALIDATION_DIVERSITY_2026-09-29.md).
 
 ```bash
 python -m pytest -q audit_e2e/tests
@@ -60,6 +62,95 @@ references with review pending. Promote them only after an independent review,
 recording that review and incrementing the reference version. Literal table
 requirements and deliberately constructed calibration controls have separate
 provenance. A silver ledger cannot establish a passing semantic quality gate.
+
+## Development coverage and private challenge
+
+```bash
+python -m audit_e2e inventory --output audit_e2e/results/inventory.json
+python -m audit_e2e run --mode replay --suite development --timeout 3600
+python -m audit_e2e build-defects \
+  --output audit_e2e/results/defects --timeout 3600
+python -m audit_e2e challenge-status \
+  --root SEALED_REVISION_DIRECTORY --identity RECORDED_SHA256
+```
+
+`development` extends the unchanged nine legacy cases with owned native templates
+and independent source materials. Their persisted PPTX/POTX bytes are used in
+both replay and live mode. See [CORPUS.md](CORPUS.md) for measured unique templates,
+source hashes, structural families and OOXML features. A native chart in an input
+template establishes input coverage; it does not prove that generation preserved
+or produced an editable chart. Repeated runs and cosmetic template changes do not
+increase the independent-material count.
+
+New runs assess the three delivered variants along two separate dimensions:
+source-material organization (grouping/order/emphasis) and composition. Both must
+differ. Color, font, background and pixel differences alone do not qualify;
+shared covers and unchanged source tables are allowed. The deterministic checker
+can establish identical literal point grouping or content geometry. Different
+arrangements alone cannot certify meaningful alternatives, and paraphrased or
+insufficient source evidence stays **inconclusive** pending calibrated independent
+review. This stricter policy can fail or abstain on a replay whose HTTP execution
+completed successfully; execution status and quality status are separate.
+
+PPTX/PDF/HTML checks compare source anchors, with per-format evidence and slide
+locations. Text absent from PDF extraction can still be rasterized or outlined,
+so absence is uncertainty unless an independently constructed text-export control
+requires literal agreement. This is not optical proof that every export looks
+the same. HTML parsing excludes directly hidden/script content but does not
+evaluate CSS classes or browser visibility.
+
+The bad-export builder saves expected labels outside evidence bundles, then runs
+the ordinary artifact detector without labels. Its detection matrix distinguishes
+detected, missed, inconclusive and false-positive outcomes. Constructed controls
+do not make silver development references gold. The original three-pass Luna
+calibration remains a separate, narrower control set; building the expanded corpus
+does not certify any new category or invoke a model.
+`build-defects` prints build completion separately from the detector result;
+its exit code follows detection (1 for misses/false alarms, 2 for uncertainty).
+A completed artifact build is not a calibration certificate.
+
+The current diversity rule never automatically certifies semantic alternatives.
+Its `inconclusive` result remains part of the overall gate even after a favorable
+Luna review. Positive qualification will require a calibrated resolution policy;
+this implementation deliberately supplies no permissive fallback.
+
+The owned fixture registry covers the original eleven defect families plus clipping,
+overlap, low contrast, lost backgrounds, foreign template text, chart value/axis
+corruption, missing or distorted figures, and PPTX/PDF/HTML disagreement. Every
+category has a clean control, a constructed defect, and a source-faithful wording
+transformation; each case exports executive, analytical, and story layouts from
+three fictional source topics. The full build creates 66 main cases (198 native
+presentations) plus three cosmetic-only duplicate controls and three source-limited
+abstention controls: 72 cases, 216 PPTX/PDF/HTML presentation sets. The latter
+controls alter palette or font while preserving fact order and geometry; source-
+limited controls contain only one measured point, so they cannot establish three
+meaningful organizations.
+
+Expected labels are written to `labels.expected.json`, outside every evidence
+bundle. `control-metadata.json` records source/ledger and per-export hashes,
+composition IDs, source-point grouping and authored localization; generated cases
+are marked `native_rendered_control`. This is not a product E2E run, and repeated
+judging does not increase its unique source-family or composition counts. The
+matrix scores only independent artifact findings: failed target findings must
+localize every expected affected variant, while partial localization and related
+proxy findings remain inconclusive. Unmapped visual challenges (including
+overlap, contrast, background loss, foreign template text and chart corruption)
+remain curator-labeled and will count as missed unless an independent finding
+actually targets them. The image-pixel detector can flag a changed image, but it
+cannot distinguish distortion from any other pixel change. Text extraction is not
+optical verification. Historical observations are indexed as local-only paths and
+hashes in `fixtures/historical_observations.json`; they come from an uncalibrated
+review of a silver reference and are not detector labels. The external branded
+source deck and previews are not copied into this repository.
+
+The private challenge lives outside this repository. Its command returns counts,
+seal integrity and lifecycle readiness only, never cases, filenames or expected
+answers. `ready` is not a product-quality verdict. Disclosure retires affected
+holdout entries; a replacement needs a new sealed identity. The separate directory
+and curator workflow prevent accidental disclosure, but do not prevent another
+process running as the same OS user from reading it. Enforced isolation requires
+a separate curator account or environment. No product run is implicit in status
+validation.
 
 ## Live generation and evaluation
 
@@ -185,7 +276,13 @@ python -m audit_e2e.build_cassettes --case binghamton-content --selected-repair
 ```
 
 This offline development tool authors synthetic replies against the real gateway
-and saves only a complete successful exchange set. Review its request/response
+and normally saves only a complete successful exchange set. The explicit
+`--capture-failure` authoring option can preserve a finite failed execution as a
+regression; it records the failure and never turns it into an expected success.
+If the app asks for an editorial repair, this mode explicitly authors an unchanged
+patch to exercise the bounded failure path. Its metadata marks the ineffective
+repair; it does not establish that a capable model could not fix the layout.
+Use `--suite development --case CASE` for new development fixtures. Review the request/response
 diff and rerun strict replay before accepting an update. Its canned critic replies
 are plumbing fixtures, not independent quality assessments. Never weaken matching
 to a stage name or derive expected facts from the candidate output.

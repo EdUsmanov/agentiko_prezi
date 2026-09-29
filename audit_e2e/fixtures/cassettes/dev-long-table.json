@@ -1,0 +1,716 @@
+{
+  "schema_version": 1,
+  "fixture_revision": 1,
+  "provenance": "Explicitly authored synthetic model replies at the real HTTP boundary. Not a provider recording or a quality oracle. Independent reference ledger is authored separately.",
+  "image_matching": "dimensions",
+  "exchanges": [
+    {
+      "request": {
+        "parameters": {
+          "model": "fixture-27b",
+          "temperature": 0.25,
+          "max_tokens": 8192,
+          "response_format": {
+            "type": "json_schema",
+            "json_schema": {
+              "name": "template_analyst",
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "pattern_id": {
+                    "type": "string",
+                    "enum": [
+                      "native-slide-1"
+                    ]
+                  },
+                  "roles": {
+                    "items": {
+                      "enum": [
+                        "context",
+                        "insight",
+                        "evidence",
+                        "action",
+                        "appendix"
+                      ],
+                      "type": "string"
+                    },
+                    "maxItems": 5,
+                    "minItems": 1,
+                    "title": "Roles",
+                    "type": "array"
+                  },
+                  "density": {
+                    "enum": [
+                      "low",
+                      "medium",
+                      "high"
+                    ],
+                    "title": "Density",
+                    "type": "string"
+                  },
+                  "purpose": {
+                    "anyOf": [
+                      {
+                        "enum": [
+                          "cover",
+                          "speaker",
+                          "agenda",
+                          "divider",
+                          "context",
+                          "problem",
+                          "solution",
+                          "claim_evidence",
+                          "comparison",
+                          "process",
+                          "timeline",
+                          "metrics",
+                          "trend",
+                          "composition",
+                          "structure",
+                          "recommendations",
+                          "summary",
+                          "closing",
+                          "content"
+                        ],
+                        "type": "string"
+                      },
+                      {
+                        "enum": [
+                          "unknown",
+                          "service",
+                          "reference"
+                        ],
+                        "type": "string"
+                      }
+                    ],
+                    "default": "unknown",
+                    "title": "Purpose"
+                  },
+                  "reusable": {
+                    "default": true,
+                    "title": "Reusable",
+                    "type": "boolean"
+                  },
+                  "body_order": {
+                    "items": {
+                      "type": "integer"
+                    },
+                    "maxItems": 12,
+                    "title": "Body Order",
+                    "type": "array"
+                  },
+                  "graphic_flow_confirmed": {
+                    "default": false,
+                    "title": "Graphic Flow Confirmed",
+                    "type": "boolean"
+                  },
+                  "graphic_kind": {
+                    "default": "none",
+                    "enum": [
+                      "none",
+                      "cards",
+                      "sequence",
+                      "comparison",
+                      "hierarchy",
+                      "radial",
+                      "pyramid",
+                      "matrix"
+                    ],
+                    "title": "Graphic Kind",
+                    "type": "string"
+                  },
+                  "graphic_shape_ids": {
+                    "items": {
+                      "type": "integer"
+                    },
+                    "maxItems": 160,
+                    "title": "Graphic Shape Ids",
+                    "type": "array"
+                  },
+                  "graphic_edges": {
+                    "items": {
+                      "maxItems": 2,
+                      "minItems": 2,
+                      "prefixItems": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "integer"
+                        }
+                      ],
+                      "type": "array"
+                    },
+                    "maxItems": 160,
+                    "title": "Graphic Edges",
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "pattern_id",
+                  "roles",
+                  "density"
+                ],
+                "title": "PatternMeaning",
+                "type": "object"
+              },
+              "strict": true
+            }
+          }
+        },
+        "messages": [
+          {
+            "role": "system",
+            "content": {
+              "sha256": "7d99ccb405864127e61589b293df049ce1dca378fab3aea5ad33b84afb6da482"
+            }
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "{\"untrusted_input\": {\"patterns\": [{\"id\": \"native-slide-1\", \"source_slide\": 1, \"source_layout\": \"Blank\", \"title_zone\": {\"x\": 57.6, \"y\": 100.8, \"w\": 844.7759842519685, \"h\": 39.60000000000001}, \"body_zones\": [{\"x\": 64.8, \"y\": 424.8, \"w\": 830.3759842519684, \"h\": 32.4}], \"technical_role\": \"statement\", \"colors\": {\"scheme_id\": \"rendered-scheme-1\", \"title\": {\"background\": \"#F4F7FB\", \"text\": \"#4673A1\"}, \"body\": [{\"background\": \"#FFFFFF\", \"text\": \"#263A4C\"}]}, \"graphic_candidates\": [{\"id\": 2, \"geometry\": \"rect\", \"box\": [50.4, 97.2, 859.2, 43.2]}, {\"id\": 4, \"geometry\": \"roundRect\", \"box\": [57.6, 421.2, 844.8, 39.6]}], \"body_fields\": [{\"shape_id\": 4, \"index\": 0, \"box\": {\"x\": 64.8, \"y\": 424.8, \"w\": 830.3759842519684, \"h\": 32.4}}], \"source_sample\": \"SAMPLE ONLY • NOT SOURCE DATA\\nSAMPLE UNITS • SOURCE LABELS\"}], \"canvas\": {\"width\": 959.9759842519685, \"height\": 540.0}, \"image_order\": [1], \"archetype_catalog\": {\"version\": 1, \"archetypes\": [{\"id\": \"cover\", \"name\": \"Титульный\", \"description\": \"Представляет основную тему всей презентации, а не отдельной главы.\", \"required_slots\": {\"topic\": 1}}, {\"id\": \"speaker\", \"name\": \"Представление спикера\", \"description\": \"Представляет конкретного выступающего и его связь с темой. Имя обязательно, фото и биография — только если предоставлены.\", \"required_slots\": {\"person\": 1}}, {\"id\": \"agenda\", \"name\": \"План выступления\", \"description\": \"Перечисляет вопросы или разделы, которые будут раскрыты далее; не описывает бизнес-процесс.\", \"required_slots\": {\"topic\": 2}}, {\"id\": \"divider\", \"name\": \"Разделитель\", \"description\": \"Обозначает начало следующей смысловой главы, за которой следует её содержание.\", \"required_slots\": {\"topic\": 1}}, {\"id\": \"context\", \"name\": \"Контекст\", \"description\": \"Объясняет объект, исходную ситуацию или границы рассмотрения, необходимые для понимания дальнейших тезисов.\", \"required_slots\": {\"topic\": 1}}, {\"id\": \"problem\", \"name\": \"Проблема\", \"description\": \"Показывает описанное в источнике препятствие или нежелательное состояние. Нельзя объявлять нейтральный факт проблемой без основания.\", \"required_slots\": {\"problem\": 1}}, {\"id\": \"solution\", \"name\": \"Решение\", \"description\": \"Объясняет конкретное предложение для решения задачи. Не выдаёт предложение или ожидаемый эффект за полученный результат.\", \"required_slots\": {\"solution\": 1}}, {\"id\": \"claim_evidence\", \"name\": \"Тезис и обоснование\", \"description\": \"Связывает главный вывод с подтверждающими его фактами, наблюдениями или данными. Причинная связь не придумывается.\", \"required_slots\": {\"claim\": 1, \"evidence\": 1}}, {\"id\": \"comparison\", \"name\": \"Сравнение\", \"description\": \"Сопоставляет не менее двух объектов по общему критерию. Два независимых текстовых блока не являются сравнением.\", \"required_slots\": {\"entity\": 2, \"criterion\": 1}}, {\"id\": \"process\", \"name\": \"Процесс\", \"description\": \"Объясняет два и более связанных действия в заданной последовательности. Не любой нумерованный список является процессом.\", \"required_slots\": {\"step\": 2}}, {\"id\": \"timeline\", \"name\": \"Хронология\", \"description\": \"Располагает события относительно явно заданных дат или временных интервалов. Без временных привязок выбирайте другой тип.\", \"required_slots\": {\"event\": 2, \"date\": 2}}, {\"id\": \"metrics\", \"name\": \"Ключевые показатели\", \"description\": \"Показывает измеримые характеристики с названиями и исходными значениями; единицы и периоды нельзя выдумывать.\", \"required_slots\": {\"metric\": 1, \"value\": 1}}, {\"id\": \"trend\", \"name\": \"Динамика\", \"description\": \"Показывает изменение сопоставимой величины во времени. Отсутствующие значения и причины изменений не достраиваются.\", \"required_slots\": {\"metric\": 1, \"date\": 2, \"value\": 2}}, {\"id\": \"composition\", \"name\": \"Состав целого\", \"description\": \"Показывает целое и его части. Круговая диаграмма требует дополнительных численных оснований: не любые категории являются долями.\", \"required_slots\": {\"whole\": 1, \"part\": 2}}, {\"id\": \"structure\", \"name\": \"Устройство и связи\", \"description\": \"Объясняет компоненты системы и явно заданные связи или иерархию. Список компонентов сам по себе не задаёт архитектуру.\", \"required_slots\": {\"component\": 2, \"relationship\": 1}}, {\"id\": \"recommendations\", \"name\": \"Рекомендации\", \"description\": \"Формулирует указанные в источнике действия. Ответственные, сроки и обязательства не добавляются самостоятельно.\", \"required_slots\": {\"action\": 1}}, {\"id\": \"summary\", \"name\": \"Итоги\", \"description\": \"Собирает подтверждённые ключевые выводы материала. Не вводит новые факты и не равно формальному завершению.\", \"required_slots\": {\"takeaway\": 1}}, {\"id\": \"closing\", \"name\": \"Завершение\", \"description\": \"Завершает выступление, приглашает к обсуждению или показывает предоставленные контакты. Не копирует старые контакты из шаблона.\", \"required_slots\": {\"message\": 1}}, {\"id\": \"content\", \"name\": \"Раскрытие темы\", \"description\": \"Связанный содержательный блок без подтверждённого более специфического назначения. Не принудительный тип всех обычных слайдов.\", \"required_slots\": {}}], \"appendix\": \"Положение в повествовании, не геометрия: сохраняйте внутренний архетип.\"}}}"
+              },
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": {
+                    "width": 960,
+                    "height": 540
+                  },
+                  "detail": "high"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "response": {
+        "choices": [
+          {
+            "message": {
+              "role": "assistant",
+              "content": "{\"patterns\": [{\"pattern_id\": \"native-slide-1\", \"roles\": [\"context\", \"insight\"], \"density\": \"medium\", \"purpose\": \"content\", \"reusable\": true}]}"
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 100,
+          "completion_tokens": 50,
+          "total_tokens": 150
+        }
+      }
+    },
+    {
+      "request": {
+        "parameters": {
+          "model": "fixture-27b",
+          "temperature": 0.25,
+          "max_tokens": 4096,
+          "response_format": {
+            "type": "json_schema",
+            "json_schema": {
+              "name": "template_analyst",
+              "schema": {
+                "$defs": {
+                  "PatternMeaning": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "pattern_id": {
+                        "type": "string",
+                        "enum": [
+                          "native-layout-0-0",
+                          "native-layout-0-2"
+                        ]
+                      },
+                      "roles": {
+                        "items": {
+                          "enum": [
+                            "context",
+                            "insight",
+                            "evidence",
+                            "action",
+                            "appendix"
+                          ],
+                          "type": "string"
+                        },
+                        "maxItems": 5,
+                        "minItems": 1,
+                        "title": "Roles",
+                        "type": "array"
+                      },
+                      "density": {
+                        "enum": [
+                          "low",
+                          "medium",
+                          "high"
+                        ],
+                        "title": "Density",
+                        "type": "string"
+                      },
+                      "purpose": {
+                        "anyOf": [
+                          {
+                            "enum": [
+                              "cover",
+                              "speaker",
+                              "agenda",
+                              "divider",
+                              "context",
+                              "problem",
+                              "solution",
+                              "claim_evidence",
+                              "comparison",
+                              "process",
+                              "timeline",
+                              "metrics",
+                              "trend",
+                              "composition",
+                              "structure",
+                              "recommendations",
+                              "summary",
+                              "closing",
+                              "content"
+                            ],
+                            "type": "string"
+                          },
+                          {
+                            "enum": [
+                              "unknown",
+                              "service",
+                              "reference"
+                            ],
+                            "type": "string"
+                          }
+                        ],
+                        "default": "unknown",
+                        "title": "Purpose"
+                      },
+                      "reusable": {
+                        "default": true,
+                        "title": "Reusable",
+                        "type": "boolean"
+                      },
+                      "body_order": {
+                        "items": {
+                          "type": "integer"
+                        },
+                        "maxItems": 12,
+                        "title": "Body Order",
+                        "type": "array"
+                      },
+                      "graphic_flow_confirmed": {
+                        "default": false,
+                        "title": "Graphic Flow Confirmed",
+                        "type": "boolean"
+                      },
+                      "graphic_kind": {
+                        "default": "none",
+                        "enum": [
+                          "none",
+                          "cards",
+                          "sequence",
+                          "comparison",
+                          "hierarchy",
+                          "radial",
+                          "pyramid",
+                          "matrix"
+                        ],
+                        "title": "Graphic Kind",
+                        "type": "string"
+                      },
+                      "graphic_shape_ids": {
+                        "items": {
+                          "type": "integer"
+                        },
+                        "maxItems": 160,
+                        "title": "Graphic Shape Ids",
+                        "type": "array"
+                      },
+                      "graphic_edges": {
+                        "items": {
+                          "maxItems": 2,
+                          "minItems": 2,
+                          "prefixItems": [
+                            {
+                              "type": "integer"
+                            },
+                            {
+                              "type": "integer"
+                            }
+                          ],
+                          "type": "array"
+                        },
+                        "maxItems": 160,
+                        "title": "Graphic Edges",
+                        "type": "array"
+                      }
+                    },
+                    "required": [
+                      "pattern_id",
+                      "roles",
+                      "density"
+                    ],
+                    "title": "PatternMeaning",
+                    "type": "object"
+                  }
+                },
+                "additionalProperties": false,
+                "properties": {
+                  "patterns": {
+                    "items": {
+                      "$ref": "#/$defs/PatternMeaning"
+                    },
+                    "maxItems": 2,
+                    "title": "Patterns",
+                    "type": "array",
+                    "minItems": 2
+                  }
+                },
+                "required": [
+                  "patterns"
+                ],
+                "title": "TemplateMeaning",
+                "type": "object"
+              },
+              "strict": true
+            }
+          }
+        },
+        "messages": [
+          {
+            "role": "system",
+            "content": {
+              "sha256": "1d09bccca9bfa9551e698a45d5cc497b445464e9cb542a2ce8f110fa617c9973"
+            }
+          },
+          {
+            "role": "user",
+            "content": "{\"untrusted_input\": {\"patterns\": [{\"id\": \"native-layout-0-0\", \"source_slide\": 0, \"source_layout\": \"Title Slide\", \"title_zone\": {\"x\": 61.2, \"y\": 171.35, \"w\": 597.5999999999999, \"h\": 112.15}, \"body_zones\": [{\"x\": 115.2, \"y\": 309.6, \"w\": 489.6, \"h\": 130.8}], \"technical_role\": \"cover\", \"colors\": {\"scheme_id\": \"\", \"title\": {\"background\": \"#F4F7FB\", \"text\": \"#000000\"}, \"body\": [{\"background\": \"#F4F7FB\", \"text\": \"#000000\"}]}, \"graphic_candidates\": [], \"body_fields\": [{\"shape_id\": 3, \"index\": 0, \"box\": {\"x\": 115.2, \"y\": 309.6, \"w\": 489.6, \"h\": 130.8}}], \"source_sample\": \"\"}, {\"id\": \"native-layout-0-2\", \"source_slide\": 0, \"source_layout\": \"Section Header\", \"title_zone\": {\"x\": 39.6, \"y\": 28.8, \"w\": 597.5999999999999, \"h\": 55.44}, \"body_zones\": [], \"technical_role\": \"divider\", \"colors\": {\"scheme_id\": \"\", \"title\": {\"background\": \"#F4F7FB\", \"text\": \"#4673A1\"}, \"body\": []}, \"graphic_candidates\": [], \"body_fields\": [], \"source_sample\": \"\"}], \"canvas\": {\"width\": 959.9759842519685, \"height\": 540.0}, \"image_order\": [], \"archetype_catalog\": {\"version\": 1, \"archetypes\": [{\"id\": \"cover\", \"name\": \"Титульный\", \"description\": \"Представляет основную тему всей презентации, а не отдельной главы.\", \"required_slots\": {\"topic\": 1}}, {\"id\": \"speaker\", \"name\": \"Представление спикера\", \"description\": \"Представляет конкретного выступающего и его связь с темой. Имя обязательно, фото и биография — только если предоставлены.\", \"required_slots\": {\"person\": 1}}, {\"id\": \"agenda\", \"name\": \"План выступления\", \"description\": \"Перечисляет вопросы или разделы, которые будут раскрыты далее; не описывает бизнес-процесс.\", \"required_slots\": {\"topic\": 2}}, {\"id\": \"divider\", \"name\": \"Разделитель\", \"description\": \"Обозначает начало следующей смысловой главы, за которой следует её содержание.\", \"required_slots\": {\"topic\": 1}}, {\"id\": \"context\", \"name\": \"Контекст\", \"description\": \"Объясняет объект, исходную ситуацию или границы рассмотрения, необходимые для понимания дальнейших тезисов.\", \"required_slots\": {\"topic\": 1}}, {\"id\": \"problem\", \"name\": \"Проблема\", \"description\": \"Показывает описанное в источнике препятствие или нежелательное состояние. Нельзя объявлять нейтральный факт проблемой без основания.\", \"required_slots\": {\"problem\": 1}}, {\"id\": \"solution\", \"name\": \"Решение\", \"description\": \"Объясняет конкретное предложение для решения задачи. Не выдаёт предложение или ожидаемый эффект за полученный результат.\", \"required_slots\": {\"solution\": 1}}, {\"id\": \"claim_evidence\", \"name\": \"Тезис и обоснование\", \"description\": \"Связывает главный вывод с подтверждающими его фактами, наблюдениями или данными. Причинная связь не придумывается.\", \"required_slots\": {\"claim\": 1, \"evidence\": 1}}, {\"id\": \"comparison\", \"name\": \"Сравнение\", \"description\": \"Сопоставляет не менее двух объектов по общему критерию. Два независимых текстовых блока не являются сравнением.\", \"required_slots\": {\"entity\": 2, \"criterion\": 1}}, {\"id\": \"process\", \"name\": \"Процесс\", \"description\": \"Объясняет два и более связанных действия в заданной последовательности. Не любой нумерованный список является процессом.\", \"required_slots\": {\"step\": 2}}, {\"id\": \"timeline\", \"name\": \"Хронология\", \"description\": \"Располагает события относительно явно заданных дат или временных интервалов. Без временных привязок выбирайте другой тип.\", \"required_slots\": {\"event\": 2, \"date\": 2}}, {\"id\": \"metrics\", \"name\": \"Ключевые показатели\", \"description\": \"Показывает измеримые характеристики с названиями и исходными значениями; единицы и периоды нельзя выдумывать.\", \"required_slots\": {\"metric\": 1, \"value\": 1}}, {\"id\": \"trend\", \"name\": \"Динамика\", \"description\": \"Показывает изменение сопоставимой величины во времени. Отсутствующие значения и причины изменений не достраиваются.\", \"required_slots\": {\"metric\": 1, \"date\": 2, \"value\": 2}}, {\"id\": \"composition\", \"name\": \"Состав целого\", \"description\": \"Показывает целое и его части. Круговая диаграмма требует дополнительных численных оснований: не любые категории являются долями.\", \"required_slots\": {\"whole\": 1, \"part\": 2}}, {\"id\": \"structure\", \"name\": \"Устройство и связи\", \"description\": \"Объясняет компоненты системы и явно заданные связи или иерархию. Список компонентов сам по себе не задаёт архитектуру.\", \"required_slots\": {\"component\": 2, \"relationship\": 1}}, {\"id\": \"recommendations\", \"name\": \"Рекомендации\", \"description\": \"Формулирует указанные в источнике действия. Ответственные, сроки и обязательства не добавляются самостоятельно.\", \"required_slots\": {\"action\": 1}}, {\"id\": \"summary\", \"name\": \"Итоги\", \"description\": \"Собирает подтверждённые ключевые выводы материала. Не вводит новые факты и не равно формальному завершению.\", \"required_slots\": {\"takeaway\": 1}}, {\"id\": \"closing\", \"name\": \"Завершение\", \"description\": \"Завершает выступление, приглашает к обсуждению или показывает предоставленные контакты. Не копирует старые контакты из шаблона.\", \"required_slots\": {\"message\": 1}}, {\"id\": \"content\", \"name\": \"Раскрытие темы\", \"description\": \"Связанный содержательный блок без подтверждённого более специфического назначения. Не принудительный тип всех обычных слайдов.\", \"required_slots\": {}}], \"appendix\": \"Положение в повествовании, не геометрия: сохраняйте внутренний архетип.\"}}}"
+          }
+        ]
+      },
+      "status": 200,
+      "response": {
+        "choices": [
+          {
+            "message": {
+              "role": "assistant",
+              "content": "{\"patterns\": [{\"pattern_id\": \"native-layout-0-0\", \"roles\": [\"context\", \"insight\"], \"density\": \"medium\", \"purpose\": \"cover\", \"reusable\": true}, {\"pattern_id\": \"native-layout-0-2\", \"roles\": [\"context\", \"insight\"], \"density\": \"medium\", \"purpose\": \"divider\", \"reusable\": true}]}"
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 100,
+          "completion_tokens": 50,
+          "total_tokens": 150
+        }
+      }
+    },
+    {
+      "request": {
+        "parameters": {
+          "model": "fixture-27b",
+          "temperature": 0.25,
+          "max_tokens": 10000,
+          "response_format": {
+            "type": "json_schema",
+            "json_schema": {
+              "name": "editorial",
+              "schema": {
+                "$defs": {
+                  "Citation": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "fact_id": {
+                        "title": "Fact Id",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "fact_id"
+                    ],
+                    "title": "Citation",
+                    "type": "object"
+                  },
+                  "Claim": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "text": {
+                        "maxLength": 300,
+                        "minLength": 1,
+                        "title": "Text",
+                        "type": "string"
+                      },
+                      "group": {
+                        "default": "",
+                        "maxLength": 80,
+                        "title": "Group",
+                        "type": "string"
+                      },
+                      "parent_group": {
+                        "anyOf": [
+                          {
+                            "maxLength": 80,
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "default": null,
+                        "title": "Parent Group"
+                      },
+                      "evidence": {
+                        "items": {
+                          "$ref": "#/$defs/Citation"
+                        },
+                        "maxItems": 12,
+                        "minItems": 1,
+                        "title": "Evidence",
+                        "type": "array"
+                      }
+                    },
+                    "required": [
+                      "text",
+                      "evidence"
+                    ],
+                    "title": "Claim",
+                    "type": "object"
+                  },
+                  "DataRow": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "fact_id": {
+                        "title": "Fact Id",
+                        "type": "string"
+                      },
+                      "label": {
+                        "maxLength": 200,
+                        "minLength": 1,
+                        "title": "Label",
+                        "type": "string"
+                      },
+                      "value": {
+                        "maxLength": 100,
+                        "minLength": 1,
+                        "title": "Value",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "fact_id",
+                      "label",
+                      "value"
+                    ],
+                    "title": "DataRow",
+                    "type": "object"
+                  },
+                  "EditorialSlide": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "title": {
+                        "maxLength": 140,
+                        "minLength": 1,
+                        "title": "Title",
+                        "type": "string"
+                      },
+                      "purpose": {
+                        "default": "content",
+                        "enum": [
+                          "cover",
+                          "speaker",
+                          "agenda",
+                          "divider",
+                          "context",
+                          "problem",
+                          "solution",
+                          "claim_evidence",
+                          "comparison",
+                          "process",
+                          "timeline",
+                          "metrics",
+                          "trend",
+                          "composition",
+                          "structure",
+                          "recommendations",
+                          "summary",
+                          "closing",
+                          "content"
+                        ],
+                        "title": "Purpose",
+                        "type": "string"
+                      },
+                      "bullets": {
+                        "items": {
+                          "$ref": "#/$defs/Claim"
+                        },
+                        "maxItems": 6,
+                        "minItems": 1,
+                        "title": "Bullets",
+                        "type": "array"
+                      },
+                      "source_table_id": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "default": null,
+                        "title": "Source Table Id"
+                      },
+                      "source_columns": {
+                        "items": {
+                          "type": "integer"
+                        },
+                        "maxItems": 8,
+                        "title": "Source Columns",
+                        "type": "array"
+                      },
+                      "chart_type": {
+                        "default": "auto",
+                        "enum": [
+                          "auto",
+                          "table",
+                          "line",
+                          "column",
+                          "column_stacked",
+                          "bar",
+                          "pie"
+                        ],
+                        "title": "Chart Type",
+                        "type": "string"
+                      },
+                      "relationship": {
+                        "default": "none",
+                        "enum": [
+                          "none",
+                          "comparison",
+                          "time",
+                          "share",
+                          "table"
+                        ],
+                        "title": "Relationship",
+                        "type": "string"
+                      },
+                      "rows": {
+                        "items": {
+                          "$ref": "#/$defs/DataRow"
+                        },
+                        "maxItems": 12,
+                        "title": "Rows",
+                        "type": "array"
+                      }
+                    },
+                    "required": [
+                      "title",
+                      "bullets",
+                      "purpose"
+                    ],
+                    "title": "EditorialSlide",
+                    "type": "object"
+                  },
+                  "Omission": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "fact_id": {
+                        "title": "Fact Id",
+                        "type": "string"
+                      },
+                      "reason": {
+                        "enum": [
+                          "detail",
+                          "duplicate",
+                          "off_topic"
+                        ],
+                        "title": "Reason",
+                        "type": "string"
+                      },
+                      "explanation": {
+                        "maxLength": 240,
+                        "minLength": 1,
+                        "title": "Explanation",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "fact_id",
+                      "reason",
+                      "explanation"
+                    ],
+                    "title": "Omission",
+                    "type": "object"
+                  }
+                },
+                "additionalProperties": false,
+                "properties": {
+                  "slides": {
+                    "items": {
+                      "$ref": "#/$defs/EditorialSlide"
+                    },
+                    "maxItems": 6,
+                    "minItems": 6,
+                    "title": "Slides",
+                    "type": "array"
+                  },
+                  "omitted": {
+                    "items": {
+                      "$ref": "#/$defs/Omission"
+                    },
+                    "maxItems": 300,
+                    "title": "Omitted",
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "slides"
+                ],
+                "title": "EditorialPlan",
+                "type": "object"
+              },
+              "strict": true
+            }
+          }
+        },
+        "messages": [
+          {
+            "role": "system",
+            "content": {
+              "sha256": "cf6e8c2a81401e67c025eec3fb2cf1d2bc67c23ddbfde5d6e11c422705b0e446"
+            }
+          },
+          {
+            "role": "user",
+            "content": "{\"untrusted_input\": {\"source\": {\"title\": \"Community Energy Survey Extract\", \"facts\": [{\"id\": \"f1\", \"text\": \"Twelve months of fictional energy survey data are supplied for table-layout testing.\", \"section\": \"Overview\", \"source\": \"user_text\", \"line\": 3, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f2\", \"text\": \"This fictional worksheet contains twelve monthly rows from a demonstration energy survey.\", \"section\": \"What this extract contains\", \"source\": \"user_text\", \"line\": 5, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f3\", \"text\": \"Values are supplied for table-layout testing and do not describe a real utility or customer.\", \"section\": \"What this extract contains\", \"source\": \"user_text\", \"line\": 5, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f4\", \"text\": \"Monthly observations: Jan — 18 — 17 — 412 kWh — 1 — DEMO-01; Feb — 18 — 18 — 398 kWh — 0 — DEMO-02; Mar — 19 — 18 — 376 kWh — 2 — DEMO-03; Apr — 19 — 19 — 341 kWh — 0 — DEMO-04; May — 20 — 20 — 315 kWh — 0 — DEMO-05; Jun — 20 — 19 — 302 kWh — 1 — DEMO-06; Jul — 21 — 21 — 328 kWh — 0 — DEMO-07; Aug — 21 — 20 — 337 kWh — 1 — DEMO-08; Sep — 22 — 22 — 354 kWh — 0 — DEMO-09; Oct — 22 — 21 — 389 kWh — 1 — DEMO-10; Nov — 23 — 23 — 421 kWh — 0 — DEMO-11; Dec — 23 — 22 — 447 kWh — 1 — DEMO-12\", \"section\": \"Monthly observations\", \"source\": \"t1\", \"line\": 7, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f5\", \"text\": \"Sites counts locations in the monthly sample.\", \"section\": \"Reading the columns\", \"source\": \"user_text\", \"line\": 22, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f6\", \"text\": \"Meter reads counts received readings.\", \"section\": \"Reading the columns\", \"source\": \"user_text\", \"line\": 22, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f7\", \"text\": \"Median kWh/site is an energy quantity per site;\", \"section\": \"Reading the columns\", \"source\": \"user_text\", \"line\": 22, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f8\", \"text\": \"late reads counts records received after the monthly close.\", \"section\": \"Reading the columns\", \"source\": \"user_text\", \"line\": 22, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f9\", \"text\": \"The number of sites changes during the year, and the extract does not identify which sites enter or leave.\", \"section\": \"Coverage caveat\", \"source\": \"user_text\", \"line\": 24, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f10\", \"text\": \"Month-to-month medians therefore should not be read as a fixed panel comparison.\", \"section\": \"Coverage caveat\", \"source\": \"user_text\", \"line\": 24, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f11\", \"text\": \"Every row carries a DEMO batch label.\", \"section\": \"Source label\", \"source\": \"user_text\", \"line\": 26, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f12\", \"text\": \"These labels identify fictional fixture rows and cannot be used to locate an external data source.\", \"section\": \"Source label\", \"source\": \"user_text\", \"line\": 26, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}], \"tables\": [{\"id\": \"t1\", \"headers\": [\"Month\", \"Sites\", \"Meter reads\", \"Median kWh/site\", \"Late reads\", \"Source batch\"], \"rows\": [[\"Jan\", \"18\", \"17\", \"412 kWh\", \"1\", \"DEMO-01\"], [\"Feb\", \"18\", \"18\", \"398 kWh\", \"0\", \"DEMO-02\"], [\"Mar\", \"19\", \"18\", \"376 kWh\", \"2\", \"DEMO-03\"], [\"Apr\", \"19\", \"19\", \"341 kWh\", \"0\", \"DEMO-04\"], [\"May\", \"20\", \"20\", \"315 kWh\", \"0\", \"DEMO-05\"], [\"Jun\", \"20\", \"19\", \"302 kWh\", \"1\", \"DEMO-06\"], [\"Jul\", \"21\", \"21\", \"328 kWh\", \"0\", \"DEMO-07\"], [\"Aug\", \"21\", \"20\", \"337 kWh\", \"1\", \"DEMO-08\"], [\"Sep\", \"22\", \"22\", \"354 kWh\", \"0\", \"DEMO-09\"], [\"Oct\", \"22\", \"21\", \"389 kWh\", \"1\", \"DEMO-10\"], [\"Nov\", \"23\", \"23\", \"421 kWh\", \"0\", \"DEMO-11\"], [\"Dec\", \"23\", \"22\", \"447 kWh\", \"1\", \"DEMO-12\"]], \"section\": \"Monthly observations\", \"visualization\": \"auto\"}], \"warnings\": [], \"quarantined\": [], \"headings\": [], \"directives\": []}, \"slide_range\": [6, 6], \"include_cover\": true, \"audience\": \"\", \"instructions\": \"\", \"characters_per_slide\": 500, \"templates\": [{\"id\": \"native-slide-1\", \"purpose\": \"content\", \"source_slide\": 1, \"graphic_kind\": \"none\", \"fields\": 1, \"title_max_characters\": 46, \"field_capacity\": [{\"width\": 830, \"height\": 32, \"target_max_characters\": 92}]}, {\"id\": \"native-layout-0-0\", \"purpose\": \"cover\", \"source_slide\": 0, \"graphic_kind\": \"none\", \"fields\": 1, \"title_max_characters\": 66, \"field_capacity\": [{\"width\": 490, \"height\": 131, \"target_max_characters\": 270}]}, {\"id\": \"native-layout-0-2\", \"purpose\": \"divider\", \"source_slide\": 0, \"graphic_kind\": \"none\", \"fields\": 0, \"title_max_characters\": 33, \"field_capacity\": []}, {\"id\": \"roomy-native-slide-1\", \"purpose\": \"content\", \"source_slide\": 1, \"graphic_kind\": \"none\", \"fields\": 1, \"title_max_characters\": 46, \"field_capacity\": [{\"width\": 870, \"height\": 32, \"target_max_characters\": 96}]}], \"required_chart_types\": []}}"
+          }
+        ]
+      },
+      "status": 200,
+      "response": {
+        "choices": [
+          {
+            "message": {
+              "role": "assistant",
+              "content": "{\"slides\": [{\"title\": \"Community Energy Survey Extract\", \"purpose\": \"cover\", \"bullets\": [{\"text\": \"Twelve months of fictional energy survey data are supplied for table-layout testing.\", \"evidence\": [{\"fact_id\": \"f1\"}]}]}, {\"title\": \"What this extract contains\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"This fictional worksheet contains twelve monthly rows from a demonstration energy survey.\", \"evidence\": [{\"fact_id\": \"f2\"}]}, {\"text\": \"Values are supplied for table-layout testing and do not describe a real utility or customer.\", \"evidence\": [{\"fact_id\": \"f3\"}]}]}, {\"title\": \"Monthly observations\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"Monthly observations\", \"evidence\": [{\"fact_id\": \"f4\"}]}], \"source_table_id\": \"t1\", \"source_columns\": [], \"chart_type\": \"table\", \"rows\": []}, {\"title\": \"Reading the columns\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"Sites counts locations in the monthly sample.\", \"evidence\": [{\"fact_id\": \"f5\"}]}, {\"text\": \"Meter reads counts received readings.\", \"evidence\": [{\"fact_id\": \"f6\"}]}, {\"text\": \"Median kWh/site is an energy quantity per site;\", \"evidence\": [{\"fact_id\": \"f7\"}]}, {\"text\": \"late reads counts records received after the monthly close.\", \"evidence\": [{\"fact_id\": \"f8\"}]}]}, {\"title\": \"Coverage caveat\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The number of sites changes during the year, and the extract does not identify which sites enter or leave.\", \"evidence\": [{\"fact_id\": \"f9\"}]}, {\"text\": \"Month-to-month medians therefore should not be read as a fixed panel comparison.\", \"evidence\": [{\"fact_id\": \"f10\"}]}]}, {\"title\": \"Source label\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"Every row carries a DEMO batch label.\", \"evidence\": [{\"fact_id\": \"f11\"}]}, {\"text\": \"These labels identify fictional fixture rows and cannot be used to locate an external data source.\", \"evidence\": [{\"fact_id\": \"f12\"}]}]}], \"omitted\": []}"
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 100,
+          "completion_tokens": 50,
+          "total_tokens": 150
+        }
+      }
+    }
+  ],
+  "authoring_execution_status": "inconclusive",
+  "quality_oracle": false
+}

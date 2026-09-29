@@ -1,0 +1,2631 @@
+{
+  "schema_version": 1,
+  "fixture_revision": 1,
+  "provenance": "Explicitly authored synthetic model replies at the real HTTP boundary. Not a provider recording or a quality oracle. Independent reference ledger is authored separately.",
+  "image_matching": "dimensions",
+  "exchanges": [
+    {
+      "request": {
+        "parameters": {
+          "model": "fixture-27b",
+          "temperature": 0.25,
+          "max_tokens": 4096,
+          "response_format": {
+            "type": "json_schema",
+            "json_schema": {
+              "name": "template_analyst",
+              "schema": {
+                "$defs": {
+                  "PatternMeaning": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "pattern_id": {
+                        "type": "string",
+                        "enum": [
+                          "native-layout-0-0",
+                          "native-layout-0-2"
+                        ]
+                      },
+                      "roles": {
+                        "items": {
+                          "enum": [
+                            "context",
+                            "insight",
+                            "evidence",
+                            "action",
+                            "appendix"
+                          ],
+                          "type": "string"
+                        },
+                        "maxItems": 5,
+                        "minItems": 1,
+                        "title": "Roles",
+                        "type": "array"
+                      },
+                      "density": {
+                        "enum": [
+                          "low",
+                          "medium",
+                          "high"
+                        ],
+                        "title": "Density",
+                        "type": "string"
+                      },
+                      "purpose": {
+                        "anyOf": [
+                          {
+                            "enum": [
+                              "cover",
+                              "speaker",
+                              "agenda",
+                              "divider",
+                              "context",
+                              "problem",
+                              "solution",
+                              "claim_evidence",
+                              "comparison",
+                              "process",
+                              "timeline",
+                              "metrics",
+                              "trend",
+                              "composition",
+                              "structure",
+                              "recommendations",
+                              "summary",
+                              "closing",
+                              "content"
+                            ],
+                            "type": "string"
+                          },
+                          {
+                            "enum": [
+                              "unknown",
+                              "service",
+                              "reference"
+                            ],
+                            "type": "string"
+                          }
+                        ],
+                        "default": "unknown",
+                        "title": "Purpose"
+                      },
+                      "reusable": {
+                        "default": true,
+                        "title": "Reusable",
+                        "type": "boolean"
+                      },
+                      "body_order": {
+                        "items": {
+                          "type": "integer"
+                        },
+                        "maxItems": 12,
+                        "title": "Body Order",
+                        "type": "array"
+                      },
+                      "graphic_flow_confirmed": {
+                        "default": false,
+                        "title": "Graphic Flow Confirmed",
+                        "type": "boolean"
+                      },
+                      "graphic_kind": {
+                        "default": "none",
+                        "enum": [
+                          "none",
+                          "cards",
+                          "sequence",
+                          "comparison",
+                          "hierarchy",
+                          "radial",
+                          "pyramid",
+                          "matrix"
+                        ],
+                        "title": "Graphic Kind",
+                        "type": "string"
+                      },
+                      "graphic_shape_ids": {
+                        "items": {
+                          "type": "integer"
+                        },
+                        "maxItems": 160,
+                        "title": "Graphic Shape Ids",
+                        "type": "array"
+                      },
+                      "graphic_edges": {
+                        "items": {
+                          "maxItems": 2,
+                          "minItems": 2,
+                          "prefixItems": [
+                            {
+                              "type": "integer"
+                            },
+                            {
+                              "type": "integer"
+                            }
+                          ],
+                          "type": "array"
+                        },
+                        "maxItems": 160,
+                        "title": "Graphic Edges",
+                        "type": "array"
+                      }
+                    },
+                    "required": [
+                      "pattern_id",
+                      "roles",
+                      "density"
+                    ],
+                    "title": "PatternMeaning",
+                    "type": "object"
+                  }
+                },
+                "additionalProperties": false,
+                "properties": {
+                  "patterns": {
+                    "items": {
+                      "$ref": "#/$defs/PatternMeaning"
+                    },
+                    "maxItems": 2,
+                    "title": "Patterns",
+                    "type": "array",
+                    "minItems": 2
+                  }
+                },
+                "required": [
+                  "patterns"
+                ],
+                "title": "TemplateMeaning",
+                "type": "object"
+              },
+              "strict": true
+            }
+          }
+        },
+        "messages": [
+          {
+            "role": "system",
+            "content": {
+              "sha256": "1d09bccca9bfa9551e698a45d5cc497b445464e9cb542a2ce8f110fa617c9973"
+            }
+          },
+          {
+            "role": "user",
+            "content": "{\"untrusted_input\": {\"patterns\": [{\"id\": \"native-layout-0-0\", \"source_slide\": 0, \"source_layout\": \"Title Slide\", \"title_zone\": {\"x\": 61.2, \"y\": 171.35, \"w\": 597.5999999999999, \"h\": 112.15}, \"body_zones\": [{\"x\": 115.2, \"y\": 309.6, \"w\": 489.6, \"h\": 130.8}], \"technical_role\": \"cover\", \"colors\": {\"scheme_id\": \"\", \"title\": {\"background\": \"#F6F5EF\", \"text\": \"#000000\"}, \"body\": [{\"background\": \"#F6F5EF\", \"text\": \"#000000\"}]}, \"graphic_candidates\": [], \"body_fields\": [{\"shape_id\": 3, \"index\": 0, \"box\": {\"x\": 115.2, \"y\": 309.6, \"w\": 489.6, \"h\": 130.8}}], \"source_sample\": \"\"}, {\"id\": \"native-layout-0-2\", \"source_slide\": 0, \"source_layout\": \"Section Header\", \"title_zone\": {\"x\": 39.6, \"y\": 28.8, \"w\": 597.5999999999999, \"h\": 55.44}, \"body_zones\": [], \"technical_role\": \"divider\", \"colors\": {\"scheme_id\": \"\", \"title\": {\"background\": \"#F6F5EF\", \"text\": \"#286B55\"}, \"body\": []}, \"graphic_candidates\": [], \"body_fields\": [], \"source_sample\": \"\"}], \"canvas\": {\"width\": 959.9759842519685, \"height\": 540.0}, \"image_order\": [], \"archetype_catalog\": {\"version\": 1, \"archetypes\": [{\"id\": \"cover\", \"name\": \"Титульный\", \"description\": \"Представляет основную тему всей презентации, а не отдельной главы.\", \"required_slots\": {\"topic\": 1}}, {\"id\": \"speaker\", \"name\": \"Представление спикера\", \"description\": \"Представляет конкретного выступающего и его связь с темой. Имя обязательно, фото и биография — только если предоставлены.\", \"required_slots\": {\"person\": 1}}, {\"id\": \"agenda\", \"name\": \"План выступления\", \"description\": \"Перечисляет вопросы или разделы, которые будут раскрыты далее; не описывает бизнес-процесс.\", \"required_slots\": {\"topic\": 2}}, {\"id\": \"divider\", \"name\": \"Разделитель\", \"description\": \"Обозначает начало следующей смысловой главы, за которой следует её содержание.\", \"required_slots\": {\"topic\": 1}}, {\"id\": \"context\", \"name\": \"Контекст\", \"description\": \"Объясняет объект, исходную ситуацию или границы рассмотрения, необходимые для понимания дальнейших тезисов.\", \"required_slots\": {\"topic\": 1}}, {\"id\": \"problem\", \"name\": \"Проблема\", \"description\": \"Показывает описанное в источнике препятствие или нежелательное состояние. Нельзя объявлять нейтральный факт проблемой без основания.\", \"required_slots\": {\"problem\": 1}}, {\"id\": \"solution\", \"name\": \"Решение\", \"description\": \"Объясняет конкретное предложение для решения задачи. Не выдаёт предложение или ожидаемый эффект за полученный результат.\", \"required_slots\": {\"solution\": 1}}, {\"id\": \"claim_evidence\", \"name\": \"Тезис и обоснование\", \"description\": \"Связывает главный вывод с подтверждающими его фактами, наблюдениями или данными. Причинная связь не придумывается.\", \"required_slots\": {\"claim\": 1, \"evidence\": 1}}, {\"id\": \"comparison\", \"name\": \"Сравнение\", \"description\": \"Сопоставляет не менее двух объектов по общему критерию. Два независимых текстовых блока не являются сравнением.\", \"required_slots\": {\"entity\": 2, \"criterion\": 1}}, {\"id\": \"process\", \"name\": \"Процесс\", \"description\": \"Объясняет два и более связанных действия в заданной последовательности. Не любой нумерованный список является процессом.\", \"required_slots\": {\"step\": 2}}, {\"id\": \"timeline\", \"name\": \"Хронология\", \"description\": \"Располагает события относительно явно заданных дат или временных интервалов. Без временных привязок выбирайте другой тип.\", \"required_slots\": {\"event\": 2, \"date\": 2}}, {\"id\": \"metrics\", \"name\": \"Ключевые показатели\", \"description\": \"Показывает измеримые характеристики с названиями и исходными значениями; единицы и периоды нельзя выдумывать.\", \"required_slots\": {\"metric\": 1, \"value\": 1}}, {\"id\": \"trend\", \"name\": \"Динамика\", \"description\": \"Показывает изменение сопоставимой величины во времени. Отсутствующие значения и причины изменений не достраиваются.\", \"required_slots\": {\"metric\": 1, \"date\": 2, \"value\": 2}}, {\"id\": \"composition\", \"name\": \"Состав целого\", \"description\": \"Показывает целое и его части. Круговая диаграмма требует дополнительных численных оснований: не любые категории являются долями.\", \"required_slots\": {\"whole\": 1, \"part\": 2}}, {\"id\": \"structure\", \"name\": \"Устройство и связи\", \"description\": \"Объясняет компоненты системы и явно заданные связи или иерархию. Список компонентов сам по себе не задаёт архитектуру.\", \"required_slots\": {\"component\": 2, \"relationship\": 1}}, {\"id\": \"recommendations\", \"name\": \"Рекомендации\", \"description\": \"Формулирует указанные в источнике действия. Ответственные, сроки и обязательства не добавляются самостоятельно.\", \"required_slots\": {\"action\": 1}}, {\"id\": \"summary\", \"name\": \"Итоги\", \"description\": \"Собирает подтверждённые ключевые выводы материала. Не вводит новые факты и не равно формальному завершению.\", \"required_slots\": {\"takeaway\": 1}}, {\"id\": \"closing\", \"name\": \"Завершение\", \"description\": \"Завершает выступление, приглашает к обсуждению или показывает предоставленные контакты. Не копирует старые контакты из шаблона.\", \"required_slots\": {\"message\": 1}}, {\"id\": \"content\", \"name\": \"Раскрытие темы\", \"description\": \"Связанный содержательный блок без подтверждённого более специфического назначения. Не принудительный тип всех обычных слайдов.\", \"required_slots\": {}}], \"appendix\": \"Положение в повествовании, не геометрия: сохраняйте внутренний архетип.\"}}}"
+          }
+        ]
+      },
+      "status": 200,
+      "response": {
+        "choices": [
+          {
+            "message": {
+              "role": "assistant",
+              "content": "{\"patterns\": [{\"pattern_id\": \"native-layout-0-0\", \"roles\": [\"context\", \"insight\"], \"density\": \"medium\", \"purpose\": \"cover\", \"reusable\": true}, {\"pattern_id\": \"native-layout-0-2\", \"roles\": [\"context\", \"insight\"], \"density\": \"medium\", \"purpose\": \"divider\", \"reusable\": true}]}"
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 100,
+          "completion_tokens": 50,
+          "total_tokens": 150
+        }
+      }
+    },
+    {
+      "request": {
+        "parameters": {
+          "model": "fixture-27b",
+          "temperature": 0.25,
+          "max_tokens": 10000,
+          "response_format": {
+            "type": "json_schema",
+            "json_schema": {
+              "name": "editorial",
+              "schema": {
+                "$defs": {
+                  "Citation": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "fact_id": {
+                        "title": "Fact Id",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "fact_id"
+                    ],
+                    "title": "Citation",
+                    "type": "object"
+                  },
+                  "Claim": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "text": {
+                        "maxLength": 300,
+                        "minLength": 1,
+                        "title": "Text",
+                        "type": "string"
+                      },
+                      "group": {
+                        "default": "",
+                        "maxLength": 80,
+                        "title": "Group",
+                        "type": "string"
+                      },
+                      "parent_group": {
+                        "anyOf": [
+                          {
+                            "maxLength": 80,
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "default": null,
+                        "title": "Parent Group"
+                      },
+                      "evidence": {
+                        "items": {
+                          "$ref": "#/$defs/Citation"
+                        },
+                        "maxItems": 12,
+                        "minItems": 1,
+                        "title": "Evidence",
+                        "type": "array"
+                      }
+                    },
+                    "required": [
+                      "text",
+                      "evidence"
+                    ],
+                    "title": "Claim",
+                    "type": "object"
+                  },
+                  "DataRow": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "fact_id": {
+                        "title": "Fact Id",
+                        "type": "string"
+                      },
+                      "label": {
+                        "maxLength": 200,
+                        "minLength": 1,
+                        "title": "Label",
+                        "type": "string"
+                      },
+                      "value": {
+                        "maxLength": 100,
+                        "minLength": 1,
+                        "title": "Value",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "fact_id",
+                      "label",
+                      "value"
+                    ],
+                    "title": "DataRow",
+                    "type": "object"
+                  },
+                  "EditorialSlide": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "title": {
+                        "maxLength": 140,
+                        "minLength": 1,
+                        "title": "Title",
+                        "type": "string"
+                      },
+                      "purpose": {
+                        "default": "content",
+                        "enum": [
+                          "cover",
+                          "speaker",
+                          "agenda",
+                          "divider",
+                          "context",
+                          "problem",
+                          "solution",
+                          "claim_evidence",
+                          "comparison",
+                          "process",
+                          "timeline",
+                          "metrics",
+                          "trend",
+                          "composition",
+                          "structure",
+                          "recommendations",
+                          "summary",
+                          "closing",
+                          "content"
+                        ],
+                        "title": "Purpose",
+                        "type": "string"
+                      },
+                      "bullets": {
+                        "items": {
+                          "$ref": "#/$defs/Claim"
+                        },
+                        "maxItems": 6,
+                        "minItems": 1,
+                        "title": "Bullets",
+                        "type": "array"
+                      },
+                      "source_table_id": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "default": null,
+                        "title": "Source Table Id"
+                      },
+                      "source_columns": {
+                        "items": {
+                          "type": "integer"
+                        },
+                        "maxItems": 8,
+                        "title": "Source Columns",
+                        "type": "array"
+                      },
+                      "chart_type": {
+                        "default": "auto",
+                        "enum": [
+                          "auto",
+                          "table",
+                          "line",
+                          "column",
+                          "column_stacked",
+                          "bar",
+                          "pie"
+                        ],
+                        "title": "Chart Type",
+                        "type": "string"
+                      },
+                      "relationship": {
+                        "default": "none",
+                        "enum": [
+                          "none",
+                          "comparison",
+                          "time",
+                          "share",
+                          "table"
+                        ],
+                        "title": "Relationship",
+                        "type": "string"
+                      },
+                      "rows": {
+                        "items": {
+                          "$ref": "#/$defs/DataRow"
+                        },
+                        "maxItems": 12,
+                        "title": "Rows",
+                        "type": "array"
+                      }
+                    },
+                    "required": [
+                      "title",
+                      "bullets",
+                      "purpose"
+                    ],
+                    "title": "EditorialSlide",
+                    "type": "object"
+                  },
+                  "Omission": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "fact_id": {
+                        "title": "Fact Id",
+                        "type": "string"
+                      },
+                      "reason": {
+                        "enum": [
+                          "detail",
+                          "duplicate",
+                          "off_topic"
+                        ],
+                        "title": "Reason",
+                        "type": "string"
+                      },
+                      "explanation": {
+                        "maxLength": 240,
+                        "minLength": 1,
+                        "title": "Explanation",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "fact_id",
+                      "reason",
+                      "explanation"
+                    ],
+                    "title": "Omission",
+                    "type": "object"
+                  }
+                },
+                "additionalProperties": false,
+                "properties": {
+                  "slides": {
+                    "items": {
+                      "$ref": "#/$defs/EditorialSlide"
+                    },
+                    "maxItems": 7,
+                    "minItems": 7,
+                    "title": "Slides",
+                    "type": "array"
+                  },
+                  "omitted": {
+                    "items": {
+                      "$ref": "#/$defs/Omission"
+                    },
+                    "maxItems": 300,
+                    "title": "Omitted",
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "slides"
+                ],
+                "title": "EditorialPlan",
+                "type": "object"
+              },
+              "strict": true
+            }
+          }
+        },
+        "messages": [
+          {
+            "role": "system",
+            "content": {
+              "sha256": "603bbbc00ec9c802d55c8f5f7bae88781f4ff1a0dd8a42d77f14ba1968cc8d78"
+            }
+          },
+          {
+            "role": "user",
+            "content": "{\"untrusted_input\": {\"source\": {\"title\": \"Mobile Library Route Options\", \"facts\": [{\"id\": \"f1\", \"text\": \"The county is comparing three routes for a six-month mobile library trial.\", \"section\": \"Overview\", \"source\": \"user_text\", \"line\": 3, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f2\", \"text\": \"The source team has not selected a route and has not estimated demand outside the listed stops.\", \"section\": \"Decision context\", \"source\": \"user_text\", \"line\": 5, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f3\", \"text\": \"The North Loop covers 18 kilometres and visits four stops.\", \"section\": \"North Loop\", \"source\": \"user_text\", \"line\": 7, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f4\", \"text\": \"It needs 3.5 driver hours per service day.\", \"section\": \"North Loop\", \"source\": \"user_text\", \"line\": 7, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f5\", \"text\": \"Its two rural stops have no indoor waiting area.\", \"section\": \"North Loop\", \"source\": \"user_text\", \"line\": 7, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f6\", \"text\": \"The Market Link covers 12 kilometres and visits five stops.\", \"section\": \"Market Link\", \"source\": \"user_text\", \"line\": 9, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f7\", \"text\": \"It needs 4.0 driver hours because the central market stop has a scheduled 45-minute dwell.\", \"section\": \"Market Link\", \"source\": \"user_text\", \"line\": 9, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f8\", \"text\": \"A school asked for a later arrival, but no change has been approved.\", \"section\": \"Market Link\", \"source\": \"user_text\", \"line\": 9, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f9\", \"text\": \"The Lakeside Spur covers 21 kilometres and visits three stops.\", \"section\": \"Lakeside Spur\", \"source\": \"user_text\", \"line\": 11, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f10\", \"text\": \"It needs 3.0 driver hours.\", \"section\": \"Lakeside Spur\", \"source\": \"user_text\", \"line\": 11, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f11\", \"text\": \"One bridge has a posted 7.5-tonne limit, and the source does not state the vehicle's loaded weight.\", \"section\": \"Lakeside Spur\", \"source\": \"user_text\", \"line\": 11, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f12\", \"text\": \"North Loop has the longest list of stops among the two rural options, Market Link has the most stops overall, and Lakeside Spur has the longest distance.\", \"section\": \"Recorded comparison\", \"source\": \"user_text\", \"line\": 13, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f13\", \"text\": \"These measures describe the route sheet only;\", \"section\": \"Recorded comparison\", \"source\": \"user_text\", \"line\": 13, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f14\", \"text\": \"they do not establish which route serves more readers.\", \"section\": \"Recorded comparison\", \"source\": \"user_text\", \"line\": 13, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f15\", \"text\": \"The trial coordinator will bring mileage, visit counts, and missed-stop reports to the 9 October 2027 review.\", \"section\": \"Trial review\", \"source\": \"user_text\", \"line\": 15, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f16\", \"text\": \"No route cost or attendance forecast appears in this note.\", \"section\": \"Trial review\", \"source\": \"user_text\", \"line\": 15, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}], \"tables\": [], \"warnings\": [], \"quarantined\": [], \"headings\": [], \"directives\": []}, \"slide_range\": [7, 7], \"include_cover\": true, \"audience\": \"\", \"instructions\": \"\", \"characters_per_slide\": 500, \"templates\": [{\"id\": \"native-layout-0-0\", \"purpose\": \"cover\", \"source_slide\": 0, \"graphic_kind\": \"none\", \"fields\": 1, \"title_max_characters\": 66, \"field_capacity\": [{\"width\": 490, \"height\": 131, \"target_max_characters\": 270}]}, {\"id\": \"native-layout-0-2\", \"purpose\": \"divider\", \"source_slide\": 0, \"graphic_kind\": \"none\", \"fields\": 0, \"title_max_characters\": 33, \"field_capacity\": []}], \"required_chart_types\": []}}"
+          }
+        ]
+      },
+      "status": 200,
+      "response": {
+        "choices": [
+          {
+            "message": {
+              "role": "assistant",
+              "content": "{\"slides\": [{\"title\": \"Mobile Library Route Options\", \"purpose\": \"cover\", \"bullets\": [{\"text\": \"The county is comparing three routes for a six-month mobile library trial.\", \"evidence\": [{\"fact_id\": \"f1\"}]}]}, {\"title\": \"Decision context\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The source team has not selected a route and has not estimated demand outside the listed stops.\", \"evidence\": [{\"fact_id\": \"f2\"}]}]}, {\"title\": \"North Loop\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The North Loop covers 18 kilometres and visits four stops.\", \"evidence\": [{\"fact_id\": \"f3\"}]}, {\"text\": \"It needs 3.5 driver hours per service day.\", \"evidence\": [{\"fact_id\": \"f4\"}]}, {\"text\": \"Its two rural stops have no indoor waiting area.\", \"evidence\": [{\"fact_id\": \"f5\"}]}]}, {\"title\": \"Market Link\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The Market Link covers 12 kilometres and visits five stops.\", \"evidence\": [{\"fact_id\": \"f6\"}]}, {\"text\": \"It needs 4.0 driver hours because the central market stop has a scheduled 45-minute dwell.\", \"evidence\": [{\"fact_id\": \"f7\"}]}, {\"text\": \"A school asked for a later arrival, but no change has been approved.\", \"evidence\": [{\"fact_id\": \"f8\"}]}]}, {\"title\": \"Lakeside Spur\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The Lakeside Spur covers 21 kilometres and visits three stops.\", \"evidence\": [{\"fact_id\": \"f9\"}]}, {\"text\": \"It needs 3.0 driver hours.\", \"evidence\": [{\"fact_id\": \"f10\"}]}, {\"text\": \"One bridge has a posted 7.5-tonne limit, and the source does not state the vehicle's loaded weight.\", \"evidence\": [{\"fact_id\": \"f11\"}]}]}, {\"title\": \"Recorded comparison\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"North Loop has the longest list of stops among the two rural options, Market Link has the most stops overall, and Lakeside Spur has the longest distance.\", \"evidence\": [{\"fact_id\": \"f12\"}]}, {\"text\": \"These measures describe the route sheet only;\", \"evidence\": [{\"fact_id\": \"f13\"}]}, {\"text\": \"they do not establish which route serves more readers.\", \"evidence\": [{\"fact_id\": \"f14\"}]}]}, {\"title\": \"Trial review\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The trial coordinator will bring mileage, visit counts, and missed-stop reports to the 9 October 2027 review.\", \"evidence\": [{\"fact_id\": \"f15\"}]}, {\"text\": \"No route cost or attendance forecast appears in this note.\", \"evidence\": [{\"fact_id\": \"f16\"}]}]}], \"omitted\": []}"
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 100,
+          "completion_tokens": 50,
+          "total_tokens": 150
+        }
+      }
+    },
+    {
+      "request": {
+        "parameters": {
+          "model": "fixture-27b",
+          "temperature": 0.25,
+          "max_tokens": 10000,
+          "response_format": {
+            "type": "json_schema",
+            "json_schema": {
+              "name": "editorial_repair",
+              "schema": {
+                "$defs": {
+                  "Citation": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "fact_id": {
+                        "title": "Fact Id",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "fact_id"
+                    ],
+                    "title": "Citation",
+                    "type": "object"
+                  },
+                  "Claim": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "text": {
+                        "maxLength": 300,
+                        "minLength": 1,
+                        "title": "Text",
+                        "type": "string"
+                      },
+                      "group": {
+                        "default": "",
+                        "maxLength": 80,
+                        "title": "Group",
+                        "type": "string"
+                      },
+                      "parent_group": {
+                        "anyOf": [
+                          {
+                            "maxLength": 80,
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "default": null,
+                        "title": "Parent Group"
+                      },
+                      "evidence": {
+                        "items": {
+                          "$ref": "#/$defs/Citation"
+                        },
+                        "maxItems": 12,
+                        "minItems": 1,
+                        "title": "Evidence",
+                        "type": "array"
+                      }
+                    },
+                    "required": [
+                      "text",
+                      "evidence"
+                    ],
+                    "title": "Claim",
+                    "type": "object"
+                  },
+                  "DataRow": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "fact_id": {
+                        "title": "Fact Id",
+                        "type": "string"
+                      },
+                      "label": {
+                        "maxLength": 200,
+                        "minLength": 1,
+                        "title": "Label",
+                        "type": "string"
+                      },
+                      "value": {
+                        "maxLength": 100,
+                        "minLength": 1,
+                        "title": "Value",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "fact_id",
+                      "label",
+                      "value"
+                    ],
+                    "title": "DataRow",
+                    "type": "object"
+                  },
+                  "EditorialSlide": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "title": {
+                        "maxLength": 140,
+                        "minLength": 1,
+                        "title": "Title",
+                        "type": "string"
+                      },
+                      "purpose": {
+                        "default": "content",
+                        "enum": [
+                          "cover",
+                          "speaker",
+                          "agenda",
+                          "divider",
+                          "context",
+                          "problem",
+                          "solution",
+                          "claim_evidence",
+                          "comparison",
+                          "process",
+                          "timeline",
+                          "metrics",
+                          "trend",
+                          "composition",
+                          "structure",
+                          "recommendations",
+                          "summary",
+                          "closing",
+                          "content"
+                        ],
+                        "title": "Purpose",
+                        "type": "string"
+                      },
+                      "bullets": {
+                        "items": {
+                          "$ref": "#/$defs/Claim"
+                        },
+                        "maxItems": 6,
+                        "minItems": 1,
+                        "title": "Bullets",
+                        "type": "array"
+                      },
+                      "source_table_id": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "default": null,
+                        "title": "Source Table Id"
+                      },
+                      "source_columns": {
+                        "items": {
+                          "type": "integer"
+                        },
+                        "maxItems": 8,
+                        "title": "Source Columns",
+                        "type": "array"
+                      },
+                      "chart_type": {
+                        "default": "auto",
+                        "enum": [
+                          "auto",
+                          "table",
+                          "line",
+                          "column",
+                          "column_stacked",
+                          "bar",
+                          "pie"
+                        ],
+                        "title": "Chart Type",
+                        "type": "string"
+                      },
+                      "relationship": {
+                        "default": "none",
+                        "enum": [
+                          "none",
+                          "comparison",
+                          "time",
+                          "share",
+                          "table"
+                        ],
+                        "title": "Relationship",
+                        "type": "string"
+                      },
+                      "rows": {
+                        "items": {
+                          "$ref": "#/$defs/DataRow"
+                        },
+                        "maxItems": 12,
+                        "title": "Rows",
+                        "type": "array"
+                      }
+                    },
+                    "required": [
+                      "title",
+                      "bullets",
+                      "purpose"
+                    ],
+                    "title": "EditorialSlide",
+                    "type": "object"
+                  },
+                  "Replacement": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "slide": {
+                        "maximum": 30,
+                        "minimum": 1,
+                        "title": "Slide",
+                        "type": "integer",
+                        "enum": [
+                          2,
+                          3,
+                          4,
+                          5,
+                          6,
+                          7
+                        ]
+                      },
+                      "content": {
+                        "$ref": "#/$defs/EditorialSlide"
+                      }
+                    },
+                    "required": [
+                      "slide",
+                      "content"
+                    ],
+                    "title": "Replacement",
+                    "type": "object"
+                  }
+                },
+                "additionalProperties": false,
+                "properties": {
+                  "replacements": {
+                    "items": {
+                      "oneOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "slide": {
+                              "type": "integer",
+                              "const": 2
+                            },
+                            "content": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "title": {
+                                  "maxLength": 140,
+                                  "minLength": 1,
+                                  "title": "Title",
+                                  "type": "string"
+                                },
+                                "purpose": {
+                                  "default": "content",
+                                  "enum": [
+                                    "cover",
+                                    "speaker",
+                                    "agenda",
+                                    "divider",
+                                    "context",
+                                    "problem",
+                                    "solution",
+                                    "claim_evidence",
+                                    "comparison",
+                                    "process",
+                                    "timeline",
+                                    "metrics",
+                                    "trend",
+                                    "composition",
+                                    "structure",
+                                    "recommendations",
+                                    "summary",
+                                    "closing",
+                                    "content"
+                                  ],
+                                  "title": "Purpose",
+                                  "type": "string",
+                                  "const": "content"
+                                },
+                                "bullets": {
+                                  "items": {
+                                    "$ref": "#/$defs/Claim"
+                                  },
+                                  "maxItems": 6,
+                                  "minItems": 1,
+                                  "title": "Bullets",
+                                  "type": "array"
+                                },
+                                "source_table_id": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "default": null,
+                                  "title": "Source Table Id",
+                                  "const": null
+                                },
+                                "source_columns": {
+                                  "items": {
+                                    "type": "integer"
+                                  },
+                                  "maxItems": 8,
+                                  "title": "Source Columns",
+                                  "type": "array",
+                                  "const": []
+                                },
+                                "chart_type": {
+                                  "default": "auto",
+                                  "enum": [
+                                    "auto",
+                                    "table",
+                                    "line",
+                                    "column",
+                                    "column_stacked",
+                                    "bar",
+                                    "pie"
+                                  ],
+                                  "title": "Chart Type",
+                                  "type": "string",
+                                  "const": "auto"
+                                },
+                                "relationship": {
+                                  "default": "none",
+                                  "enum": [
+                                    "none",
+                                    "comparison",
+                                    "time",
+                                    "share",
+                                    "table"
+                                  ],
+                                  "title": "Relationship",
+                                  "type": "string",
+                                  "const": "none"
+                                },
+                                "rows": {
+                                  "items": {
+                                    "$ref": "#/$defs/DataRow"
+                                  },
+                                  "maxItems": 12,
+                                  "title": "Rows",
+                                  "type": "array",
+                                  "const": []
+                                }
+                              },
+                              "required": [
+                                "title",
+                                "bullets",
+                                "purpose"
+                              ],
+                              "title": "EditorialSlide",
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "slide",
+                            "content"
+                          ],
+                          "title": "Replacement",
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "slide": {
+                              "type": "integer",
+                              "const": 3
+                            },
+                            "content": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "title": {
+                                  "maxLength": 140,
+                                  "minLength": 1,
+                                  "title": "Title",
+                                  "type": "string"
+                                },
+                                "purpose": {
+                                  "default": "content",
+                                  "enum": [
+                                    "cover",
+                                    "speaker",
+                                    "agenda",
+                                    "divider",
+                                    "context",
+                                    "problem",
+                                    "solution",
+                                    "claim_evidence",
+                                    "comparison",
+                                    "process",
+                                    "timeline",
+                                    "metrics",
+                                    "trend",
+                                    "composition",
+                                    "structure",
+                                    "recommendations",
+                                    "summary",
+                                    "closing",
+                                    "content"
+                                  ],
+                                  "title": "Purpose",
+                                  "type": "string",
+                                  "const": "content"
+                                },
+                                "bullets": {
+                                  "items": {
+                                    "$ref": "#/$defs/Claim"
+                                  },
+                                  "maxItems": 6,
+                                  "minItems": 1,
+                                  "title": "Bullets",
+                                  "type": "array"
+                                },
+                                "source_table_id": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "default": null,
+                                  "title": "Source Table Id",
+                                  "const": null
+                                },
+                                "source_columns": {
+                                  "items": {
+                                    "type": "integer"
+                                  },
+                                  "maxItems": 8,
+                                  "title": "Source Columns",
+                                  "type": "array",
+                                  "const": []
+                                },
+                                "chart_type": {
+                                  "default": "auto",
+                                  "enum": [
+                                    "auto",
+                                    "table",
+                                    "line",
+                                    "column",
+                                    "column_stacked",
+                                    "bar",
+                                    "pie"
+                                  ],
+                                  "title": "Chart Type",
+                                  "type": "string",
+                                  "const": "auto"
+                                },
+                                "relationship": {
+                                  "default": "none",
+                                  "enum": [
+                                    "none",
+                                    "comparison",
+                                    "time",
+                                    "share",
+                                    "table"
+                                  ],
+                                  "title": "Relationship",
+                                  "type": "string",
+                                  "const": "none"
+                                },
+                                "rows": {
+                                  "items": {
+                                    "$ref": "#/$defs/DataRow"
+                                  },
+                                  "maxItems": 12,
+                                  "title": "Rows",
+                                  "type": "array",
+                                  "const": []
+                                }
+                              },
+                              "required": [
+                                "title",
+                                "bullets",
+                                "purpose"
+                              ],
+                              "title": "EditorialSlide",
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "slide",
+                            "content"
+                          ],
+                          "title": "Replacement",
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "slide": {
+                              "type": "integer",
+                              "const": 4
+                            },
+                            "content": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "title": {
+                                  "maxLength": 140,
+                                  "minLength": 1,
+                                  "title": "Title",
+                                  "type": "string"
+                                },
+                                "purpose": {
+                                  "default": "content",
+                                  "enum": [
+                                    "cover",
+                                    "speaker",
+                                    "agenda",
+                                    "divider",
+                                    "context",
+                                    "problem",
+                                    "solution",
+                                    "claim_evidence",
+                                    "comparison",
+                                    "process",
+                                    "timeline",
+                                    "metrics",
+                                    "trend",
+                                    "composition",
+                                    "structure",
+                                    "recommendations",
+                                    "summary",
+                                    "closing",
+                                    "content"
+                                  ],
+                                  "title": "Purpose",
+                                  "type": "string",
+                                  "const": "content"
+                                },
+                                "bullets": {
+                                  "items": {
+                                    "$ref": "#/$defs/Claim"
+                                  },
+                                  "maxItems": 6,
+                                  "minItems": 1,
+                                  "title": "Bullets",
+                                  "type": "array"
+                                },
+                                "source_table_id": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "default": null,
+                                  "title": "Source Table Id",
+                                  "const": null
+                                },
+                                "source_columns": {
+                                  "items": {
+                                    "type": "integer"
+                                  },
+                                  "maxItems": 8,
+                                  "title": "Source Columns",
+                                  "type": "array",
+                                  "const": []
+                                },
+                                "chart_type": {
+                                  "default": "auto",
+                                  "enum": [
+                                    "auto",
+                                    "table",
+                                    "line",
+                                    "column",
+                                    "column_stacked",
+                                    "bar",
+                                    "pie"
+                                  ],
+                                  "title": "Chart Type",
+                                  "type": "string",
+                                  "const": "auto"
+                                },
+                                "relationship": {
+                                  "default": "none",
+                                  "enum": [
+                                    "none",
+                                    "comparison",
+                                    "time",
+                                    "share",
+                                    "table"
+                                  ],
+                                  "title": "Relationship",
+                                  "type": "string",
+                                  "const": "none"
+                                },
+                                "rows": {
+                                  "items": {
+                                    "$ref": "#/$defs/DataRow"
+                                  },
+                                  "maxItems": 12,
+                                  "title": "Rows",
+                                  "type": "array",
+                                  "const": []
+                                }
+                              },
+                              "required": [
+                                "title",
+                                "bullets",
+                                "purpose"
+                              ],
+                              "title": "EditorialSlide",
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "slide",
+                            "content"
+                          ],
+                          "title": "Replacement",
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "slide": {
+                              "type": "integer",
+                              "const": 5
+                            },
+                            "content": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "title": {
+                                  "maxLength": 140,
+                                  "minLength": 1,
+                                  "title": "Title",
+                                  "type": "string"
+                                },
+                                "purpose": {
+                                  "default": "content",
+                                  "enum": [
+                                    "cover",
+                                    "speaker",
+                                    "agenda",
+                                    "divider",
+                                    "context",
+                                    "problem",
+                                    "solution",
+                                    "claim_evidence",
+                                    "comparison",
+                                    "process",
+                                    "timeline",
+                                    "metrics",
+                                    "trend",
+                                    "composition",
+                                    "structure",
+                                    "recommendations",
+                                    "summary",
+                                    "closing",
+                                    "content"
+                                  ],
+                                  "title": "Purpose",
+                                  "type": "string",
+                                  "const": "content"
+                                },
+                                "bullets": {
+                                  "items": {
+                                    "$ref": "#/$defs/Claim"
+                                  },
+                                  "maxItems": 6,
+                                  "minItems": 1,
+                                  "title": "Bullets",
+                                  "type": "array"
+                                },
+                                "source_table_id": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "default": null,
+                                  "title": "Source Table Id",
+                                  "const": null
+                                },
+                                "source_columns": {
+                                  "items": {
+                                    "type": "integer"
+                                  },
+                                  "maxItems": 8,
+                                  "title": "Source Columns",
+                                  "type": "array",
+                                  "const": []
+                                },
+                                "chart_type": {
+                                  "default": "auto",
+                                  "enum": [
+                                    "auto",
+                                    "table",
+                                    "line",
+                                    "column",
+                                    "column_stacked",
+                                    "bar",
+                                    "pie"
+                                  ],
+                                  "title": "Chart Type",
+                                  "type": "string",
+                                  "const": "auto"
+                                },
+                                "relationship": {
+                                  "default": "none",
+                                  "enum": [
+                                    "none",
+                                    "comparison",
+                                    "time",
+                                    "share",
+                                    "table"
+                                  ],
+                                  "title": "Relationship",
+                                  "type": "string",
+                                  "const": "none"
+                                },
+                                "rows": {
+                                  "items": {
+                                    "$ref": "#/$defs/DataRow"
+                                  },
+                                  "maxItems": 12,
+                                  "title": "Rows",
+                                  "type": "array",
+                                  "const": []
+                                }
+                              },
+                              "required": [
+                                "title",
+                                "bullets",
+                                "purpose"
+                              ],
+                              "title": "EditorialSlide",
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "slide",
+                            "content"
+                          ],
+                          "title": "Replacement",
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "slide": {
+                              "type": "integer",
+                              "const": 6
+                            },
+                            "content": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "title": {
+                                  "maxLength": 140,
+                                  "minLength": 1,
+                                  "title": "Title",
+                                  "type": "string"
+                                },
+                                "purpose": {
+                                  "default": "content",
+                                  "enum": [
+                                    "cover",
+                                    "speaker",
+                                    "agenda",
+                                    "divider",
+                                    "context",
+                                    "problem",
+                                    "solution",
+                                    "claim_evidence",
+                                    "comparison",
+                                    "process",
+                                    "timeline",
+                                    "metrics",
+                                    "trend",
+                                    "composition",
+                                    "structure",
+                                    "recommendations",
+                                    "summary",
+                                    "closing",
+                                    "content"
+                                  ],
+                                  "title": "Purpose",
+                                  "type": "string",
+                                  "const": "content"
+                                },
+                                "bullets": {
+                                  "items": {
+                                    "$ref": "#/$defs/Claim"
+                                  },
+                                  "maxItems": 6,
+                                  "minItems": 1,
+                                  "title": "Bullets",
+                                  "type": "array"
+                                },
+                                "source_table_id": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "default": null,
+                                  "title": "Source Table Id",
+                                  "const": null
+                                },
+                                "source_columns": {
+                                  "items": {
+                                    "type": "integer"
+                                  },
+                                  "maxItems": 8,
+                                  "title": "Source Columns",
+                                  "type": "array",
+                                  "const": []
+                                },
+                                "chart_type": {
+                                  "default": "auto",
+                                  "enum": [
+                                    "auto",
+                                    "table",
+                                    "line",
+                                    "column",
+                                    "column_stacked",
+                                    "bar",
+                                    "pie"
+                                  ],
+                                  "title": "Chart Type",
+                                  "type": "string",
+                                  "const": "auto"
+                                },
+                                "relationship": {
+                                  "default": "none",
+                                  "enum": [
+                                    "none",
+                                    "comparison",
+                                    "time",
+                                    "share",
+                                    "table"
+                                  ],
+                                  "title": "Relationship",
+                                  "type": "string",
+                                  "const": "none"
+                                },
+                                "rows": {
+                                  "items": {
+                                    "$ref": "#/$defs/DataRow"
+                                  },
+                                  "maxItems": 12,
+                                  "title": "Rows",
+                                  "type": "array",
+                                  "const": []
+                                }
+                              },
+                              "required": [
+                                "title",
+                                "bullets",
+                                "purpose"
+                              ],
+                              "title": "EditorialSlide",
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "slide",
+                            "content"
+                          ],
+                          "title": "Replacement",
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "slide": {
+                              "type": "integer",
+                              "const": 7
+                            },
+                            "content": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "title": {
+                                  "maxLength": 140,
+                                  "minLength": 1,
+                                  "title": "Title",
+                                  "type": "string"
+                                },
+                                "purpose": {
+                                  "default": "content",
+                                  "enum": [
+                                    "cover",
+                                    "speaker",
+                                    "agenda",
+                                    "divider",
+                                    "context",
+                                    "problem",
+                                    "solution",
+                                    "claim_evidence",
+                                    "comparison",
+                                    "process",
+                                    "timeline",
+                                    "metrics",
+                                    "trend",
+                                    "composition",
+                                    "structure",
+                                    "recommendations",
+                                    "summary",
+                                    "closing",
+                                    "content"
+                                  ],
+                                  "title": "Purpose",
+                                  "type": "string",
+                                  "const": "content"
+                                },
+                                "bullets": {
+                                  "items": {
+                                    "$ref": "#/$defs/Claim"
+                                  },
+                                  "maxItems": 6,
+                                  "minItems": 1,
+                                  "title": "Bullets",
+                                  "type": "array"
+                                },
+                                "source_table_id": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "default": null,
+                                  "title": "Source Table Id",
+                                  "const": null
+                                },
+                                "source_columns": {
+                                  "items": {
+                                    "type": "integer"
+                                  },
+                                  "maxItems": 8,
+                                  "title": "Source Columns",
+                                  "type": "array",
+                                  "const": []
+                                },
+                                "chart_type": {
+                                  "default": "auto",
+                                  "enum": [
+                                    "auto",
+                                    "table",
+                                    "line",
+                                    "column",
+                                    "column_stacked",
+                                    "bar",
+                                    "pie"
+                                  ],
+                                  "title": "Chart Type",
+                                  "type": "string",
+                                  "const": "auto"
+                                },
+                                "relationship": {
+                                  "default": "none",
+                                  "enum": [
+                                    "none",
+                                    "comparison",
+                                    "time",
+                                    "share",
+                                    "table"
+                                  ],
+                                  "title": "Relationship",
+                                  "type": "string",
+                                  "const": "none"
+                                },
+                                "rows": {
+                                  "items": {
+                                    "$ref": "#/$defs/DataRow"
+                                  },
+                                  "maxItems": 12,
+                                  "title": "Rows",
+                                  "type": "array",
+                                  "const": []
+                                }
+                              },
+                              "required": [
+                                "title",
+                                "bullets",
+                                "purpose"
+                              ],
+                              "title": "EditorialSlide",
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "slide",
+                            "content"
+                          ],
+                          "title": "Replacement",
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "maxItems": 6,
+                    "minItems": 6,
+                    "title": "Replacements",
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "replacements"
+                ],
+                "title": "EditorialPatch",
+                "type": "object"
+              },
+              "strict": true
+            }
+          }
+        },
+        "messages": [
+          {
+            "role": "system",
+            "content": {
+              "sha256": "6c2fd44a56dd4e0bc9893ebeb58995534634648fa1e5667336b4b97483101eb9"
+            }
+          },
+          {
+            "role": "user",
+            "content": "{\"untrusted_input\": {\"source\": {\"title\": \"Mobile Library Route Options\", \"facts\": [{\"id\": \"f1\", \"text\": \"The county is comparing three routes for a six-month mobile library trial.\", \"section\": \"Overview\", \"source\": \"user_text\", \"line\": 3, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f2\", \"text\": \"The source team has not selected a route and has not estimated demand outside the listed stops.\", \"section\": \"Decision context\", \"source\": \"user_text\", \"line\": 5, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f3\", \"text\": \"The North Loop covers 18 kilometres and visits four stops.\", \"section\": \"North Loop\", \"source\": \"user_text\", \"line\": 7, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f4\", \"text\": \"It needs 3.5 driver hours per service day.\", \"section\": \"North Loop\", \"source\": \"user_text\", \"line\": 7, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f5\", \"text\": \"Its two rural stops have no indoor waiting area.\", \"section\": \"North Loop\", \"source\": \"user_text\", \"line\": 7, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f6\", \"text\": \"The Market Link covers 12 kilometres and visits five stops.\", \"section\": \"Market Link\", \"source\": \"user_text\", \"line\": 9, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f7\", \"text\": \"It needs 4.0 driver hours because the central market stop has a scheduled 45-minute dwell.\", \"section\": \"Market Link\", \"source\": \"user_text\", \"line\": 9, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f8\", \"text\": \"A school asked for a later arrival, but no change has been approved.\", \"section\": \"Market Link\", \"source\": \"user_text\", \"line\": 9, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f9\", \"text\": \"The Lakeside Spur covers 21 kilometres and visits three stops.\", \"section\": \"Lakeside Spur\", \"source\": \"user_text\", \"line\": 11, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f10\", \"text\": \"It needs 3.0 driver hours.\", \"section\": \"Lakeside Spur\", \"source\": \"user_text\", \"line\": 11, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f11\", \"text\": \"One bridge has a posted 7.5-tonne limit, and the source does not state the vehicle's loaded weight.\", \"section\": \"Lakeside Spur\", \"source\": \"user_text\", \"line\": 11, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f12\", \"text\": \"North Loop has the longest list of stops among the two rural options, Market Link has the most stops overall, and Lakeside Spur has the longest distance.\", \"section\": \"Recorded comparison\", \"source\": \"user_text\", \"line\": 13, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f13\", \"text\": \"These measures describe the route sheet only;\", \"section\": \"Recorded comparison\", \"source\": \"user_text\", \"line\": 13, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f14\", \"text\": \"they do not establish which route serves more readers.\", \"section\": \"Recorded comparison\", \"source\": \"user_text\", \"line\": 13, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f15\", \"text\": \"The trial coordinator will bring mileage, visit counts, and missed-stop reports to the 9 October 2027 review.\", \"section\": \"Trial review\", \"source\": \"user_text\", \"line\": 15, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f16\", \"text\": \"No route cost or attendance forecast appears in this note.\", \"section\": \"Trial review\", \"source\": \"user_text\", \"line\": 15, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}], \"tables\": [], \"warnings\": [], \"quarantined\": [], \"headings\": [], \"directives\": []}, \"slide_range\": [7, 7], \"include_cover\": true, \"audience\": \"\", \"instructions\": \"\", \"characters_per_slide\": 500, \"templates\": [{\"id\": \"native-layout-0-0\", \"purpose\": \"cover\", \"source_slide\": 0, \"graphic_kind\": \"none\", \"fields\": 1, \"title_max_characters\": 66, \"field_capacity\": [{\"width\": 490, \"height\": 131, \"target_max_characters\": 270}]}, {\"id\": \"native-layout-0-2\", \"purpose\": \"divider\", \"source_slide\": 0, \"graphic_kind\": \"none\", \"fields\": 0, \"title_max_characters\": 33, \"field_capacity\": []}], \"required_chart_types\": [], \"allowed_slide_indices\": [2, 3, 4, 5, 6, 7], \"previous_plan\": {\"slides\": [{\"title\": \"Mobile Library Route Options\", \"purpose\": \"cover\", \"bullets\": [{\"text\": \"The county is comparing three routes for a six-month mobile library trial.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f1\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}, {\"title\": \"Decision context\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The source team has not selected a route and has not estimated demand outside the listed stops.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f2\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}, {\"title\": \"North Loop\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The North Loop covers 18 kilometres and visits four stops.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f3\"}]}, {\"text\": \"It needs 3.5 driver hours per service day.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f4\"}]}, {\"text\": \"Its two rural stops have no indoor waiting area.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f5\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}, {\"title\": \"Market Link\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The Market Link covers 12 kilometres and visits five stops.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f6\"}]}, {\"text\": \"It needs 4.0 driver hours because the central market stop has a scheduled 45-minute dwell.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f7\"}]}, {\"text\": \"A school asked for a later arrival, but no change has been approved.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f8\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}, {\"title\": \"Lakeside Spur\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The Lakeside Spur covers 21 kilometres and visits three stops.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f9\"}]}, {\"text\": \"It needs 3.0 driver hours.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f10\"}]}, {\"text\": \"One bridge has a posted 7.5-tonne limit, and the source does not state the vehicle's loaded weight.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f11\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}, {\"title\": \"Recorded comparison\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"North Loop has the longest list of stops among the two rural options, Market Link has the most stops overall, and Lakeside Spur has the longest distance.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f12\"}]}, {\"text\": \"These measures describe the route sheet only;\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f13\"}]}, {\"text\": \"they do not establish which route serves more readers.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f14\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}, {\"title\": \"Trial review\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The trial coordinator will bring mileage, visit counts, and missed-stop reports to the 9 October 2027 review.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f15\"}]}, {\"text\": \"No route cost or attendance forecast appears in this note.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f16\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}], \"omitted\": []}, \"revision_feedback\": {\"issues\": [], \"essential_facts_to_restore\": [], \"explanation\": \"Geometry requires repair before semantic review\", \"geometry\": \"Компоновка требует исправления на слайдах 2, 3, 4, 5, 6, 7. Причины и допустимые действия записаны по каждому объекту.\", \"repair_issues\": [{\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 2, \"claim\": null, \"element\": 0}, {\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 3, \"claim\": null, \"element\": 0}, {\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 4, \"claim\": null, \"element\": 0}, {\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 5, \"claim\": null, \"element\": 0}, {\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 6, \"claim\": null, \"element\": 0}, {\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 7, \"claim\": null, \"element\": 0}], \"fields\": [{\"slide\": 2, \"pattern_id\": null, \"findings\": [{\"code\": \"readability\", \"severity\": \"warning\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"slide\": 2, \"element\": 0, \"repaired\": false}], \"repair_issues\": [{\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 2, \"claim\": null, \"element\": 0}], \"fields\": [{\"element\": 0, \"role\": \"title\", \"text\": \"Decision context\", \"fact_ids\": [], \"current_font_size\": 17.0, \"minimum_font_size\": 18, \"width\": 883, \"height\": 22, \"target_max_characters\": 98}]}, {\"slide\": 3, \"pattern_id\": null, \"findings\": [{\"code\": \"readability\", \"severity\": \"warning\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"slide\": 3, \"element\": 0, \"repaired\": false}], \"repair_issues\": [{\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 3, \"claim\": null, \"element\": 0}], \"fields\": [{\"element\": 0, \"role\": \"title\", \"text\": \"North Loop\", \"fact_ids\": [], \"current_font_size\": 17.0, \"minimum_font_size\": 18, \"width\": 883, \"height\": 22, \"target_max_characters\": 98}]}, {\"slide\": 4, \"pattern_id\": null, \"findings\": [{\"code\": \"readability\", \"severity\": \"warning\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"slide\": 4, \"element\": 0, \"repaired\": false}], \"repair_issues\": [{\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 4, \"claim\": null, \"element\": 0}], \"fields\": [{\"element\": 0, \"role\": \"title\", \"text\": \"Market Link\", \"fact_ids\": [], \"current_font_size\": 17.0, \"minimum_font_size\": 18, \"width\": 883, \"height\": 22, \"target_max_characters\": 98}]}, {\"slide\": 5, \"pattern_id\": null, \"findings\": [{\"code\": \"readability\", \"severity\": \"warning\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"slide\": 5, \"element\": 0, \"repaired\": false}], \"repair_issues\": [{\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 5, \"claim\": null, \"element\": 0}], \"fields\": [{\"element\": 0, \"role\": \"title\", \"text\": \"Lakeside Spur\", \"fact_ids\": [], \"current_font_size\": 17.0, \"minimum_font_size\": 18, \"width\": 883, \"height\": 22, \"target_max_characters\": 98}]}, {\"slide\": 6, \"pattern_id\": null, \"findings\": [{\"code\": \"readability\", \"severity\": \"warning\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"slide\": 6, \"element\": 0, \"repaired\": false}], \"repair_issues\": [{\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 6, \"claim\": null, \"element\": 0}], \"fields\": [{\"element\": 0, \"role\": \"title\", \"text\": \"Recorded comparison\", \"fact_ids\": [], \"current_font_size\": 17.0, \"minimum_font_size\": 18, \"width\": 883, \"height\": 22, \"target_max_characters\": 98}]}, {\"slide\": 7, \"pattern_id\": null, \"findings\": [{\"code\": \"readability\", \"severity\": \"warning\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"slide\": 7, \"element\": 0, \"repaired\": false}], \"repair_issues\": [{\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 7, \"claim\": null, \"element\": 0}], \"fields\": [{\"element\": 0, \"role\": \"title\", \"text\": \"Trial review\", \"fact_ids\": [], \"current_font_size\": 17.0, \"minimum_font_size\": 18, \"width\": 883, \"height\": 22, \"target_max_characters\": 98}]}], \"previous_semantic_corrections\": []}, \"repair_contracts\": [{\"slide\": 2, \"fixed_bullets\": [{\"index\": 1, \"content\": {\"text\": \"The source team has not selected a route and has not estimated demand outside the listed stops.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f2\"}]}}], \"bullet_count\": 1, \"fixed_title\": null, \"purpose\": \"content\", \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": [], \"source_fact_ids\": [\"f2\"], \"groups\": null, \"target_characters_per_bullet\": 500}, {\"slide\": 3, \"fixed_bullets\": [{\"index\": 1, \"content\": {\"text\": \"The North Loop covers 18 kilometres and visits four stops.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f3\"}]}}, {\"index\": 2, \"content\": {\"text\": \"It needs 3.5 driver hours per service day.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f4\"}]}}, {\"index\": 3, \"content\": {\"text\": \"Its two rural stops have no indoor waiting area.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f5\"}]}}], \"bullet_count\": 3, \"fixed_title\": null, \"purpose\": \"content\", \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": [], \"source_fact_ids\": [\"f3\", \"f4\", \"f5\"], \"groups\": null, \"target_characters_per_bullet\": 166}, {\"slide\": 4, \"fixed_bullets\": [{\"index\": 1, \"content\": {\"text\": \"The Market Link covers 12 kilometres and visits five stops.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f6\"}]}}, {\"index\": 2, \"content\": {\"text\": \"It needs 4.0 driver hours because the central market stop has a scheduled 45-minute dwell.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f7\"}]}}, {\"index\": 3, \"content\": {\"text\": \"A school asked for a later arrival, but no change has been approved.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f8\"}]}}], \"bullet_count\": 3, \"fixed_title\": null, \"purpose\": \"content\", \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": [], \"source_fact_ids\": [\"f6\", \"f7\", \"f8\"], \"groups\": null, \"target_characters_per_bullet\": 166}, {\"slide\": 5, \"fixed_bullets\": [{\"index\": 1, \"content\": {\"text\": \"The Lakeside Spur covers 21 kilometres and visits three stops.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f9\"}]}}, {\"index\": 2, \"content\": {\"text\": \"It needs 3.0 driver hours.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f10\"}]}}, {\"index\": 3, \"content\": {\"text\": \"One bridge has a posted 7.5-tonne limit, and the source does not state the vehicle's loaded weight.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f11\"}]}}], \"bullet_count\": 3, \"fixed_title\": null, \"purpose\": \"content\", \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": [], \"source_fact_ids\": [\"f10\", \"f11\", \"f9\"], \"groups\": null, \"target_characters_per_bullet\": 166}, {\"slide\": 6, \"fixed_bullets\": [{\"index\": 1, \"content\": {\"text\": \"North Loop has the longest list of stops among the two rural options, Market Link has the most stops overall, and Lakeside Spur has the longest distance.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f12\"}]}}, {\"index\": 2, \"content\": {\"text\": \"These measures describe the route sheet only;\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f13\"}]}}, {\"index\": 3, \"content\": {\"text\": \"they do not establish which route serves more readers.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f14\"}]}}], \"bullet_count\": 3, \"fixed_title\": null, \"purpose\": \"content\", \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": [], \"source_fact_ids\": [\"f12\", \"f13\", \"f14\"], \"groups\": null, \"target_characters_per_bullet\": 166}, {\"slide\": 7, \"fixed_bullets\": [{\"index\": 1, \"content\": {\"text\": \"The trial coordinator will bring mileage, visit counts, and missed-stop reports to the 9 October 2027 review.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f15\"}]}}, {\"index\": 2, \"content\": {\"text\": \"No route cost or attendance forecast appears in this note.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f16\"}]}}], \"bullet_count\": 2, \"fixed_title\": null, \"purpose\": \"content\", \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": [], \"source_fact_ids\": [\"f15\", \"f16\"], \"groups\": null, \"target_characters_per_bullet\": 250}], \"numeric_evidence_hints\": [], \"instruction\": \"Return replacements ONLY for the allowed slides. Keep total count and order. Preserve every previously corrected qualification. Use fact_id citations only. Do not edit neighbours.\"}}"
+          }
+        ]
+      },
+      "status": 200,
+      "response": {
+        "choices": [
+          {
+            "message": {
+              "role": "assistant",
+              "content": "{\"replacements\": [{\"slide\": 2, \"content\": {\"title\": \"Decision context\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The source team has not selected a route and has not estimated demand outside the listed stops.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f2\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}}, {\"slide\": 3, \"content\": {\"title\": \"North Loop\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The North Loop covers 18 kilometres and visits four stops.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f3\"}]}, {\"text\": \"It needs 3.5 driver hours per service day.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f4\"}]}, {\"text\": \"Its two rural stops have no indoor waiting area.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f5\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}}, {\"slide\": 4, \"content\": {\"title\": \"Market Link\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The Market Link covers 12 kilometres and visits five stops.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f6\"}]}, {\"text\": \"It needs 4.0 driver hours because the central market stop has a scheduled 45-minute dwell.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f7\"}]}, {\"text\": \"A school asked for a later arrival, but no change has been approved.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f8\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}}, {\"slide\": 5, \"content\": {\"title\": \"Lakeside Spur\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The Lakeside Spur covers 21 kilometres and visits three stops.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f9\"}]}, {\"text\": \"It needs 3.0 driver hours.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f10\"}]}, {\"text\": \"One bridge has a posted 7.5-tonne limit, and the source does not state the vehicle's loaded weight.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f11\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}}, {\"slide\": 6, \"content\": {\"title\": \"Recorded comparison\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"North Loop has the longest list of stops among the two rural options, Market Link has the most stops overall, and Lakeside Spur has the longest distance.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f12\"}]}, {\"text\": \"These measures describe the route sheet only;\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f13\"}]}, {\"text\": \"they do not establish which route serves more readers.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f14\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}}, {\"slide\": 7, \"content\": {\"title\": \"Trial review\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The trial coordinator will bring mileage, visit counts, and missed-stop reports to the 9 October 2027 review.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f15\"}]}, {\"text\": \"No route cost or attendance forecast appears in this note.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f16\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}}]}"
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 100,
+          "completion_tokens": 50,
+          "total_tokens": 150
+        }
+      }
+    },
+    {
+      "request": {
+        "parameters": {
+          "model": "fixture-27b",
+          "temperature": 0.25,
+          "max_tokens": 10000,
+          "response_format": {
+            "type": "json_schema",
+            "json_schema": {
+              "name": "editorial_repair",
+              "schema": {
+                "$defs": {
+                  "Citation": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "fact_id": {
+                        "title": "Fact Id",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "fact_id"
+                    ],
+                    "title": "Citation",
+                    "type": "object"
+                  },
+                  "Claim": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "text": {
+                        "maxLength": 300,
+                        "minLength": 1,
+                        "title": "Text",
+                        "type": "string"
+                      },
+                      "group": {
+                        "default": "",
+                        "maxLength": 80,
+                        "title": "Group",
+                        "type": "string"
+                      },
+                      "parent_group": {
+                        "anyOf": [
+                          {
+                            "maxLength": 80,
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "default": null,
+                        "title": "Parent Group"
+                      },
+                      "evidence": {
+                        "items": {
+                          "$ref": "#/$defs/Citation"
+                        },
+                        "maxItems": 12,
+                        "minItems": 1,
+                        "title": "Evidence",
+                        "type": "array"
+                      }
+                    },
+                    "required": [
+                      "text",
+                      "evidence"
+                    ],
+                    "title": "Claim",
+                    "type": "object"
+                  },
+                  "DataRow": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "fact_id": {
+                        "title": "Fact Id",
+                        "type": "string"
+                      },
+                      "label": {
+                        "maxLength": 200,
+                        "minLength": 1,
+                        "title": "Label",
+                        "type": "string"
+                      },
+                      "value": {
+                        "maxLength": 100,
+                        "minLength": 1,
+                        "title": "Value",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "fact_id",
+                      "label",
+                      "value"
+                    ],
+                    "title": "DataRow",
+                    "type": "object"
+                  },
+                  "EditorialSlide": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "title": {
+                        "maxLength": 140,
+                        "minLength": 1,
+                        "title": "Title",
+                        "type": "string"
+                      },
+                      "purpose": {
+                        "default": "content",
+                        "enum": [
+                          "cover",
+                          "speaker",
+                          "agenda",
+                          "divider",
+                          "context",
+                          "problem",
+                          "solution",
+                          "claim_evidence",
+                          "comparison",
+                          "process",
+                          "timeline",
+                          "metrics",
+                          "trend",
+                          "composition",
+                          "structure",
+                          "recommendations",
+                          "summary",
+                          "closing",
+                          "content"
+                        ],
+                        "title": "Purpose",
+                        "type": "string"
+                      },
+                      "bullets": {
+                        "items": {
+                          "$ref": "#/$defs/Claim"
+                        },
+                        "maxItems": 6,
+                        "minItems": 1,
+                        "title": "Bullets",
+                        "type": "array"
+                      },
+                      "source_table_id": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "default": null,
+                        "title": "Source Table Id"
+                      },
+                      "source_columns": {
+                        "items": {
+                          "type": "integer"
+                        },
+                        "maxItems": 8,
+                        "title": "Source Columns",
+                        "type": "array"
+                      },
+                      "chart_type": {
+                        "default": "auto",
+                        "enum": [
+                          "auto",
+                          "table",
+                          "line",
+                          "column",
+                          "column_stacked",
+                          "bar",
+                          "pie"
+                        ],
+                        "title": "Chart Type",
+                        "type": "string"
+                      },
+                      "relationship": {
+                        "default": "none",
+                        "enum": [
+                          "none",
+                          "comparison",
+                          "time",
+                          "share",
+                          "table"
+                        ],
+                        "title": "Relationship",
+                        "type": "string"
+                      },
+                      "rows": {
+                        "items": {
+                          "$ref": "#/$defs/DataRow"
+                        },
+                        "maxItems": 12,
+                        "title": "Rows",
+                        "type": "array"
+                      }
+                    },
+                    "required": [
+                      "title",
+                      "bullets",
+                      "purpose"
+                    ],
+                    "title": "EditorialSlide",
+                    "type": "object"
+                  },
+                  "Replacement": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "slide": {
+                        "maximum": 30,
+                        "minimum": 1,
+                        "title": "Slide",
+                        "type": "integer",
+                        "enum": [
+                          2,
+                          3,
+                          4,
+                          5,
+                          6,
+                          7
+                        ]
+                      },
+                      "content": {
+                        "$ref": "#/$defs/EditorialSlide"
+                      }
+                    },
+                    "required": [
+                      "slide",
+                      "content"
+                    ],
+                    "title": "Replacement",
+                    "type": "object"
+                  }
+                },
+                "additionalProperties": false,
+                "properties": {
+                  "replacements": {
+                    "items": {
+                      "oneOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "slide": {
+                              "type": "integer",
+                              "const": 2
+                            },
+                            "content": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "title": {
+                                  "maxLength": 140,
+                                  "minLength": 1,
+                                  "title": "Title",
+                                  "type": "string"
+                                },
+                                "purpose": {
+                                  "default": "content",
+                                  "enum": [
+                                    "cover",
+                                    "speaker",
+                                    "agenda",
+                                    "divider",
+                                    "context",
+                                    "problem",
+                                    "solution",
+                                    "claim_evidence",
+                                    "comparison",
+                                    "process",
+                                    "timeline",
+                                    "metrics",
+                                    "trend",
+                                    "composition",
+                                    "structure",
+                                    "recommendations",
+                                    "summary",
+                                    "closing",
+                                    "content"
+                                  ],
+                                  "title": "Purpose",
+                                  "type": "string",
+                                  "const": "content"
+                                },
+                                "bullets": {
+                                  "items": {
+                                    "$ref": "#/$defs/Claim"
+                                  },
+                                  "maxItems": 6,
+                                  "minItems": 1,
+                                  "title": "Bullets",
+                                  "type": "array"
+                                },
+                                "source_table_id": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "default": null,
+                                  "title": "Source Table Id",
+                                  "const": null
+                                },
+                                "source_columns": {
+                                  "items": {
+                                    "type": "integer"
+                                  },
+                                  "maxItems": 8,
+                                  "title": "Source Columns",
+                                  "type": "array",
+                                  "const": []
+                                },
+                                "chart_type": {
+                                  "default": "auto",
+                                  "enum": [
+                                    "auto",
+                                    "table",
+                                    "line",
+                                    "column",
+                                    "column_stacked",
+                                    "bar",
+                                    "pie"
+                                  ],
+                                  "title": "Chart Type",
+                                  "type": "string",
+                                  "const": "auto"
+                                },
+                                "relationship": {
+                                  "default": "none",
+                                  "enum": [
+                                    "none",
+                                    "comparison",
+                                    "time",
+                                    "share",
+                                    "table"
+                                  ],
+                                  "title": "Relationship",
+                                  "type": "string",
+                                  "const": "none"
+                                },
+                                "rows": {
+                                  "items": {
+                                    "$ref": "#/$defs/DataRow"
+                                  },
+                                  "maxItems": 12,
+                                  "title": "Rows",
+                                  "type": "array",
+                                  "const": []
+                                }
+                              },
+                              "required": [
+                                "title",
+                                "bullets",
+                                "purpose"
+                              ],
+                              "title": "EditorialSlide",
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "slide",
+                            "content"
+                          ],
+                          "title": "Replacement",
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "slide": {
+                              "type": "integer",
+                              "const": 3
+                            },
+                            "content": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "title": {
+                                  "maxLength": 140,
+                                  "minLength": 1,
+                                  "title": "Title",
+                                  "type": "string"
+                                },
+                                "purpose": {
+                                  "default": "content",
+                                  "enum": [
+                                    "cover",
+                                    "speaker",
+                                    "agenda",
+                                    "divider",
+                                    "context",
+                                    "problem",
+                                    "solution",
+                                    "claim_evidence",
+                                    "comparison",
+                                    "process",
+                                    "timeline",
+                                    "metrics",
+                                    "trend",
+                                    "composition",
+                                    "structure",
+                                    "recommendations",
+                                    "summary",
+                                    "closing",
+                                    "content"
+                                  ],
+                                  "title": "Purpose",
+                                  "type": "string",
+                                  "const": "content"
+                                },
+                                "bullets": {
+                                  "items": {
+                                    "$ref": "#/$defs/Claim"
+                                  },
+                                  "maxItems": 6,
+                                  "minItems": 1,
+                                  "title": "Bullets",
+                                  "type": "array"
+                                },
+                                "source_table_id": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "default": null,
+                                  "title": "Source Table Id",
+                                  "const": null
+                                },
+                                "source_columns": {
+                                  "items": {
+                                    "type": "integer"
+                                  },
+                                  "maxItems": 8,
+                                  "title": "Source Columns",
+                                  "type": "array",
+                                  "const": []
+                                },
+                                "chart_type": {
+                                  "default": "auto",
+                                  "enum": [
+                                    "auto",
+                                    "table",
+                                    "line",
+                                    "column",
+                                    "column_stacked",
+                                    "bar",
+                                    "pie"
+                                  ],
+                                  "title": "Chart Type",
+                                  "type": "string",
+                                  "const": "auto"
+                                },
+                                "relationship": {
+                                  "default": "none",
+                                  "enum": [
+                                    "none",
+                                    "comparison",
+                                    "time",
+                                    "share",
+                                    "table"
+                                  ],
+                                  "title": "Relationship",
+                                  "type": "string",
+                                  "const": "none"
+                                },
+                                "rows": {
+                                  "items": {
+                                    "$ref": "#/$defs/DataRow"
+                                  },
+                                  "maxItems": 12,
+                                  "title": "Rows",
+                                  "type": "array",
+                                  "const": []
+                                }
+                              },
+                              "required": [
+                                "title",
+                                "bullets",
+                                "purpose"
+                              ],
+                              "title": "EditorialSlide",
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "slide",
+                            "content"
+                          ],
+                          "title": "Replacement",
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "slide": {
+                              "type": "integer",
+                              "const": 4
+                            },
+                            "content": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "title": {
+                                  "maxLength": 140,
+                                  "minLength": 1,
+                                  "title": "Title",
+                                  "type": "string"
+                                },
+                                "purpose": {
+                                  "default": "content",
+                                  "enum": [
+                                    "cover",
+                                    "speaker",
+                                    "agenda",
+                                    "divider",
+                                    "context",
+                                    "problem",
+                                    "solution",
+                                    "claim_evidence",
+                                    "comparison",
+                                    "process",
+                                    "timeline",
+                                    "metrics",
+                                    "trend",
+                                    "composition",
+                                    "structure",
+                                    "recommendations",
+                                    "summary",
+                                    "closing",
+                                    "content"
+                                  ],
+                                  "title": "Purpose",
+                                  "type": "string",
+                                  "const": "content"
+                                },
+                                "bullets": {
+                                  "items": {
+                                    "$ref": "#/$defs/Claim"
+                                  },
+                                  "maxItems": 6,
+                                  "minItems": 1,
+                                  "title": "Bullets",
+                                  "type": "array"
+                                },
+                                "source_table_id": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "default": null,
+                                  "title": "Source Table Id",
+                                  "const": null
+                                },
+                                "source_columns": {
+                                  "items": {
+                                    "type": "integer"
+                                  },
+                                  "maxItems": 8,
+                                  "title": "Source Columns",
+                                  "type": "array",
+                                  "const": []
+                                },
+                                "chart_type": {
+                                  "default": "auto",
+                                  "enum": [
+                                    "auto",
+                                    "table",
+                                    "line",
+                                    "column",
+                                    "column_stacked",
+                                    "bar",
+                                    "pie"
+                                  ],
+                                  "title": "Chart Type",
+                                  "type": "string",
+                                  "const": "auto"
+                                },
+                                "relationship": {
+                                  "default": "none",
+                                  "enum": [
+                                    "none",
+                                    "comparison",
+                                    "time",
+                                    "share",
+                                    "table"
+                                  ],
+                                  "title": "Relationship",
+                                  "type": "string",
+                                  "const": "none"
+                                },
+                                "rows": {
+                                  "items": {
+                                    "$ref": "#/$defs/DataRow"
+                                  },
+                                  "maxItems": 12,
+                                  "title": "Rows",
+                                  "type": "array",
+                                  "const": []
+                                }
+                              },
+                              "required": [
+                                "title",
+                                "bullets",
+                                "purpose"
+                              ],
+                              "title": "EditorialSlide",
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "slide",
+                            "content"
+                          ],
+                          "title": "Replacement",
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "slide": {
+                              "type": "integer",
+                              "const": 5
+                            },
+                            "content": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "title": {
+                                  "maxLength": 140,
+                                  "minLength": 1,
+                                  "title": "Title",
+                                  "type": "string"
+                                },
+                                "purpose": {
+                                  "default": "content",
+                                  "enum": [
+                                    "cover",
+                                    "speaker",
+                                    "agenda",
+                                    "divider",
+                                    "context",
+                                    "problem",
+                                    "solution",
+                                    "claim_evidence",
+                                    "comparison",
+                                    "process",
+                                    "timeline",
+                                    "metrics",
+                                    "trend",
+                                    "composition",
+                                    "structure",
+                                    "recommendations",
+                                    "summary",
+                                    "closing",
+                                    "content"
+                                  ],
+                                  "title": "Purpose",
+                                  "type": "string",
+                                  "const": "content"
+                                },
+                                "bullets": {
+                                  "items": {
+                                    "$ref": "#/$defs/Claim"
+                                  },
+                                  "maxItems": 6,
+                                  "minItems": 1,
+                                  "title": "Bullets",
+                                  "type": "array"
+                                },
+                                "source_table_id": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "default": null,
+                                  "title": "Source Table Id",
+                                  "const": null
+                                },
+                                "source_columns": {
+                                  "items": {
+                                    "type": "integer"
+                                  },
+                                  "maxItems": 8,
+                                  "title": "Source Columns",
+                                  "type": "array",
+                                  "const": []
+                                },
+                                "chart_type": {
+                                  "default": "auto",
+                                  "enum": [
+                                    "auto",
+                                    "table",
+                                    "line",
+                                    "column",
+                                    "column_stacked",
+                                    "bar",
+                                    "pie"
+                                  ],
+                                  "title": "Chart Type",
+                                  "type": "string",
+                                  "const": "auto"
+                                },
+                                "relationship": {
+                                  "default": "none",
+                                  "enum": [
+                                    "none",
+                                    "comparison",
+                                    "time",
+                                    "share",
+                                    "table"
+                                  ],
+                                  "title": "Relationship",
+                                  "type": "string",
+                                  "const": "none"
+                                },
+                                "rows": {
+                                  "items": {
+                                    "$ref": "#/$defs/DataRow"
+                                  },
+                                  "maxItems": 12,
+                                  "title": "Rows",
+                                  "type": "array",
+                                  "const": []
+                                }
+                              },
+                              "required": [
+                                "title",
+                                "bullets",
+                                "purpose"
+                              ],
+                              "title": "EditorialSlide",
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "slide",
+                            "content"
+                          ],
+                          "title": "Replacement",
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "slide": {
+                              "type": "integer",
+                              "const": 6
+                            },
+                            "content": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "title": {
+                                  "maxLength": 140,
+                                  "minLength": 1,
+                                  "title": "Title",
+                                  "type": "string"
+                                },
+                                "purpose": {
+                                  "default": "content",
+                                  "enum": [
+                                    "cover",
+                                    "speaker",
+                                    "agenda",
+                                    "divider",
+                                    "context",
+                                    "problem",
+                                    "solution",
+                                    "claim_evidence",
+                                    "comparison",
+                                    "process",
+                                    "timeline",
+                                    "metrics",
+                                    "trend",
+                                    "composition",
+                                    "structure",
+                                    "recommendations",
+                                    "summary",
+                                    "closing",
+                                    "content"
+                                  ],
+                                  "title": "Purpose",
+                                  "type": "string",
+                                  "const": "content"
+                                },
+                                "bullets": {
+                                  "items": {
+                                    "$ref": "#/$defs/Claim"
+                                  },
+                                  "maxItems": 6,
+                                  "minItems": 1,
+                                  "title": "Bullets",
+                                  "type": "array"
+                                },
+                                "source_table_id": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "default": null,
+                                  "title": "Source Table Id",
+                                  "const": null
+                                },
+                                "source_columns": {
+                                  "items": {
+                                    "type": "integer"
+                                  },
+                                  "maxItems": 8,
+                                  "title": "Source Columns",
+                                  "type": "array",
+                                  "const": []
+                                },
+                                "chart_type": {
+                                  "default": "auto",
+                                  "enum": [
+                                    "auto",
+                                    "table",
+                                    "line",
+                                    "column",
+                                    "column_stacked",
+                                    "bar",
+                                    "pie"
+                                  ],
+                                  "title": "Chart Type",
+                                  "type": "string",
+                                  "const": "auto"
+                                },
+                                "relationship": {
+                                  "default": "none",
+                                  "enum": [
+                                    "none",
+                                    "comparison",
+                                    "time",
+                                    "share",
+                                    "table"
+                                  ],
+                                  "title": "Relationship",
+                                  "type": "string",
+                                  "const": "none"
+                                },
+                                "rows": {
+                                  "items": {
+                                    "$ref": "#/$defs/DataRow"
+                                  },
+                                  "maxItems": 12,
+                                  "title": "Rows",
+                                  "type": "array",
+                                  "const": []
+                                }
+                              },
+                              "required": [
+                                "title",
+                                "bullets",
+                                "purpose"
+                              ],
+                              "title": "EditorialSlide",
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "slide",
+                            "content"
+                          ],
+                          "title": "Replacement",
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "slide": {
+                              "type": "integer",
+                              "const": 7
+                            },
+                            "content": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "title": {
+                                  "maxLength": 140,
+                                  "minLength": 1,
+                                  "title": "Title",
+                                  "type": "string"
+                                },
+                                "purpose": {
+                                  "default": "content",
+                                  "enum": [
+                                    "cover",
+                                    "speaker",
+                                    "agenda",
+                                    "divider",
+                                    "context",
+                                    "problem",
+                                    "solution",
+                                    "claim_evidence",
+                                    "comparison",
+                                    "process",
+                                    "timeline",
+                                    "metrics",
+                                    "trend",
+                                    "composition",
+                                    "structure",
+                                    "recommendations",
+                                    "summary",
+                                    "closing",
+                                    "content"
+                                  ],
+                                  "title": "Purpose",
+                                  "type": "string",
+                                  "const": "content"
+                                },
+                                "bullets": {
+                                  "items": {
+                                    "$ref": "#/$defs/Claim"
+                                  },
+                                  "maxItems": 6,
+                                  "minItems": 1,
+                                  "title": "Bullets",
+                                  "type": "array"
+                                },
+                                "source_table_id": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "default": null,
+                                  "title": "Source Table Id",
+                                  "const": null
+                                },
+                                "source_columns": {
+                                  "items": {
+                                    "type": "integer"
+                                  },
+                                  "maxItems": 8,
+                                  "title": "Source Columns",
+                                  "type": "array",
+                                  "const": []
+                                },
+                                "chart_type": {
+                                  "default": "auto",
+                                  "enum": [
+                                    "auto",
+                                    "table",
+                                    "line",
+                                    "column",
+                                    "column_stacked",
+                                    "bar",
+                                    "pie"
+                                  ],
+                                  "title": "Chart Type",
+                                  "type": "string",
+                                  "const": "auto"
+                                },
+                                "relationship": {
+                                  "default": "none",
+                                  "enum": [
+                                    "none",
+                                    "comparison",
+                                    "time",
+                                    "share",
+                                    "table"
+                                  ],
+                                  "title": "Relationship",
+                                  "type": "string",
+                                  "const": "none"
+                                },
+                                "rows": {
+                                  "items": {
+                                    "$ref": "#/$defs/DataRow"
+                                  },
+                                  "maxItems": 12,
+                                  "title": "Rows",
+                                  "type": "array",
+                                  "const": []
+                                }
+                              },
+                              "required": [
+                                "title",
+                                "bullets",
+                                "purpose"
+                              ],
+                              "title": "EditorialSlide",
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "slide",
+                            "content"
+                          ],
+                          "title": "Replacement",
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "maxItems": 6,
+                    "minItems": 6,
+                    "title": "Replacements",
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "replacements"
+                ],
+                "title": "EditorialPatch",
+                "type": "object"
+              },
+              "strict": true
+            }
+          }
+        },
+        "messages": [
+          {
+            "role": "system",
+            "content": {
+              "sha256": "6c2fd44a56dd4e0bc9893ebeb58995534634648fa1e5667336b4b97483101eb9"
+            }
+          },
+          {
+            "role": "user",
+            "content": "{\"untrusted_input\": {\"source\": {\"title\": \"Mobile Library Route Options\", \"facts\": [{\"id\": \"f1\", \"text\": \"The county is comparing three routes for a six-month mobile library trial.\", \"section\": \"Overview\", \"source\": \"user_text\", \"line\": 3, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f2\", \"text\": \"The source team has not selected a route and has not estimated demand outside the listed stops.\", \"section\": \"Decision context\", \"source\": \"user_text\", \"line\": 5, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f3\", \"text\": \"The North Loop covers 18 kilometres and visits four stops.\", \"section\": \"North Loop\", \"source\": \"user_text\", \"line\": 7, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f4\", \"text\": \"It needs 3.5 driver hours per service day.\", \"section\": \"North Loop\", \"source\": \"user_text\", \"line\": 7, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f5\", \"text\": \"Its two rural stops have no indoor waiting area.\", \"section\": \"North Loop\", \"source\": \"user_text\", \"line\": 7, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f6\", \"text\": \"The Market Link covers 12 kilometres and visits five stops.\", \"section\": \"Market Link\", \"source\": \"user_text\", \"line\": 9, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f7\", \"text\": \"It needs 4.0 driver hours because the central market stop has a scheduled 45-minute dwell.\", \"section\": \"Market Link\", \"source\": \"user_text\", \"line\": 9, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f8\", \"text\": \"A school asked for a later arrival, but no change has been approved.\", \"section\": \"Market Link\", \"source\": \"user_text\", \"line\": 9, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f9\", \"text\": \"The Lakeside Spur covers 21 kilometres and visits three stops.\", \"section\": \"Lakeside Spur\", \"source\": \"user_text\", \"line\": 11, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f10\", \"text\": \"It needs 3.0 driver hours.\", \"section\": \"Lakeside Spur\", \"source\": \"user_text\", \"line\": 11, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f11\", \"text\": \"One bridge has a posted 7.5-tonne limit, and the source does not state the vehicle's loaded weight.\", \"section\": \"Lakeside Spur\", \"source\": \"user_text\", \"line\": 11, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f12\", \"text\": \"North Loop has the longest list of stops among the two rural options, Market Link has the most stops overall, and Lakeside Spur has the longest distance.\", \"section\": \"Recorded comparison\", \"source\": \"user_text\", \"line\": 13, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f13\", \"text\": \"These measures describe the route sheet only;\", \"section\": \"Recorded comparison\", \"source\": \"user_text\", \"line\": 13, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f14\", \"text\": \"they do not establish which route serves more readers.\", \"section\": \"Recorded comparison\", \"source\": \"user_text\", \"line\": 13, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f15\", \"text\": \"The trial coordinator will bring mileage, visit counts, and missed-stop reports to the 9 October 2027 review.\", \"section\": \"Trial review\", \"source\": \"user_text\", \"line\": 15, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f16\", \"text\": \"No route cost or attendance forecast appears in this note.\", \"section\": \"Trial review\", \"source\": \"user_text\", \"line\": 15, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}], \"tables\": [], \"warnings\": [], \"quarantined\": [], \"headings\": [], \"directives\": []}, \"slide_range\": [7, 7], \"include_cover\": true, \"audience\": \"\", \"instructions\": \"\", \"characters_per_slide\": 500, \"templates\": [{\"id\": \"native-layout-0-0\", \"purpose\": \"cover\", \"source_slide\": 0, \"graphic_kind\": \"none\", \"fields\": 1, \"title_max_characters\": 66, \"field_capacity\": [{\"width\": 490, \"height\": 131, \"target_max_characters\": 270}]}, {\"id\": \"native-layout-0-2\", \"purpose\": \"divider\", \"source_slide\": 0, \"graphic_kind\": \"none\", \"fields\": 0, \"title_max_characters\": 33, \"field_capacity\": []}], \"required_chart_types\": [], \"allowed_slide_indices\": [2, 3, 4, 5, 6, 7], \"previous_plan\": {\"slides\": [{\"title\": \"Mobile Library Route Options\", \"purpose\": \"cover\", \"bullets\": [{\"text\": \"The county is comparing three routes for a six-month mobile library trial.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f1\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}, {\"title\": \"Decision context\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The source team has not selected a route and has not estimated demand outside the listed stops.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f2\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}, {\"title\": \"North Loop\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The North Loop covers 18 kilometres and visits four stops.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f3\"}]}, {\"text\": \"It needs 3.5 driver hours per service day.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f4\"}]}, {\"text\": \"Its two rural stops have no indoor waiting area.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f5\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}, {\"title\": \"Market Link\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The Market Link covers 12 kilometres and visits five stops.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f6\"}]}, {\"text\": \"It needs 4.0 driver hours because the central market stop has a scheduled 45-minute dwell.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f7\"}]}, {\"text\": \"A school asked for a later arrival, but no change has been approved.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f8\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}, {\"title\": \"Lakeside Spur\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The Lakeside Spur covers 21 kilometres and visits three stops.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f9\"}]}, {\"text\": \"It needs 3.0 driver hours.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f10\"}]}, {\"text\": \"One bridge has a posted 7.5-tonne limit, and the source does not state the vehicle's loaded weight.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f11\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}, {\"title\": \"Recorded comparison\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"North Loop has the longest list of stops among the two rural options, Market Link has the most stops overall, and Lakeside Spur has the longest distance.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f12\"}]}, {\"text\": \"These measures describe the route sheet only;\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f13\"}]}, {\"text\": \"they do not establish which route serves more readers.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f14\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}, {\"title\": \"Trial review\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The trial coordinator will bring mileage, visit counts, and missed-stop reports to the 9 October 2027 review.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f15\"}]}, {\"text\": \"No route cost or attendance forecast appears in this note.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f16\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}], \"omitted\": []}, \"revision_feedback\": {\"issues\": [], \"essential_facts_to_restore\": [], \"explanation\": \"Geometry requires repair before semantic review\", \"geometry\": \"Компоновка требует исправления на слайдах 2, 3, 4, 5, 6, 7. Причины и допустимые действия записаны по каждому объекту.\", \"repair_issues\": [{\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 2, \"claim\": null, \"element\": 0}, {\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 3, \"claim\": null, \"element\": 0}, {\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 4, \"claim\": null, \"element\": 0}, {\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 5, \"claim\": null, \"element\": 0}, {\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 6, \"claim\": null, \"element\": 0}, {\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 7, \"claim\": null, \"element\": 0}], \"fields\": [{\"slide\": 2, \"pattern_id\": null, \"findings\": [{\"code\": \"readability\", \"severity\": \"warning\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"slide\": 2, \"element\": 0, \"repaired\": false}], \"repair_issues\": [{\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 2, \"claim\": null, \"element\": 0}], \"fields\": [{\"element\": 0, \"role\": \"title\", \"text\": \"Decision context\", \"fact_ids\": [], \"current_font_size\": 17.0, \"minimum_font_size\": 18, \"width\": 883, \"height\": 22, \"target_max_characters\": 98}]}, {\"slide\": 3, \"pattern_id\": null, \"findings\": [{\"code\": \"readability\", \"severity\": \"warning\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"slide\": 3, \"element\": 0, \"repaired\": false}], \"repair_issues\": [{\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 3, \"claim\": null, \"element\": 0}], \"fields\": [{\"element\": 0, \"role\": \"title\", \"text\": \"North Loop\", \"fact_ids\": [], \"current_font_size\": 17.0, \"minimum_font_size\": 18, \"width\": 883, \"height\": 22, \"target_max_characters\": 98}]}, {\"slide\": 4, \"pattern_id\": null, \"findings\": [{\"code\": \"readability\", \"severity\": \"warning\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"slide\": 4, \"element\": 0, \"repaired\": false}], \"repair_issues\": [{\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 4, \"claim\": null, \"element\": 0}], \"fields\": [{\"element\": 0, \"role\": \"title\", \"text\": \"Market Link\", \"fact_ids\": [], \"current_font_size\": 17.0, \"minimum_font_size\": 18, \"width\": 883, \"height\": 22, \"target_max_characters\": 98}]}, {\"slide\": 5, \"pattern_id\": null, \"findings\": [{\"code\": \"readability\", \"severity\": \"warning\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"slide\": 5, \"element\": 0, \"repaired\": false}], \"repair_issues\": [{\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 5, \"claim\": null, \"element\": 0}], \"fields\": [{\"element\": 0, \"role\": \"title\", \"text\": \"Lakeside Spur\", \"fact_ids\": [], \"current_font_size\": 17.0, \"minimum_font_size\": 18, \"width\": 883, \"height\": 22, \"target_max_characters\": 98}]}, {\"slide\": 6, \"pattern_id\": null, \"findings\": [{\"code\": \"readability\", \"severity\": \"warning\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"slide\": 6, \"element\": 0, \"repaired\": false}], \"repair_issues\": [{\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 6, \"claim\": null, \"element\": 0}], \"fields\": [{\"element\": 0, \"role\": \"title\", \"text\": \"Recorded comparison\", \"fact_ids\": [], \"current_font_size\": 17.0, \"minimum_font_size\": 18, \"width\": 883, \"height\": 22, \"target_max_characters\": 98}]}, {\"slide\": 7, \"pattern_id\": null, \"findings\": [{\"code\": \"readability\", \"severity\": \"warning\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"slide\": 7, \"element\": 0, \"repaired\": false}], \"repair_issues\": [{\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 7, \"claim\": null, \"element\": 0}], \"fields\": [{\"element\": 0, \"role\": \"title\", \"text\": \"Trial review\", \"fact_ids\": [], \"current_font_size\": 17.0, \"minimum_font_size\": 18, \"width\": 883, \"height\": 22, \"target_max_characters\": 98}]}], \"previous_semantic_corrections\": []}, \"repair_contracts\": [{\"slide\": 2, \"fixed_bullets\": [{\"index\": 1, \"content\": {\"text\": \"The source team has not selected a route and has not estimated demand outside the listed stops.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f2\"}]}}], \"bullet_count\": 1, \"fixed_title\": null, \"purpose\": \"content\", \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": [], \"source_fact_ids\": [\"f2\"], \"groups\": null, \"target_characters_per_bullet\": 500}, {\"slide\": 3, \"fixed_bullets\": [{\"index\": 1, \"content\": {\"text\": \"The North Loop covers 18 kilometres and visits four stops.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f3\"}]}}, {\"index\": 2, \"content\": {\"text\": \"It needs 3.5 driver hours per service day.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f4\"}]}}, {\"index\": 3, \"content\": {\"text\": \"Its two rural stops have no indoor waiting area.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f5\"}]}}], \"bullet_count\": 3, \"fixed_title\": null, \"purpose\": \"content\", \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": [], \"source_fact_ids\": [\"f3\", \"f4\", \"f5\"], \"groups\": null, \"target_characters_per_bullet\": 166}, {\"slide\": 4, \"fixed_bullets\": [{\"index\": 1, \"content\": {\"text\": \"The Market Link covers 12 kilometres and visits five stops.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f6\"}]}}, {\"index\": 2, \"content\": {\"text\": \"It needs 4.0 driver hours because the central market stop has a scheduled 45-minute dwell.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f7\"}]}}, {\"index\": 3, \"content\": {\"text\": \"A school asked for a later arrival, but no change has been approved.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f8\"}]}}], \"bullet_count\": 3, \"fixed_title\": null, \"purpose\": \"content\", \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": [], \"source_fact_ids\": [\"f6\", \"f7\", \"f8\"], \"groups\": null, \"target_characters_per_bullet\": 166}, {\"slide\": 5, \"fixed_bullets\": [{\"index\": 1, \"content\": {\"text\": \"The Lakeside Spur covers 21 kilometres and visits three stops.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f9\"}]}}, {\"index\": 2, \"content\": {\"text\": \"It needs 3.0 driver hours.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f10\"}]}}, {\"index\": 3, \"content\": {\"text\": \"One bridge has a posted 7.5-tonne limit, and the source does not state the vehicle's loaded weight.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f11\"}]}}], \"bullet_count\": 3, \"fixed_title\": null, \"purpose\": \"content\", \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": [], \"source_fact_ids\": [\"f10\", \"f11\", \"f9\"], \"groups\": null, \"target_characters_per_bullet\": 166}, {\"slide\": 6, \"fixed_bullets\": [{\"index\": 1, \"content\": {\"text\": \"North Loop has the longest list of stops among the two rural options, Market Link has the most stops overall, and Lakeside Spur has the longest distance.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f12\"}]}}, {\"index\": 2, \"content\": {\"text\": \"These measures describe the route sheet only;\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f13\"}]}}, {\"index\": 3, \"content\": {\"text\": \"they do not establish which route serves more readers.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f14\"}]}}], \"bullet_count\": 3, \"fixed_title\": null, \"purpose\": \"content\", \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": [], \"source_fact_ids\": [\"f12\", \"f13\", \"f14\"], \"groups\": null, \"target_characters_per_bullet\": 166}, {\"slide\": 7, \"fixed_bullets\": [{\"index\": 1, \"content\": {\"text\": \"The trial coordinator will bring mileage, visit counts, and missed-stop reports to the 9 October 2027 review.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f15\"}]}}, {\"index\": 2, \"content\": {\"text\": \"No route cost or attendance forecast appears in this note.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f16\"}]}}], \"bullet_count\": 2, \"fixed_title\": null, \"purpose\": \"content\", \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": [], \"source_fact_ids\": [\"f15\", \"f16\"], \"groups\": null, \"target_characters_per_bullet\": 250}], \"numeric_evidence_hints\": [], \"instruction\": \"Return replacements ONLY for the allowed slides. Keep total count and order. Preserve every previously corrected qualification. Use fact_id citations only. Do not edit neighbours.\", \"validation_feedback\": \"Match the schema and preserve required ID coverage. No extra fields. Validation issue: Repair repeats an already rejected plan. Change the affected content or evidence to resolve revision_feedback; returning the same slide cannot fix it.\"}}"
+          }
+        ]
+      },
+      "status": 200,
+      "response": {
+        "choices": [
+          {
+            "message": {
+              "role": "assistant",
+              "content": "{\"replacements\": [{\"slide\": 2, \"content\": {\"title\": \"Decision context\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The source team has not selected a route and has not estimated demand outside the listed stops.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f2\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}}, {\"slide\": 3, \"content\": {\"title\": \"North Loop\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The North Loop covers 18 kilometres and visits four stops.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f3\"}]}, {\"text\": \"It needs 3.5 driver hours per service day.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f4\"}]}, {\"text\": \"Its two rural stops have no indoor waiting area.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f5\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}}, {\"slide\": 4, \"content\": {\"title\": \"Market Link\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The Market Link covers 12 kilometres and visits five stops.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f6\"}]}, {\"text\": \"It needs 4.0 driver hours because the central market stop has a scheduled 45-minute dwell.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f7\"}]}, {\"text\": \"A school asked for a later arrival, but no change has been approved.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f8\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}}, {\"slide\": 5, \"content\": {\"title\": \"Lakeside Spur\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The Lakeside Spur covers 21 kilometres and visits three stops.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f9\"}]}, {\"text\": \"It needs 3.0 driver hours.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f10\"}]}, {\"text\": \"One bridge has a posted 7.5-tonne limit, and the source does not state the vehicle's loaded weight.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f11\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}}, {\"slide\": 6, \"content\": {\"title\": \"Recorded comparison\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"North Loop has the longest list of stops among the two rural options, Market Link has the most stops overall, and Lakeside Spur has the longest distance.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f12\"}]}, {\"text\": \"These measures describe the route sheet only;\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f13\"}]}, {\"text\": \"they do not establish which route serves more readers.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f14\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}}, {\"slide\": 7, \"content\": {\"title\": \"Trial review\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The trial coordinator will bring mileage, visit counts, and missed-stop reports to the 9 October 2027 review.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f15\"}]}, {\"text\": \"No route cost or attendance forecast appears in this note.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f16\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}}]}"
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 100,
+          "completion_tokens": 50,
+          "total_tokens": 150
+        }
+      }
+    }
+  ],
+  "ineffective_editorial_repair_allowed": true,
+  "authoring_execution_status": "inconclusive",
+  "quality_oracle": false
+}

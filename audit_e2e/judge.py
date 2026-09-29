@@ -22,7 +22,7 @@ from .reporting import write_json
 MODEL = "gpt-6-luna"
 MODEL_REASONING_EFFORT = "max"
 SCHEMA_VERSION = 1
-PROMPT_VERSION = "presentation-judge-2026-09-29.4"
+PROMPT_VERSION = "presentation-judge-2026-09-29.5-organization"
 WORKER_SCHEMA_VERSION = "case-bound-opaque-ids-v3"
 MAX_PARALLEL_WORKERS = 3
 FINDING_CATEGORIES = (
