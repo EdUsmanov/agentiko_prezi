@@ -9,8 +9,9 @@ import pytest
 from playwright.sync_api import sync_playwright
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def browser():
+    # Release Playwright's loop before a separate E2E runner starts its own.
     with sync_playwright() as runner:
         browser = runner.chromium.launch()
         yield browser

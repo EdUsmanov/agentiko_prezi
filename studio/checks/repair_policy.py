@@ -32,12 +32,28 @@ def scene_repair_issues(
             if finding.element is not None and 0 <= finding.element < len(scene.elements)
             else None
         )
+        editable_text = (
+            element is not None
+            and element.kind == "text"
+            and (
+                element.role == "title"
+                or (element.source_ids and set(element.source_ids) <= editable_fact_ids)
+            )
+        )
+        # Shortening cannot make text readable if its box cannot hold even one
+        # line at the role's readability floor and the renderer's line spacing.
+        text_floor_cannot_fit = (
+            finding.code in {"text_overflow", "readability"}
+            and editable_text
+            and element.box.h < (18 if element.role == "title" else 16) * 1.25
+        )
         # A table's readability failure is a data-layout problem, even when
         # neighbouring prose is long. Never shorten data or labels to hide it.
         text_repair = (
             finding.code in {"text_overflow", "readability"}
             and element is not None
             and element.kind == "text"
+            and not text_floor_cannot_fit
             and (
                 element.role == "title"
                 or (element.source_ids and set(element.source_ids) <= editable_fact_ids)

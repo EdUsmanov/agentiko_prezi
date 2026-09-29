@@ -87,12 +87,13 @@ def compose(slide, package, index, variant):
     elements = []
     top_assets = [a for a in p.assets if a.box.y < h * 0.15]
     title_y = max([m] + [a.box.y + a.box.h + 12 for a in top_assets])
+    title_size = max(18, p.title_size)
     title_h = min(
         h * 0.23,
         max(
-            p.title_size * 1.3,
-            len(wrap_text(slide.title, role_font(p, "title")[1], p.title_size, w - 2 * m))
-            * p.title_size
+            title_size * 1.3,
+            len(wrap_text(slide.title, role_font(p, "title")[1], title_size, (w - 2 * m) * 0.94))
+            * title_size
             * 1.25,
         ),
     )

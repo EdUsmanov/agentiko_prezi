@@ -23,6 +23,8 @@ full replay results and detector gaps are recorded in
 [VALIDATION_DIVERSITY_2026-09-29.md](VALIDATION_DIVERSITY_2026-09-29.md).
 The subsequent main replay, PDF boundary fixes and manual computer-use browser
 checks are recorded in [VALIDATION_FOLLOWUP_2026-09-29.md](VALIDATION_FOLLOWUP_2026-09-29.md).
+The subsequent title-layout fixes, Sol review and repeated browser E2E recovered
+three more cases; see [VALIDATION_LAYOUT_FIX_2026-09-29.md](VALIDATION_LAYOUT_FIX_2026-09-29.md).
 
 ```bash
 python -m pytest -q audit_e2e/tests

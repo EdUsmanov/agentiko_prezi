@@ -2,7 +2,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from studio.models import Box, Element, Fact, Pattern, SlideScene
+from studio.models import Box, ContentModel, Element, Fact, Pattern, SlidePlan, SlideScene
 from studio.composition.design_balance import (
     improve_contrast,
     composition_family,
@@ -11,7 +11,7 @@ from studio.composition.design_balance import (
 )
 from studio.composition.chart_space import expand_chart_space
 from studio.composition.text_composer import text_element, fact_elements
-from studio.templates.fonts import wrap_text, element_font
+from studio.templates.fonts import wrap_text, element_font, role_font
 from studio.templates.parsing import analyze_template
 
 
@@ -57,6 +57,60 @@ def test_title_growth_is_measured_and_source_field_is_immutable(profile):
         size=24,
     )
     assert narrow.size < e.size and narrow.text == "Проверка результата обработки заявки"
+
+
+def test_token_title_box_reserves_the_readable_floor(template, tmp_path):
+    from studio.composition.composer import compose
+
+    profile = analyze_template(template, tmp_path / "profile")
+    profile.title_size = 17
+    profile.patterns = []
+    package = SimpleNamespace(
+        template=profile,
+        content=ContentModel(title="Decision context", facts=[]),
+        analysis={},
+        images=[],
+    )
+    slide = SlidePlan(title="Decision context", fact_ids=[], layout="columns")
+
+    scene = compose(slide, package, 0, "executive")
+    title = next(e for e in scene.elements if e.role == "title")
+
+    assert title.size == 18
+    assert title.box.h >= title.size * 1.25
+
+
+def test_token_title_box_measures_bold_width_at_wrap_boundary(profile):
+    from studio.composition.composer import compose
+
+    profile.width, profile.height, profile.margin = 720, 405, 30
+    profile.title_size = 17
+    profile.font_sizes = [17]
+    profile.patterns = []
+    title_text = ("A " * 40).strip()
+    font = role_font(profile, "title")[1]
+    width = profile.width - 2 * profile.margin
+    assert len(wrap_text(title_text, font, 18, width)) == 1
+    assert len(wrap_text(title_text, font, 18, width * 0.94)) == 2
+
+    package = SimpleNamespace(
+        template=profile,
+        content=ContentModel(title=title_text, facts=[]),
+        analysis={},
+        images=[],
+    )
+    scene = compose(
+        SlidePlan(title=title_text, fact_ids=[], layout="columns"), package, 0, "executive"
+    )
+    title = next(e for e in scene.elements if e.role == "title")
+
+    assert title.size >= 18
+    assert (
+        len(wrap_text(title.text, element_font(profile, title)[1], title.size, title.box.w * 0.94))
+        * title.size
+        * 1.25
+        <= title.box.h
+    )
 
 
 def test_body_contrast_uses_local_background_and_template_palette():

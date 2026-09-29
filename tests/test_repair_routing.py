@@ -145,6 +145,106 @@ def test_unknown_element_is_not_assumed_to_be_prose():
     assert feedback["fields"] == []
 
 
+@pytest.mark.parametrize(
+    ("role", "code", "height", "size", "source_ids", "editable_fact_ids"),
+    [("title", code, 22, 17, [], set()) for code in ("readability", "text_overflow")]
+    + [("body", code, 15, 15, ["f1"], {"f1"}) for code in ("readability", "text_overflow")],
+)
+def test_editable_text_that_cannot_fit_one_floor_line_routes_to_layout(
+    role, code, height, size, source_ids, editable_fact_ids
+):
+    scene_with_short_box = SlideScene(
+        title="Evidence",
+        background="#FFFFFF",
+        source_ids=["f1"],
+        layout="columns",
+        elements=[
+            Element(
+                kind="text",
+                box=Box(x=10, y=10, w=400, h=height),
+                text="Evidence",
+                role=role,
+                size=size,
+                source_ids=source_ids,
+            )
+        ],
+    )
+    feedback = scene_fit_feedback(
+        scene_with_short_box,
+        [Finding(code=code, message="Text does not fit", severity="warning", element=0)],
+        1,
+        editable_fact_ids=editable_fact_ids,
+    )
+    assert feedback["repair_issues"][0]["action"] == "adapt_layout"
+    assert feedback["fields"] == []
+
+
+def test_title_box_that_cannot_fit_readability_floor_stops_before_editorial_model(monkeypatch):
+    from studio.contents import narrative_layout as narrative
+
+    title_scene = SlideScene(
+        title="Evidence",
+        background="#FFFFFF",
+        source_ids=["f1"],
+        layout="columns",
+        elements=[
+            Element(
+                kind="text",
+                box=Box(x=10, y=10, w=400, h=22),
+                text="Evidence",
+                role="title",
+                size=17,
+            )
+        ],
+    )
+    finding = Finding(
+        code="readability",
+        message="Title is below its floor",
+        slide=1,
+        element=0,
+        severity="warning",
+    )
+    feedback = scene_fit_feedback(title_scene, [finding], 1, editable_fact_ids=set())
+    assert feedback["repair_issues"][0]["action"] == "adapt_layout"
+    assert feedback["fields"] == []
+
+    source = parse_content("Evidence.")
+    package = SimpleNamespace(
+        content=source,
+        original_content=None,
+        template=SimpleNamespace(patterns=[]),
+        constraints=Constraints(slides=1, count_mode="exact", include_cover=False, summarize=True),
+        analysis={},
+        control=PreparationControl(),
+    )
+    monkeypatch.setattr(
+        narrative,
+        "narrative_storyboard",
+        lambda p: setattr(
+            p.control, "slide_budget", SlideBudget(status="needs_input", fit_issues=[feedback])
+        ),
+    )
+
+    class Gateway:
+        settings = SimpleNamespace()
+
+        async def json_request(self, *args, **kwargs):
+            pytest.fail("A shorter title cannot make this box fit the 18pt line-height floor")
+
+    with pytest.raises(LayoutCapacityError) as caught:
+        asyncio.run(
+            prepare_with_targeted_repairs(
+                package,
+                Gateway(),
+                starting_plan={"slides": [claim("Evidence.")]},
+            )
+        )
+    assert caught.value.issues[0].action == "adapt_layout"
+    assert package.analysis["editorial_repair_diagnostics"]["stopped_reason"] == (
+        "layout_capacity_exhausted"
+    )
+
+
 def test_geometry_contract_preserves_fitting_neighbor_title_and_data():
     previous = EditorialPlan.model_validate(
         {
