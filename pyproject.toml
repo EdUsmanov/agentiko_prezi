@@ -24,14 +24,14 @@ presentation-studio = "studio.cli:main"
 include = ["studio*"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests", "audit_e2e/tests"]
 pythonpath = ["."]
 
 [tool.ruff]
 required-version = "==0.15.7"
 target-version = "py312"
 line-length = 100
-extend-exclude = ["studio/_vendor", "vendor", "data"]
+extend-exclude = ["studio/_vendor", "vendor", "data", "audit_e2e/results"]
 
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F"]

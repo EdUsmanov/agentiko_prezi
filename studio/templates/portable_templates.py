@@ -13,7 +13,6 @@ import re
 from zipfile import ZipFile
 from defusedxml import ElementTree as SafeET
 from defusedxml.common import DefusedXmlException
-from pptx.oxml.ns import qn
 
 from studio._vendor.portable_background_extractor.bgextract import (
     inspect_template_backgrounds,
@@ -28,39 +27,72 @@ from studio.composition.powerpoint import open_presentation
 from studio.security import digest, validate_pptx
 
 
-def _use_ole_previews(prs):
-    """Classify embedded OLE preview images as pictures, without opening OLE data."""
+P = "{http://schemas.openxmlformats.org/presentationml/2006/main}"
+A = "{http://schemas.openxmlformats.org/drawingml/2006/main}"
+R = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
+MC = "{http://schemas.openxmlformats.org/markup-compatibility/2006}"
+
+
+def _normalize_ole_previews(prs):
+    """Expose an OLE's static image to the usual picture classifier, without its payload."""
     changed = False
     for part in list(prs.part.package.iter_parts()):
         root = getattr(part, "_element", None)
-        if root is None:
+        tree = root.find(f".//{P}spTree") if root is not None else None
+        if tree is None:
             continue
-        for frame in list(root.iter(qn("p:graphicFrame"))):
-            preview = frame.find(f".//{qn('p:oleObj')}/{qn('p:pic')}")
-            if preview is None:
+        removed_rels = set()
+        for parent in list(tree.iter()):
+            if parent.tag not in {f"{P}spTree", f"{P}grpSp"}:
                 continue
-            blip = preview.find(f"{qn('p:blipFill')}/{qn('a:blip')}")
-            rel = part.rels.get(blip.get(qn("r:embed"), "")) if blip is not None else None
-            if rel is None or rel.is_external or not rel.reltype.endswith("/image"):
-                continue
-            picture = deepcopy(preview)
-            identity = picture.find(f"{qn('p:nvPicPr')}/{qn('p:cNvPr')}")
-            original = frame.find(f"{qn('p:nvGraphicFramePr')}/{qn('p:cNvPr')}")
-            if identity is None or original is None:
-                continue
-            identity.getparent().replace(identity, deepcopy(original))
-            transform = frame.find(qn("p:xfrm"))
-            props = picture.find(qn("p:spPr"))
-            if transform is None or props is None:
-                continue
-            current = props.find(qn("a:xfrm"))
-            if current is not None:
-                props.remove(current)
-            transform = deepcopy(transform)
-            transform.tag = qn("a:xfrm")
-            props.insert(0, transform)
-            frame.getparent().replace(frame, picture)
-            changed = True
+            for child in list(parent):
+                frame = child if child.tag == f"{P}graphicFrame" else None
+                if child.tag == f"{MC}AlternateContent":
+                    frame = child.find(f"{MC}Choice/{P}graphicFrame")
+                    if frame is None:
+                        frame = child.find(f"{MC}Fallback/{P}graphicFrame")
+                if frame is None:
+                    continue
+                ole = frame.find(f".//{P}oleObj")
+                preview = ole.find(f".//{P}pic") if ole is not None else None
+                if preview is None and child.tag == f"{MC}AlternateContent":
+                    preview = child.find(f"{MC}Fallback/{P}pic")
+                transform = frame.find(f"{P}xfrm")
+                identity = frame.find(f"{P}nvGraphicFramePr/{P}cNvPr")
+                blip = preview.find(f".//{A}blip") if preview is not None else None
+                if (
+                    preview is None
+                    or blip is None
+                    or not blip.get(f"{R}embed")
+                    or ole is None
+                    or transform is None
+                    or identity is None
+                ):
+                    continue
+                rel = part.rels.get(blip.get(f"{R}embed", ""))
+                if rel is None or rel.is_external or not rel.reltype.endswith("/image"):
+                    continue
+                picture = deepcopy(preview)
+                pic_identity = picture.find(f"{P}nvPicPr/{P}cNvPr")
+                properties = picture.find(f"{P}spPr")
+                if pic_identity is None or properties is None:
+                    continue
+                pic_identity.attrib.clear()
+                pic_identity.attrib.update(identity.attrib)
+                picture_transform = deepcopy(transform)
+                picture_transform.tag = f"{A}xfrm"
+                old_transform = properties.find(f"{A}xfrm")
+                if old_transform is not None:
+                    properties.replace(old_transform, picture_transform)
+                else:
+                    properties.insert(0, picture_transform)
+                parent.replace(child, picture)
+                if ole.get(f"{R}id"):
+                    removed_rels.add(ole.get(f"{R}id"))
+                changed = True
+        for rid in removed_rels:
+            if rid in part.rels and not any(node.get(f"{R}id") == rid for node in root.iter()):
+                part.drop_rel(rid)
     return changed
 
 
@@ -68,7 +100,7 @@ def template_reference(source):
     """Normalize OLE previews and add an exemplar for layout-only POTX files."""
     raw = Path(source).read_bytes()
     prs = open_presentation(BytesIO(raw))
-    changed = _use_ole_previews(prs)
+    changed = _normalize_ole_previews(prs)
     if not len(prs.slides):
         # POTX may contain only authored layouts. A temporary exemplar lets the
         # extractor inspect its inheritance; it is never added to the user file.
@@ -153,7 +185,7 @@ def clean_editable_source(prs, patterns):
     apply its decisions directly to native XML so group transforms and object
     identities remain stable. Authored contract fields are protected explicitly.
     """
-    _use_ole_previews(prs)
+    _normalize_ole_previews(prs)
     stream = BytesIO()
     prs.save(stream)
     raw = stream.getvalue()

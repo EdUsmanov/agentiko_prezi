@@ -15,6 +15,7 @@ htmlcov
 node_modules
 data
 test-results
+audit_e2e/results
 build
 dist
 *.egg-info

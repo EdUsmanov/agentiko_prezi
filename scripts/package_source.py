@@ -16,6 +16,7 @@ DIRECTORIES = {
     "vendor",
     "test_support",
     "e2e",
+    "audit_e2e",
 }
 ROOT_FILES = {
     "LICENSE",
@@ -45,6 +46,8 @@ def main():
             candidates.extend(folder.rglob("*"))
     for path in candidates:
         relative = path.relative_to(ROOT)
+        if path.is_relative_to(ROOT / "audit_e2e" / "results"):
+            continue
         if not path.is_file() or path.is_symlink() or "__pycache__" in relative.parts:
             continue
         if len(relative.parts) == 1:
