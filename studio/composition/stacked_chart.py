@@ -12,6 +12,31 @@ def value_suffix(e):
     return suffix if suffix == "%" else " " + suffix if suffix else ""
 
 
+def legend_layout(names, font, size, width):
+    """Pack measured legend entries in rows without dropping totals or labels."""
+    best = None
+    for columns in range(1, min(4, len(names)) + 1):
+        cell_width = width / columns
+        lines = [wrap_text(name, font, size, max(1, cell_width - 20)) for name in names]
+        if columns > 1 and any(
+            text_width(word, font, size) > cell_width - 20
+            for name in names
+            for word in name.split()
+        ):
+            continue
+        cells, y = [], 0
+        for start in range(0, len(names), columns):
+            row = lines[start : start + columns]
+            height = max(max(1, len(entry)) * size * 1.25 for entry in row)
+            cells.extend(
+                dict(x=col * cell_width, y=y, w=cell_width, h=height) for col in range(len(row))
+            )
+            y += height + 3
+        if best is None or y < best[2]:
+            best = lines, cells, y
+    return best
+
+
 def stacked_layout(e, profile):
     font = element_font(profile, e)[1]
     series = e.series_values or [e.values]
@@ -26,8 +51,7 @@ def stacked_layout(e, profile):
     legend_size = min(14, e.size)
     if totals or len(names) > 2:
         legend_size = min(12, legend_size)
-    legend_lines = [wrap_text(name, font, legend_size, max(1, e.box.w - 20)) for name in legend]
-    legend_h = sum(max(1, len(lines)) * legend_size * 1.25 + 3 for lines in legend_lines)
+    legend_lines, legend_cells, legend_h = legend_layout(legend, font, legend_size, e.box.w)
     positive = [sum(max(0, s[i]) for s in series) for i in range(len(e.labels))]
     negative = [sum(min(0, s[i]) for s in series) for i in range(len(e.labels))]
 
@@ -42,6 +66,9 @@ def stacked_layout(e, profile):
     left = max(text_width(f"{v:g}", font, 16) for v in (minimum, maximum)) + 16
     width = e.box.w - left - 8
     band = width / max(1, len(e.labels))
+    heading = wrap_text(e.category_title, font, 14, max(1, e.box.w)) if e.category_title else []
+    heading_h = len(heading) * 17.5 + (6 if heading else 0)
+    top = 10
     label_size = min(16, e.size)
     for size in (label_size, min(14, label_size), min(12, label_size)):
         label_size = size
@@ -50,16 +77,13 @@ def stacked_layout(e, profile):
         labels = [
             wrap_category(label, font, size, max(1, band - 2)).splitlines() for label in e.labels
         ]
-        if all(
+        label_h = max((len(lines) for lines in labels), default=1) * label_size * 1.25 + 6
+        height = e.box.h - top - label_h - heading_h - legend_h - 8
+        if height >= max(110, len(series) * 20) and all(
             text_width(word, font, size) <= band - 2 for label in e.labels for word in label.split()
         ):
             label_size = size
             break
-    label_h = max((len(lines) for lines in labels), default=1) * label_size * 1.25 + 6
-    heading = wrap_text(e.category_title, font, 14, max(1, e.box.w)) if e.category_title else []
-    heading_h = len(heading) * 17.5 + (6 if heading else 0)
-    top = 10
-    height = e.box.h - top - label_h - heading_h - legend_h - 8
     values_fit = True
     if height >= max(110, len(series) * 20):
         for col in range(len(e.labels)):
@@ -102,6 +126,7 @@ def stacked_layout(e, profile):
         heading=heading,
         heading_h=heading_h,
         legend=legend_lines,
+        legend_cells=legend_cells,
         legend_size=legend_size,
         legend_h=legend_h,
         minimum=minimum,
@@ -263,13 +288,13 @@ def render_stacked_chart(slide, e, profile):
         )
         y += layout["heading_h"]
     for i, lines in enumerate(layout["legend"]):
-        h = max(1, len(lines)) * layout["legend_size"] * 1.25
-        swatch = shapes.add_shape(MSO_SHAPE.RECTANGLE, Pt(b.x + 2), Pt(y + 3), Pt(9), Pt(9))
+        cell = layout["legend_cells"][i]
+        x, ly = b.x + cell["x"], y + cell["y"]
+        swatch = shapes.add_shape(MSO_SHAPE.RECTANGLE, Pt(x + 2), Pt(ly + 3), Pt(9), Pt(9))
         swatch.fill.solid()
         swatch.fill.fore_color.rgb = rgb(palette[i % len(palette)])
         swatch.line.fill.background()
-        text("\n".join(lines), b.x + 18, y, b.w - 18, h, layout["legend_size"])
-        y += h + 3
+        text("\n".join(lines), x + 18, ly, cell["w"] - 18, cell["h"], layout["legend_size"])
     for col in range(len(e.labels)):
         values = [s[col] for s in series]
         ideal, positions = value_label_positions(
