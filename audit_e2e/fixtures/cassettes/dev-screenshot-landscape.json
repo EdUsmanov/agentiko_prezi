@@ -1,0 +1,2479 @@
+{
+  "schema_version": 1,
+  "fixture_revision": 1,
+  "provenance": "Explicitly authored synthetic model replies at the real HTTP boundary. Not a provider recording or a quality oracle. Independent reference ledger is authored separately.",
+  "image_matching": "dimensions",
+  "exchanges": [
+    {
+      "request": {
+        "parameters": {
+          "model": "fixture-27b",
+          "temperature": 0.25,
+          "max_tokens": 8192,
+          "response_format": {
+            "type": "json_schema",
+            "json_schema": {
+              "name": "template_analyst",
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "pattern_id": {
+                    "type": "string",
+                    "enum": [
+                      "native-slide-1"
+                    ]
+                  },
+                  "roles": {
+                    "items": {
+                      "enum": [
+                        "context",
+                        "insight",
+                        "evidence",
+                        "action",
+                        "appendix"
+                      ],
+                      "type": "string"
+                    },
+                    "maxItems": 5,
+                    "minItems": 1,
+                    "title": "Roles",
+                    "type": "array"
+                  },
+                  "density": {
+                    "enum": [
+                      "low",
+                      "medium",
+                      "high"
+                    ],
+                    "title": "Density",
+                    "type": "string"
+                  },
+                  "purpose": {
+                    "anyOf": [
+                      {
+                        "enum": [
+                          "cover",
+                          "speaker",
+                          "agenda",
+                          "divider",
+                          "context",
+                          "problem",
+                          "solution",
+                          "claim_evidence",
+                          "comparison",
+                          "process",
+                          "timeline",
+                          "metrics",
+                          "trend",
+                          "composition",
+                          "structure",
+                          "recommendations",
+                          "summary",
+                          "closing",
+                          "content"
+                        ],
+                        "type": "string"
+                      },
+                      {
+                        "enum": [
+                          "unknown",
+                          "service",
+                          "reference"
+                        ],
+                        "type": "string"
+                      }
+                    ],
+                    "default": "unknown",
+                    "title": "Purpose"
+                  },
+                  "reusable": {
+                    "default": true,
+                    "title": "Reusable",
+                    "type": "boolean"
+                  },
+                  "body_order": {
+                    "items": {
+                      "type": "integer"
+                    },
+                    "maxItems": 12,
+                    "title": "Body Order",
+                    "type": "array"
+                  },
+                  "graphic_flow_confirmed": {
+                    "default": false,
+                    "title": "Graphic Flow Confirmed",
+                    "type": "boolean"
+                  },
+                  "graphic_kind": {
+                    "default": "none",
+                    "enum": [
+                      "none",
+                      "cards",
+                      "sequence",
+                      "comparison",
+                      "hierarchy",
+                      "radial",
+                      "pyramid",
+                      "matrix"
+                    ],
+                    "title": "Graphic Kind",
+                    "type": "string"
+                  },
+                  "graphic_shape_ids": {
+                    "items": {
+                      "type": "integer"
+                    },
+                    "maxItems": 160,
+                    "title": "Graphic Shape Ids",
+                    "type": "array"
+                  },
+                  "graphic_edges": {
+                    "items": {
+                      "maxItems": 2,
+                      "minItems": 2,
+                      "prefixItems": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "integer"
+                        }
+                      ],
+                      "type": "array"
+                    },
+                    "maxItems": 160,
+                    "title": "Graphic Edges",
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "pattern_id",
+                  "roles",
+                  "density"
+                ],
+                "title": "PatternMeaning",
+                "type": "object"
+              },
+              "strict": true
+            }
+          }
+        },
+        "messages": [
+          {
+            "role": "system",
+            "content": {
+              "sha256": "7d99ccb405864127e61589b293df049ce1dca378fab3aea5ad33b84afb6da482"
+            }
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "{\"untrusted_input\": {\"patterns\": [{\"id\": \"native-slide-1\", \"source_slide\": 1, \"source_layout\": \"Blank\", \"title_zone\": {\"x\": 57.6, \"y\": 100.8, \"w\": 844.7759842519685, \"h\": 39.60000000000001}, \"body_zones\": [], \"technical_role\": \"divider\", \"colors\": {\"scheme_id\": \"rendered-scheme-1\", \"title\": {\"background\": \"#FFFFFF\", \"text\": \"#2868A0\"}, \"body\": []}, \"graphic_candidates\": [{\"id\": 2, \"geometry\": \"rect\", \"box\": [50.4, 97.2, 859.2, 43.2]}, {\"id\": 3, \"geometry\": \"roundRect\", \"box\": [131.0, 118.8, 697.7, 392.4]}], \"body_fields\": [], \"source_sample\": \"SAMPLE ONLY • NOT SOURCE DATA\\nSAMPLE SCREENSHOT VIEWPORT\\n16:9 CONTENT AREA\"}], \"canvas\": {\"width\": 959.9759842519685, \"height\": 540.0}, \"image_order\": [1], \"archetype_catalog\": {\"version\": 1, \"archetypes\": [{\"id\": \"cover\", \"name\": \"Титульный\", \"description\": \"Представляет основную тему всей презентации, а не отдельной главы.\", \"required_slots\": {\"topic\": 1}}, {\"id\": \"speaker\", \"name\": \"Представление спикера\", \"description\": \"Представляет конкретного выступающего и его связь с темой. Имя обязательно, фото и биография — только если предоставлены.\", \"required_slots\": {\"person\": 1}}, {\"id\": \"agenda\", \"name\": \"План выступления\", \"description\": \"Перечисляет вопросы или разделы, которые будут раскрыты далее; не описывает бизнес-процесс.\", \"required_slots\": {\"topic\": 2}}, {\"id\": \"divider\", \"name\": \"Разделитель\", \"description\": \"Обозначает начало следующей смысловой главы, за которой следует её содержание.\", \"required_slots\": {\"topic\": 1}}, {\"id\": \"context\", \"name\": \"Контекст\", \"description\": \"Объясняет объект, исходную ситуацию или границы рассмотрения, необходимые для понимания дальнейших тезисов.\", \"required_slots\": {\"topic\": 1}}, {\"id\": \"problem\", \"name\": \"Проблема\", \"description\": \"Показывает описанное в источнике препятствие или нежелательное состояние. Нельзя объявлять нейтральный факт проблемой без основания.\", \"required_slots\": {\"problem\": 1}}, {\"id\": \"solution\", \"name\": \"Решение\", \"description\": \"Объясняет конкретное предложение для решения задачи. Не выдаёт предложение или ожидаемый эффект за полученный результат.\", \"required_slots\": {\"solution\": 1}}, {\"id\": \"claim_evidence\", \"name\": \"Тезис и обоснование\", \"description\": \"Связывает главный вывод с подтверждающими его фактами, наблюдениями или данными. Причинная связь не придумывается.\", \"required_slots\": {\"claim\": 1, \"evidence\": 1}}, {\"id\": \"comparison\", \"name\": \"Сравнение\", \"description\": \"Сопоставляет не менее двух объектов по общему критерию. Два независимых текстовых блока не являются сравнением.\", \"required_slots\": {\"entity\": 2, \"criterion\": 1}}, {\"id\": \"process\", \"name\": \"Процесс\", \"description\": \"Объясняет два и более связанных действия в заданной последовательности. Не любой нумерованный список является процессом.\", \"required_slots\": {\"step\": 2}}, {\"id\": \"timeline\", \"name\": \"Хронология\", \"description\": \"Располагает события относительно явно заданных дат или временных интервалов. Без временных привязок выбирайте другой тип.\", \"required_slots\": {\"event\": 2, \"date\": 2}}, {\"id\": \"metrics\", \"name\": \"Ключевые показатели\", \"description\": \"Показывает измеримые характеристики с названиями и исходными значениями; единицы и периоды нельзя выдумывать.\", \"required_slots\": {\"metric\": 1, \"value\": 1}}, {\"id\": \"trend\", \"name\": \"Динамика\", \"description\": \"Показывает изменение сопоставимой величины во времени. Отсутствующие значения и причины изменений не достраиваются.\", \"required_slots\": {\"metric\": 1, \"date\": 2, \"value\": 2}}, {\"id\": \"composition\", \"name\": \"Состав целого\", \"description\": \"Показывает целое и его части. Круговая диаграмма требует дополнительных численных оснований: не любые категории являются долями.\", \"required_slots\": {\"whole\": 1, \"part\": 2}}, {\"id\": \"structure\", \"name\": \"Устройство и связи\", \"description\": \"Объясняет компоненты системы и явно заданные связи или иерархию. Список компонентов сам по себе не задаёт архитектуру.\", \"required_slots\": {\"component\": 2, \"relationship\": 1}}, {\"id\": \"recommendations\", \"name\": \"Рекомендации\", \"description\": \"Формулирует указанные в источнике действия. Ответственные, сроки и обязательства не добавляются самостоятельно.\", \"required_slots\": {\"action\": 1}}, {\"id\": \"summary\", \"name\": \"Итоги\", \"description\": \"Собирает подтверждённые ключевые выводы материала. Не вводит новые факты и не равно формальному завершению.\", \"required_slots\": {\"takeaway\": 1}}, {\"id\": \"closing\", \"name\": \"Завершение\", \"description\": \"Завершает выступление, приглашает к обсуждению или показывает предоставленные контакты. Не копирует старые контакты из шаблона.\", \"required_slots\": {\"message\": 1}}, {\"id\": \"content\", \"name\": \"Раскрытие темы\", \"description\": \"Связанный содержательный блок без подтверждённого более специфического назначения. Не принудительный тип всех обычных слайдов.\", \"required_slots\": {}}], \"appendix\": \"Положение в повествовании, не геометрия: сохраняйте внутренний архетип.\"}}}"
+              },
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": {
+                    "width": 960,
+                    "height": 540
+                  },
+                  "detail": "high"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "response": {
+        "choices": [
+          {
+            "message": {
+              "role": "assistant",
+              "content": "{\"patterns\": [{\"pattern_id\": \"native-slide-1\", \"roles\": [\"context\", \"insight\"], \"density\": \"medium\", \"purpose\": \"divider\", \"reusable\": true}]}"
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 100,
+          "completion_tokens": 50,
+          "total_tokens": 150
+        }
+      }
+    },
+    {
+      "request": {
+        "parameters": {
+          "model": "fixture-27b",
+          "temperature": 0.25,
+          "max_tokens": 4096,
+          "response_format": {
+            "type": "json_schema",
+            "json_schema": {
+              "name": "template_analyst",
+              "schema": {
+                "$defs": {
+                  "PatternMeaning": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "pattern_id": {
+                        "type": "string",
+                        "enum": [
+                          "native-layout-0-0",
+                          "native-layout-0-2"
+                        ]
+                      },
+                      "roles": {
+                        "items": {
+                          "enum": [
+                            "context",
+                            "insight",
+                            "evidence",
+                            "action",
+                            "appendix"
+                          ],
+                          "type": "string"
+                        },
+                        "maxItems": 5,
+                        "minItems": 1,
+                        "title": "Roles",
+                        "type": "array"
+                      },
+                      "density": {
+                        "enum": [
+                          "low",
+                          "medium",
+                          "high"
+                        ],
+                        "title": "Density",
+                        "type": "string"
+                      },
+                      "purpose": {
+                        "anyOf": [
+                          {
+                            "enum": [
+                              "cover",
+                              "speaker",
+                              "agenda",
+                              "divider",
+                              "context",
+                              "problem",
+                              "solution",
+                              "claim_evidence",
+                              "comparison",
+                              "process",
+                              "timeline",
+                              "metrics",
+                              "trend",
+                              "composition",
+                              "structure",
+                              "recommendations",
+                              "summary",
+                              "closing",
+                              "content"
+                            ],
+                            "type": "string"
+                          },
+                          {
+                            "enum": [
+                              "unknown",
+                              "service",
+                              "reference"
+                            ],
+                            "type": "string"
+                          }
+                        ],
+                        "default": "unknown",
+                        "title": "Purpose"
+                      },
+                      "reusable": {
+                        "default": true,
+                        "title": "Reusable",
+                        "type": "boolean"
+                      },
+                      "body_order": {
+                        "items": {
+                          "type": "integer"
+                        },
+                        "maxItems": 12,
+                        "title": "Body Order",
+                        "type": "array"
+                      },
+                      "graphic_flow_confirmed": {
+                        "default": false,
+                        "title": "Graphic Flow Confirmed",
+                        "type": "boolean"
+                      },
+                      "graphic_kind": {
+                        "default": "none",
+                        "enum": [
+                          "none",
+                          "cards",
+                          "sequence",
+                          "comparison",
+                          "hierarchy",
+                          "radial",
+                          "pyramid",
+                          "matrix"
+                        ],
+                        "title": "Graphic Kind",
+                        "type": "string"
+                      },
+                      "graphic_shape_ids": {
+                        "items": {
+                          "type": "integer"
+                        },
+                        "maxItems": 160,
+                        "title": "Graphic Shape Ids",
+                        "type": "array"
+                      },
+                      "graphic_edges": {
+                        "items": {
+                          "maxItems": 2,
+                          "minItems": 2,
+                          "prefixItems": [
+                            {
+                              "type": "integer"
+                            },
+                            {
+                              "type": "integer"
+                            }
+                          ],
+                          "type": "array"
+                        },
+                        "maxItems": 160,
+                        "title": "Graphic Edges",
+                        "type": "array"
+                      }
+                    },
+                    "required": [
+                      "pattern_id",
+                      "roles",
+                      "density"
+                    ],
+                    "title": "PatternMeaning",
+                    "type": "object"
+                  }
+                },
+                "additionalProperties": false,
+                "properties": {
+                  "patterns": {
+                    "items": {
+                      "$ref": "#/$defs/PatternMeaning"
+                    },
+                    "maxItems": 2,
+                    "title": "Patterns",
+                    "type": "array",
+                    "minItems": 2
+                  }
+                },
+                "required": [
+                  "patterns"
+                ],
+                "title": "TemplateMeaning",
+                "type": "object"
+              },
+              "strict": true
+            }
+          }
+        },
+        "messages": [
+          {
+            "role": "system",
+            "content": {
+              "sha256": "1d09bccca9bfa9551e698a45d5cc497b445464e9cb542a2ce8f110fa617c9973"
+            }
+          },
+          {
+            "role": "user",
+            "content": "{\"untrusted_input\": {\"patterns\": [{\"id\": \"native-layout-0-0\", \"source_slide\": 0, \"source_layout\": \"Title Slide\", \"title_zone\": {\"x\": 61.2, \"y\": 171.35, \"w\": 597.5999999999999, \"h\": 112.15}, \"body_zones\": [{\"x\": 115.2, \"y\": 309.6, \"w\": 489.6, \"h\": 130.8}], \"technical_role\": \"cover\", \"colors\": {\"scheme_id\": \"\", \"title\": {\"background\": \"#F1F6FA\", \"text\": \"#000000\"}, \"body\": [{\"background\": \"#F1F6FA\", \"text\": \"#000000\"}]}, \"graphic_candidates\": [], \"body_fields\": [{\"shape_id\": 3, \"index\": 0, \"box\": {\"x\": 115.2, \"y\": 309.6, \"w\": 489.6, \"h\": 130.8}}], \"source_sample\": \"\"}, {\"id\": \"native-layout-0-2\", \"source_slide\": 0, \"source_layout\": \"Section Header\", \"title_zone\": {\"x\": 39.6, \"y\": 28.8, \"w\": 597.5999999999999, \"h\": 55.44}, \"body_zones\": [], \"technical_role\": \"divider\", \"colors\": {\"scheme_id\": \"\", \"title\": {\"background\": \"#F1F6FA\", \"text\": \"#2868A0\"}, \"body\": []}, \"graphic_candidates\": [], \"body_fields\": [], \"source_sample\": \"\"}], \"canvas\": {\"width\": 959.9759842519685, \"height\": 540.0}, \"image_order\": [], \"archetype_catalog\": {\"version\": 1, \"archetypes\": [{\"id\": \"cover\", \"name\": \"Титульный\", \"description\": \"Представляет основную тему всей презентации, а не отдельной главы.\", \"required_slots\": {\"topic\": 1}}, {\"id\": \"speaker\", \"name\": \"Представление спикера\", \"description\": \"Представляет конкретного выступающего и его связь с темой. Имя обязательно, фото и биография — только если предоставлены.\", \"required_slots\": {\"person\": 1}}, {\"id\": \"agenda\", \"name\": \"План выступления\", \"description\": \"Перечисляет вопросы или разделы, которые будут раскрыты далее; не описывает бизнес-процесс.\", \"required_slots\": {\"topic\": 2}}, {\"id\": \"divider\", \"name\": \"Разделитель\", \"description\": \"Обозначает начало следующей смысловой главы, за которой следует её содержание.\", \"required_slots\": {\"topic\": 1}}, {\"id\": \"context\", \"name\": \"Контекст\", \"description\": \"Объясняет объект, исходную ситуацию или границы рассмотрения, необходимые для понимания дальнейших тезисов.\", \"required_slots\": {\"topic\": 1}}, {\"id\": \"problem\", \"name\": \"Проблема\", \"description\": \"Показывает описанное в источнике препятствие или нежелательное состояние. Нельзя объявлять нейтральный факт проблемой без основания.\", \"required_slots\": {\"problem\": 1}}, {\"id\": \"solution\", \"name\": \"Решение\", \"description\": \"Объясняет конкретное предложение для решения задачи. Не выдаёт предложение или ожидаемый эффект за полученный результат.\", \"required_slots\": {\"solution\": 1}}, {\"id\": \"claim_evidence\", \"name\": \"Тезис и обоснование\", \"description\": \"Связывает главный вывод с подтверждающими его фактами, наблюдениями или данными. Причинная связь не придумывается.\", \"required_slots\": {\"claim\": 1, \"evidence\": 1}}, {\"id\": \"comparison\", \"name\": \"Сравнение\", \"description\": \"Сопоставляет не менее двух объектов по общему критерию. Два независимых текстовых блока не являются сравнением.\", \"required_slots\": {\"entity\": 2, \"criterion\": 1}}, {\"id\": \"process\", \"name\": \"Процесс\", \"description\": \"Объясняет два и более связанных действия в заданной последовательности. Не любой нумерованный список является процессом.\", \"required_slots\": {\"step\": 2}}, {\"id\": \"timeline\", \"name\": \"Хронология\", \"description\": \"Располагает события относительно явно заданных дат или временных интервалов. Без временных привязок выбирайте другой тип.\", \"required_slots\": {\"event\": 2, \"date\": 2}}, {\"id\": \"metrics\", \"name\": \"Ключевые показатели\", \"description\": \"Показывает измеримые характеристики с названиями и исходными значениями; единицы и периоды нельзя выдумывать.\", \"required_slots\": {\"metric\": 1, \"value\": 1}}, {\"id\": \"trend\", \"name\": \"Динамика\", \"description\": \"Показывает изменение сопоставимой величины во времени. Отсутствующие значения и причины изменений не достраиваются.\", \"required_slots\": {\"metric\": 1, \"date\": 2, \"value\": 2}}, {\"id\": \"composition\", \"name\": \"Состав целого\", \"description\": \"Показывает целое и его части. Круговая диаграмма требует дополнительных численных оснований: не любые категории являются долями.\", \"required_slots\": {\"whole\": 1, \"part\": 2}}, {\"id\": \"structure\", \"name\": \"Устройство и связи\", \"description\": \"Объясняет компоненты системы и явно заданные связи или иерархию. Список компонентов сам по себе не задаёт архитектуру.\", \"required_slots\": {\"component\": 2, \"relationship\": 1}}, {\"id\": \"recommendations\", \"name\": \"Рекомендации\", \"description\": \"Формулирует указанные в источнике действия. Ответственные, сроки и обязательства не добавляются самостоятельно.\", \"required_slots\": {\"action\": 1}}, {\"id\": \"summary\", \"name\": \"Итоги\", \"description\": \"Собирает подтверждённые ключевые выводы материала. Не вводит новые факты и не равно формальному завершению.\", \"required_slots\": {\"takeaway\": 1}}, {\"id\": \"closing\", \"name\": \"Завершение\", \"description\": \"Завершает выступление, приглашает к обсуждению или показывает предоставленные контакты. Не копирует старые контакты из шаблона.\", \"required_slots\": {\"message\": 1}}, {\"id\": \"content\", \"name\": \"Раскрытие темы\", \"description\": \"Связанный содержательный блок без подтверждённого более специфического назначения. Не принудительный тип всех обычных слайдов.\", \"required_slots\": {}}], \"appendix\": \"Положение в повествовании, не геометрия: сохраняйте внутренний архетип.\"}}}"
+          }
+        ]
+      },
+      "status": 200,
+      "response": {
+        "choices": [
+          {
+            "message": {
+              "role": "assistant",
+              "content": "{\"patterns\": [{\"pattern_id\": \"native-layout-0-0\", \"roles\": [\"context\", \"insight\"], \"density\": \"medium\", \"purpose\": \"cover\", \"reusable\": true}, {\"pattern_id\": \"native-layout-0-2\", \"roles\": [\"context\", \"insight\"], \"density\": \"medium\", \"purpose\": \"divider\", \"reusable\": true}]}"
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 100,
+          "completion_tokens": 50,
+          "total_tokens": 150
+        }
+      }
+    },
+    {
+      "request": {
+        "parameters": {
+          "model": "fixture-27b",
+          "temperature": 0.25,
+          "max_tokens": 1400,
+          "response_format": {
+            "type": "json_schema",
+            "json_schema": {
+              "name": "text_zone",
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "cells": {
+                    "items": {
+                      "pattern": "^[A-H][1-8]$",
+                      "type": "string"
+                    },
+                    "maxItems": 64,
+                    "title": "Cells",
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "cells"
+                ],
+                "title": "GridCells",
+                "type": "object"
+              },
+              "strict": true
+            }
+          },
+          "chat_template_kwargs": {
+            "enable_thinking": false
+          }
+        },
+        "messages": [
+          {
+            "role": "system",
+            "content": {
+              "sha256": "573627509eaeb738c48070534350441166b4ba1e665178544fe360756fc7580e"
+            }
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "{\"untrusted_input\": {\"variant\": \"base\", \"task\": \"This full slide background has a yellow 8x8 grid. List cells touched by slide artwork, logo, icons, patterns, photos or decorative shapes. Ignore the grid and outside labels. Plain color and smooth gradients are empty. Answer cell IDs A1-H8 only, comma separated. No explanation.\"}}"
+              },
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": {
+                    "width": 1004,
+                    "height": 576
+                  },
+                  "detail": "high"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "response": {
+        "choices": [
+          {
+            "message": {
+              "role": "assistant",
+              "content": "{\"cells\": []}"
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 100,
+          "completion_tokens": 50,
+          "total_tokens": 150
+        }
+      }
+    },
+    {
+      "request": {
+        "parameters": {
+          "model": "fixture-27b",
+          "temperature": 0.25,
+          "max_tokens": 1400,
+          "response_format": {
+            "type": "json_schema",
+            "json_schema": {
+              "name": "text_zone",
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "cells": {
+                    "items": {
+                      "pattern": "^[A-H][1-8]$",
+                      "type": "string"
+                    },
+                    "maxItems": 64,
+                    "title": "Cells",
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "cells"
+                ],
+                "title": "GridCells",
+                "type": "object"
+              },
+              "strict": true
+            }
+          },
+          "chat_template_kwargs": {
+            "enable_thinking": false
+          }
+        },
+        "messages": [
+          {
+            "role": "system",
+            "content": {
+              "sha256": "573627509eaeb738c48070534350441166b4ba1e665178544fe360756fc7580e"
+            }
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "{\"untrusted_input\": {\"variant\": \"strict\", \"task\": \"This full slide background has a yellow 8x8 grid. Return all grid cells that are NOT completely clear for text. Include a cell if even a small piece of a logo, picture, pattern, stripe, decoration, line art, or sharp color boundary touches it. Ignore the yellow grid and labels. Smooth gradient and solid fill are clear. Output only comma-separated IDs A1-H8. No explanation.\"}}"
+              },
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": {
+                    "width": 1004,
+                    "height": 576
+                  },
+                  "detail": "high"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "response": {
+        "choices": [
+          {
+            "message": {
+              "role": "assistant",
+              "content": "{\"cells\": []}"
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 100,
+          "completion_tokens": 50,
+          "total_tokens": 150
+        }
+      }
+    },
+    {
+      "request": {
+        "parameters": {
+          "model": "fixture-27b",
+          "temperature": 0.25,
+          "max_tokens": 10000,
+          "response_format": {
+            "type": "json_schema",
+            "json_schema": {
+              "name": "editorial",
+              "schema": {
+                "$defs": {
+                  "Citation": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "fact_id": {
+                        "title": "Fact Id",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "fact_id"
+                    ],
+                    "title": "Citation",
+                    "type": "object"
+                  },
+                  "Claim": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "text": {
+                        "maxLength": 300,
+                        "minLength": 1,
+                        "title": "Text",
+                        "type": "string"
+                      },
+                      "group": {
+                        "default": "",
+                        "maxLength": 80,
+                        "title": "Group",
+                        "type": "string"
+                      },
+                      "parent_group": {
+                        "anyOf": [
+                          {
+                            "maxLength": 80,
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "default": null,
+                        "title": "Parent Group"
+                      },
+                      "evidence": {
+                        "items": {
+                          "$ref": "#/$defs/Citation"
+                        },
+                        "maxItems": 12,
+                        "minItems": 1,
+                        "title": "Evidence",
+                        "type": "array"
+                      }
+                    },
+                    "required": [
+                      "text",
+                      "evidence"
+                    ],
+                    "title": "Claim",
+                    "type": "object"
+                  },
+                  "DataRow": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "fact_id": {
+                        "title": "Fact Id",
+                        "type": "string"
+                      },
+                      "label": {
+                        "maxLength": 200,
+                        "minLength": 1,
+                        "title": "Label",
+                        "type": "string"
+                      },
+                      "value": {
+                        "maxLength": 100,
+                        "minLength": 1,
+                        "title": "Value",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "fact_id",
+                      "label",
+                      "value"
+                    ],
+                    "title": "DataRow",
+                    "type": "object"
+                  },
+                  "EditorialSlide": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "title": {
+                        "maxLength": 140,
+                        "minLength": 1,
+                        "title": "Title",
+                        "type": "string"
+                      },
+                      "purpose": {
+                        "default": "content",
+                        "enum": [
+                          "cover",
+                          "speaker",
+                          "agenda",
+                          "divider",
+                          "context",
+                          "problem",
+                          "solution",
+                          "claim_evidence",
+                          "comparison",
+                          "process",
+                          "timeline",
+                          "metrics",
+                          "trend",
+                          "composition",
+                          "structure",
+                          "recommendations",
+                          "summary",
+                          "closing",
+                          "content"
+                        ],
+                        "title": "Purpose",
+                        "type": "string"
+                      },
+                      "bullets": {
+                        "items": {
+                          "$ref": "#/$defs/Claim"
+                        },
+                        "maxItems": 6,
+                        "minItems": 1,
+                        "title": "Bullets",
+                        "type": "array"
+                      },
+                      "source_table_id": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "default": null,
+                        "title": "Source Table Id"
+                      },
+                      "source_columns": {
+                        "items": {
+                          "type": "integer"
+                        },
+                        "maxItems": 8,
+                        "title": "Source Columns",
+                        "type": "array"
+                      },
+                      "chart_type": {
+                        "default": "auto",
+                        "enum": [
+                          "auto",
+                          "table",
+                          "line",
+                          "column",
+                          "column_stacked",
+                          "bar",
+                          "pie"
+                        ],
+                        "title": "Chart Type",
+                        "type": "string"
+                      },
+                      "relationship": {
+                        "default": "none",
+                        "enum": [
+                          "none",
+                          "comparison",
+                          "time",
+                          "share",
+                          "table"
+                        ],
+                        "title": "Relationship",
+                        "type": "string"
+                      },
+                      "rows": {
+                        "items": {
+                          "$ref": "#/$defs/DataRow"
+                        },
+                        "maxItems": 12,
+                        "title": "Rows",
+                        "type": "array"
+                      }
+                    },
+                    "required": [
+                      "title",
+                      "bullets",
+                      "purpose"
+                    ],
+                    "title": "EditorialSlide",
+                    "type": "object"
+                  },
+                  "Omission": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "fact_id": {
+                        "title": "Fact Id",
+                        "type": "string"
+                      },
+                      "reason": {
+                        "enum": [
+                          "detail",
+                          "duplicate",
+                          "off_topic"
+                        ],
+                        "title": "Reason",
+                        "type": "string"
+                      },
+                      "explanation": {
+                        "maxLength": 240,
+                        "minLength": 1,
+                        "title": "Explanation",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "fact_id",
+                      "reason",
+                      "explanation"
+                    ],
+                    "title": "Omission",
+                    "type": "object"
+                  }
+                },
+                "additionalProperties": false,
+                "properties": {
+                  "slides": {
+                    "items": {
+                      "$ref": "#/$defs/EditorialSlide"
+                    },
+                    "maxItems": 5,
+                    "minItems": 5,
+                    "title": "Slides",
+                    "type": "array"
+                  },
+                  "omitted": {
+                    "items": {
+                      "$ref": "#/$defs/Omission"
+                    },
+                    "maxItems": 300,
+                    "title": "Omitted",
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "slides"
+                ],
+                "title": "EditorialPlan",
+                "type": "object"
+              },
+              "strict": true
+            }
+          }
+        },
+        "messages": [
+          {
+            "role": "system",
+            "content": {
+              "sha256": "385d841e1a32e67eee4d159d06ded349de62158457616c9b6e6bc09ab5ddc9ee"
+            }
+          },
+          {
+            "role": "user",
+            "content": "{\"untrusted_input\": {\"source\": {\"title\": \"Transit Control Room Mockup\", \"facts\": [{\"id\": \"f1\", \"text\": \"The attached 16:9 image is a generated control-room mockup included to test landscape screenshot placement.\", \"section\": \"Purpose\", \"source\": \"user_text\", \"line\": 3, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f2\", \"text\": \"The image reads SAMPLE DATA and SIMULATED SCREEN;\", \"section\": \"Visible labels\", \"source\": \"user_text\", \"line\": 5, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f3\", \"text\": \"its route names, counts, and trend line are decorative test content, not source facts.\", \"section\": \"Visible labels\", \"source\": \"user_text\", \"line\": 5, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f4\", \"text\": \"The image does not document a real service, control system, or measured result.\", \"section\": \"Use limit\", \"source\": \"user_text\", \"line\": 7, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f5\", \"text\": \"Keep the image's full-width dashboard context visible if it is used;\", \"section\": \"Review request\", \"source\": \"user_text\", \"line\": 9, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f6\", \"text\": \"cropping away the sample labels could make the mockup appear factual.\", \"section\": \"Review request\", \"source\": \"user_text\", \"line\": 9, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f7\", \"text\": \"The PNG was authored for this corpus from vector drawing primitives and has no external image source.\", \"section\": \"Provenance\", \"source\": \"user_text\", \"line\": 11, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}], \"tables\": [], \"warnings\": [], \"quarantined\": [], \"headings\": [], \"directives\": []}, \"slide_range\": [5, 5], \"include_cover\": true, \"audience\": \"\", \"instructions\": \"\", \"characters_per_slide\": 500, \"templates\": [{\"id\": \"native-slide-1\", \"purpose\": \"divider\", \"source_slide\": 1, \"graphic_kind\": \"none\", \"fields\": 0, \"title_max_characters\": 46, \"field_capacity\": []}, {\"id\": \"native-layout-0-0\", \"purpose\": \"cover\", \"source_slide\": 0, \"graphic_kind\": \"none\", \"fields\": 1, \"title_max_characters\": 66, \"field_capacity\": [{\"width\": 490, \"height\": 131, \"target_max_characters\": 270}]}, {\"id\": \"native-layout-0-2\", \"purpose\": \"divider\", \"source_slide\": 0, \"graphic_kind\": \"none\", \"fields\": 0, \"title_max_characters\": 33, \"field_capacity\": []}], \"required_chart_types\": []}}"
+          }
+        ]
+      },
+      "status": 200,
+      "response": {
+        "choices": [
+          {
+            "message": {
+              "role": "assistant",
+              "content": "{\"slides\": [{\"title\": \"Transit Control Room Mockup\", \"purpose\": \"cover\", \"bullets\": [{\"text\": \"The attached 16:9 image is a generated control-room mockup included to test landscape screenshot placement.\", \"evidence\": [{\"fact_id\": \"f1\"}]}]}, {\"title\": \"Visible labels\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The image reads SAMPLE DATA and SIMULATED SCREEN;\", \"evidence\": [{\"fact_id\": \"f2\"}]}, {\"text\": \"its route names, counts, and trend line are decorative test content, not source facts.\", \"evidence\": [{\"fact_id\": \"f3\"}]}]}, {\"title\": \"Use limit\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The image does not document a real service, control system, or measured result.\", \"evidence\": [{\"fact_id\": \"f4\"}]}]}, {\"title\": \"Review request\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"Keep the image's full-width dashboard context visible if it is used;\", \"evidence\": [{\"fact_id\": \"f5\"}]}, {\"text\": \"cropping away the sample labels could make the mockup appear factual.\", \"evidence\": [{\"fact_id\": \"f6\"}]}]}, {\"title\": \"Provenance\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The PNG was authored for this corpus from vector drawing primitives and has no external image source.\", \"evidence\": [{\"fact_id\": \"f7\"}]}]}], \"omitted\": []}"
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 100,
+          "completion_tokens": 50,
+          "total_tokens": 150
+        }
+      }
+    },
+    {
+      "request": {
+        "parameters": {
+          "model": "fixture-27b",
+          "temperature": 0.25,
+          "max_tokens": 10000,
+          "response_format": {
+            "type": "json_schema",
+            "json_schema": {
+              "name": "editorial_repair",
+              "schema": {
+                "$defs": {
+                  "Citation": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "fact_id": {
+                        "title": "Fact Id",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "fact_id"
+                    ],
+                    "title": "Citation",
+                    "type": "object"
+                  },
+                  "Claim": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "text": {
+                        "maxLength": 300,
+                        "minLength": 1,
+                        "title": "Text",
+                        "type": "string"
+                      },
+                      "group": {
+                        "default": "",
+                        "maxLength": 80,
+                        "title": "Group",
+                        "type": "string"
+                      },
+                      "parent_group": {
+                        "anyOf": [
+                          {
+                            "maxLength": 80,
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "default": null,
+                        "title": "Parent Group"
+                      },
+                      "evidence": {
+                        "items": {
+                          "$ref": "#/$defs/Citation"
+                        },
+                        "maxItems": 12,
+                        "minItems": 1,
+                        "title": "Evidence",
+                        "type": "array"
+                      }
+                    },
+                    "required": [
+                      "text",
+                      "evidence"
+                    ],
+                    "title": "Claim",
+                    "type": "object"
+                  },
+                  "DataRow": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "fact_id": {
+                        "title": "Fact Id",
+                        "type": "string"
+                      },
+                      "label": {
+                        "maxLength": 200,
+                        "minLength": 1,
+                        "title": "Label",
+                        "type": "string"
+                      },
+                      "value": {
+                        "maxLength": 100,
+                        "minLength": 1,
+                        "title": "Value",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "fact_id",
+                      "label",
+                      "value"
+                    ],
+                    "title": "DataRow",
+                    "type": "object"
+                  },
+                  "EditorialSlide": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "title": {
+                        "maxLength": 140,
+                        "minLength": 1,
+                        "title": "Title",
+                        "type": "string"
+                      },
+                      "purpose": {
+                        "default": "content",
+                        "enum": [
+                          "cover",
+                          "speaker",
+                          "agenda",
+                          "divider",
+                          "context",
+                          "problem",
+                          "solution",
+                          "claim_evidence",
+                          "comparison",
+                          "process",
+                          "timeline",
+                          "metrics",
+                          "trend",
+                          "composition",
+                          "structure",
+                          "recommendations",
+                          "summary",
+                          "closing",
+                          "content"
+                        ],
+                        "title": "Purpose",
+                        "type": "string"
+                      },
+                      "bullets": {
+                        "items": {
+                          "$ref": "#/$defs/Claim"
+                        },
+                        "maxItems": 6,
+                        "minItems": 1,
+                        "title": "Bullets",
+                        "type": "array"
+                      },
+                      "source_table_id": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "default": null,
+                        "title": "Source Table Id"
+                      },
+                      "source_columns": {
+                        "items": {
+                          "type": "integer"
+                        },
+                        "maxItems": 8,
+                        "title": "Source Columns",
+                        "type": "array"
+                      },
+                      "chart_type": {
+                        "default": "auto",
+                        "enum": [
+                          "auto",
+                          "table",
+                          "line",
+                          "column",
+                          "column_stacked",
+                          "bar",
+                          "pie"
+                        ],
+                        "title": "Chart Type",
+                        "type": "string"
+                      },
+                      "relationship": {
+                        "default": "none",
+                        "enum": [
+                          "none",
+                          "comparison",
+                          "time",
+                          "share",
+                          "table"
+                        ],
+                        "title": "Relationship",
+                        "type": "string"
+                      },
+                      "rows": {
+                        "items": {
+                          "$ref": "#/$defs/DataRow"
+                        },
+                        "maxItems": 12,
+                        "title": "Rows",
+                        "type": "array"
+                      }
+                    },
+                    "required": [
+                      "title",
+                      "bullets",
+                      "purpose"
+                    ],
+                    "title": "EditorialSlide",
+                    "type": "object"
+                  },
+                  "Replacement": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "slide": {
+                        "maximum": 30,
+                        "minimum": 1,
+                        "title": "Slide",
+                        "type": "integer",
+                        "enum": [
+                          2,
+                          3,
+                          4,
+                          5
+                        ]
+                      },
+                      "content": {
+                        "$ref": "#/$defs/EditorialSlide"
+                      }
+                    },
+                    "required": [
+                      "slide",
+                      "content"
+                    ],
+                    "title": "Replacement",
+                    "type": "object"
+                  }
+                },
+                "additionalProperties": false,
+                "properties": {
+                  "replacements": {
+                    "items": {
+                      "oneOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "slide": {
+                              "type": "integer",
+                              "const": 2
+                            },
+                            "content": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "title": {
+                                  "maxLength": 140,
+                                  "minLength": 1,
+                                  "title": "Title",
+                                  "type": "string"
+                                },
+                                "purpose": {
+                                  "default": "content",
+                                  "enum": [
+                                    "cover",
+                                    "speaker",
+                                    "agenda",
+                                    "divider",
+                                    "context",
+                                    "problem",
+                                    "solution",
+                                    "claim_evidence",
+                                    "comparison",
+                                    "process",
+                                    "timeline",
+                                    "metrics",
+                                    "trend",
+                                    "composition",
+                                    "structure",
+                                    "recommendations",
+                                    "summary",
+                                    "closing",
+                                    "content"
+                                  ],
+                                  "title": "Purpose",
+                                  "type": "string",
+                                  "const": "content"
+                                },
+                                "bullets": {
+                                  "items": {
+                                    "$ref": "#/$defs/Claim"
+                                  },
+                                  "maxItems": 6,
+                                  "minItems": 1,
+                                  "title": "Bullets",
+                                  "type": "array"
+                                },
+                                "source_table_id": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "default": null,
+                                  "title": "Source Table Id",
+                                  "const": null
+                                },
+                                "source_columns": {
+                                  "items": {
+                                    "type": "integer"
+                                  },
+                                  "maxItems": 8,
+                                  "title": "Source Columns",
+                                  "type": "array",
+                                  "const": []
+                                },
+                                "chart_type": {
+                                  "default": "auto",
+                                  "enum": [
+                                    "auto",
+                                    "table",
+                                    "line",
+                                    "column",
+                                    "column_stacked",
+                                    "bar",
+                                    "pie"
+                                  ],
+                                  "title": "Chart Type",
+                                  "type": "string",
+                                  "const": "auto"
+                                },
+                                "relationship": {
+                                  "default": "none",
+                                  "enum": [
+                                    "none",
+                                    "comparison",
+                                    "time",
+                                    "share",
+                                    "table"
+                                  ],
+                                  "title": "Relationship",
+                                  "type": "string",
+                                  "const": "none"
+                                },
+                                "rows": {
+                                  "items": {
+                                    "$ref": "#/$defs/DataRow"
+                                  },
+                                  "maxItems": 12,
+                                  "title": "Rows",
+                                  "type": "array",
+                                  "const": []
+                                }
+                              },
+                              "required": [
+                                "title",
+                                "bullets",
+                                "purpose"
+                              ],
+                              "title": "EditorialSlide",
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "slide",
+                            "content"
+                          ],
+                          "title": "Replacement",
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "slide": {
+                              "type": "integer",
+                              "const": 3
+                            },
+                            "content": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "title": {
+                                  "maxLength": 140,
+                                  "minLength": 1,
+                                  "title": "Title",
+                                  "type": "string"
+                                },
+                                "purpose": {
+                                  "default": "content",
+                                  "enum": [
+                                    "cover",
+                                    "speaker",
+                                    "agenda",
+                                    "divider",
+                                    "context",
+                                    "problem",
+                                    "solution",
+                                    "claim_evidence",
+                                    "comparison",
+                                    "process",
+                                    "timeline",
+                                    "metrics",
+                                    "trend",
+                                    "composition",
+                                    "structure",
+                                    "recommendations",
+                                    "summary",
+                                    "closing",
+                                    "content"
+                                  ],
+                                  "title": "Purpose",
+                                  "type": "string",
+                                  "const": "content"
+                                },
+                                "bullets": {
+                                  "items": {
+                                    "$ref": "#/$defs/Claim"
+                                  },
+                                  "maxItems": 6,
+                                  "minItems": 1,
+                                  "title": "Bullets",
+                                  "type": "array"
+                                },
+                                "source_table_id": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "default": null,
+                                  "title": "Source Table Id",
+                                  "const": null
+                                },
+                                "source_columns": {
+                                  "items": {
+                                    "type": "integer"
+                                  },
+                                  "maxItems": 8,
+                                  "title": "Source Columns",
+                                  "type": "array",
+                                  "const": []
+                                },
+                                "chart_type": {
+                                  "default": "auto",
+                                  "enum": [
+                                    "auto",
+                                    "table",
+                                    "line",
+                                    "column",
+                                    "column_stacked",
+                                    "bar",
+                                    "pie"
+                                  ],
+                                  "title": "Chart Type",
+                                  "type": "string",
+                                  "const": "auto"
+                                },
+                                "relationship": {
+                                  "default": "none",
+                                  "enum": [
+                                    "none",
+                                    "comparison",
+                                    "time",
+                                    "share",
+                                    "table"
+                                  ],
+                                  "title": "Relationship",
+                                  "type": "string",
+                                  "const": "none"
+                                },
+                                "rows": {
+                                  "items": {
+                                    "$ref": "#/$defs/DataRow"
+                                  },
+                                  "maxItems": 12,
+                                  "title": "Rows",
+                                  "type": "array",
+                                  "const": []
+                                }
+                              },
+                              "required": [
+                                "title",
+                                "bullets",
+                                "purpose"
+                              ],
+                              "title": "EditorialSlide",
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "slide",
+                            "content"
+                          ],
+                          "title": "Replacement",
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "slide": {
+                              "type": "integer",
+                              "const": 4
+                            },
+                            "content": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "title": {
+                                  "maxLength": 140,
+                                  "minLength": 1,
+                                  "title": "Title",
+                                  "type": "string"
+                                },
+                                "purpose": {
+                                  "default": "content",
+                                  "enum": [
+                                    "cover",
+                                    "speaker",
+                                    "agenda",
+                                    "divider",
+                                    "context",
+                                    "problem",
+                                    "solution",
+                                    "claim_evidence",
+                                    "comparison",
+                                    "process",
+                                    "timeline",
+                                    "metrics",
+                                    "trend",
+                                    "composition",
+                                    "structure",
+                                    "recommendations",
+                                    "summary",
+                                    "closing",
+                                    "content"
+                                  ],
+                                  "title": "Purpose",
+                                  "type": "string",
+                                  "const": "content"
+                                },
+                                "bullets": {
+                                  "items": {
+                                    "$ref": "#/$defs/Claim"
+                                  },
+                                  "maxItems": 6,
+                                  "minItems": 1,
+                                  "title": "Bullets",
+                                  "type": "array"
+                                },
+                                "source_table_id": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "default": null,
+                                  "title": "Source Table Id",
+                                  "const": null
+                                },
+                                "source_columns": {
+                                  "items": {
+                                    "type": "integer"
+                                  },
+                                  "maxItems": 8,
+                                  "title": "Source Columns",
+                                  "type": "array",
+                                  "const": []
+                                },
+                                "chart_type": {
+                                  "default": "auto",
+                                  "enum": [
+                                    "auto",
+                                    "table",
+                                    "line",
+                                    "column",
+                                    "column_stacked",
+                                    "bar",
+                                    "pie"
+                                  ],
+                                  "title": "Chart Type",
+                                  "type": "string",
+                                  "const": "auto"
+                                },
+                                "relationship": {
+                                  "default": "none",
+                                  "enum": [
+                                    "none",
+                                    "comparison",
+                                    "time",
+                                    "share",
+                                    "table"
+                                  ],
+                                  "title": "Relationship",
+                                  "type": "string",
+                                  "const": "none"
+                                },
+                                "rows": {
+                                  "items": {
+                                    "$ref": "#/$defs/DataRow"
+                                  },
+                                  "maxItems": 12,
+                                  "title": "Rows",
+                                  "type": "array",
+                                  "const": []
+                                }
+                              },
+                              "required": [
+                                "title",
+                                "bullets",
+                                "purpose"
+                              ],
+                              "title": "EditorialSlide",
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "slide",
+                            "content"
+                          ],
+                          "title": "Replacement",
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "slide": {
+                              "type": "integer",
+                              "const": 5
+                            },
+                            "content": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "title": {
+                                  "maxLength": 140,
+                                  "minLength": 1,
+                                  "title": "Title",
+                                  "type": "string"
+                                },
+                                "purpose": {
+                                  "default": "content",
+                                  "enum": [
+                                    "cover",
+                                    "speaker",
+                                    "agenda",
+                                    "divider",
+                                    "context",
+                                    "problem",
+                                    "solution",
+                                    "claim_evidence",
+                                    "comparison",
+                                    "process",
+                                    "timeline",
+                                    "metrics",
+                                    "trend",
+                                    "composition",
+                                    "structure",
+                                    "recommendations",
+                                    "summary",
+                                    "closing",
+                                    "content"
+                                  ],
+                                  "title": "Purpose",
+                                  "type": "string",
+                                  "const": "content"
+                                },
+                                "bullets": {
+                                  "items": {
+                                    "$ref": "#/$defs/Claim"
+                                  },
+                                  "maxItems": 6,
+                                  "minItems": 1,
+                                  "title": "Bullets",
+                                  "type": "array"
+                                },
+                                "source_table_id": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "default": null,
+                                  "title": "Source Table Id",
+                                  "const": null
+                                },
+                                "source_columns": {
+                                  "items": {
+                                    "type": "integer"
+                                  },
+                                  "maxItems": 8,
+                                  "title": "Source Columns",
+                                  "type": "array",
+                                  "const": []
+                                },
+                                "chart_type": {
+                                  "default": "auto",
+                                  "enum": [
+                                    "auto",
+                                    "table",
+                                    "line",
+                                    "column",
+                                    "column_stacked",
+                                    "bar",
+                                    "pie"
+                                  ],
+                                  "title": "Chart Type",
+                                  "type": "string",
+                                  "const": "auto"
+                                },
+                                "relationship": {
+                                  "default": "none",
+                                  "enum": [
+                                    "none",
+                                    "comparison",
+                                    "time",
+                                    "share",
+                                    "table"
+                                  ],
+                                  "title": "Relationship",
+                                  "type": "string",
+                                  "const": "none"
+                                },
+                                "rows": {
+                                  "items": {
+                                    "$ref": "#/$defs/DataRow"
+                                  },
+                                  "maxItems": 12,
+                                  "title": "Rows",
+                                  "type": "array",
+                                  "const": []
+                                }
+                              },
+                              "required": [
+                                "title",
+                                "bullets",
+                                "purpose"
+                              ],
+                              "title": "EditorialSlide",
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "slide",
+                            "content"
+                          ],
+                          "title": "Replacement",
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "maxItems": 4,
+                    "minItems": 4,
+                    "title": "Replacements",
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "replacements"
+                ],
+                "title": "EditorialPatch",
+                "type": "object"
+              },
+              "strict": true
+            }
+          }
+        },
+        "messages": [
+          {
+            "role": "system",
+            "content": {
+              "sha256": "d846af4e13a4f21c1b856d813a0f3ef0b44c9aa2449ab29ece39ba4f4f1a3f05"
+            }
+          },
+          {
+            "role": "user",
+            "content": "{\"untrusted_input\": {\"source\": {\"title\": \"Transit Control Room Mockup\", \"facts\": [{\"id\": \"f1\", \"text\": \"The attached 16:9 image is a generated control-room mockup included to test landscape screenshot placement.\", \"section\": \"Purpose\", \"source\": \"user_text\", \"line\": 3, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f2\", \"text\": \"The image reads SAMPLE DATA and SIMULATED SCREEN;\", \"section\": \"Visible labels\", \"source\": \"user_text\", \"line\": 5, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f3\", \"text\": \"its route names, counts, and trend line are decorative test content, not source facts.\", \"section\": \"Visible labels\", \"source\": \"user_text\", \"line\": 5, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f4\", \"text\": \"The image does not document a real service, control system, or measured result.\", \"section\": \"Use limit\", \"source\": \"user_text\", \"line\": 7, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f5\", \"text\": \"Keep the image's full-width dashboard context visible if it is used;\", \"section\": \"Review request\", \"source\": \"user_text\", \"line\": 9, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f6\", \"text\": \"cropping away the sample labels could make the mockup appear factual.\", \"section\": \"Review request\", \"source\": \"user_text\", \"line\": 9, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f7\", \"text\": \"The PNG was authored for this corpus from vector drawing primitives and has no external image source.\", \"section\": \"Provenance\", \"source\": \"user_text\", \"line\": 11, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}], \"tables\": [], \"warnings\": [], \"quarantined\": [], \"headings\": [], \"directives\": []}, \"slide_range\": [5, 5], \"include_cover\": true, \"audience\": \"\", \"instructions\": \"\", \"characters_per_slide\": 500, \"templates\": [{\"id\": \"native-slide-1\", \"purpose\": \"divider\", \"source_slide\": 1, \"graphic_kind\": \"none\", \"fields\": 0, \"title_max_characters\": 46, \"field_capacity\": []}, {\"id\": \"native-layout-0-0\", \"purpose\": \"cover\", \"source_slide\": 0, \"graphic_kind\": \"none\", \"fields\": 1, \"title_max_characters\": 66, \"field_capacity\": [{\"width\": 490, \"height\": 131, \"target_max_characters\": 270}]}, {\"id\": \"native-layout-0-2\", \"purpose\": \"divider\", \"source_slide\": 0, \"graphic_kind\": \"none\", \"fields\": 0, \"title_max_characters\": 33, \"field_capacity\": []}], \"required_chart_types\": [], \"allowed_slide_indices\": [2, 3, 4, 5], \"previous_plan\": {\"slides\": [{\"title\": \"Transit Control Room Mockup\", \"purpose\": \"cover\", \"bullets\": [{\"text\": \"The attached 16:9 image is a generated control-room mockup included to test landscape screenshot placement.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f1\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}, {\"title\": \"Visible labels\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The image reads SAMPLE DATA and SIMULATED SCREEN;\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f2\"}]}, {\"text\": \"its route names, counts, and trend line are decorative test content, not source facts.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f3\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}, {\"title\": \"Use limit\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The image does not document a real service, control system, or measured result.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f4\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}, {\"title\": \"Review request\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"Keep the image's full-width dashboard context visible if it is used;\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f5\"}]}, {\"text\": \"cropping away the sample labels could make the mockup appear factual.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f6\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}, {\"title\": \"Provenance\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The PNG was authored for this corpus from vector drawing primitives and has no external image source.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f7\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}], \"omitted\": []}, \"revision_feedback\": {\"issues\": [], \"essential_facts_to_restore\": [], \"explanation\": \"Geometry requires repair before semantic review\", \"geometry\": \"Компоновка требует исправления на слайдах 2, 3, 4, 5. Причины и допустимые действия записаны по каждому объекту.\", \"repair_issues\": [{\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 2, \"claim\": null, \"element\": 0}, {\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 3, \"claim\": null, \"element\": 0}, {\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 4, \"claim\": null, \"element\": 0}, {\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 5, \"claim\": null, \"element\": 0}], \"fields\": [{\"slide\": 2, \"pattern_id\": null, \"findings\": [{\"code\": \"readability\", \"severity\": \"warning\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"slide\": 2, \"element\": 0, \"repaired\": false}], \"repair_issues\": [{\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 2, \"claim\": null, \"element\": 0}], \"fields\": [{\"element\": 0, \"role\": \"title\", \"text\": \"Visible labels\", \"fact_ids\": [], \"current_font_size\": 17.0, \"minimum_font_size\": 18, \"width\": 883, \"height\": 103, \"target_max_characters\": 392}]}, {\"slide\": 3, \"pattern_id\": null, \"findings\": [{\"code\": \"readability\", \"severity\": \"warning\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"slide\": 3, \"element\": 0, \"repaired\": false}], \"repair_issues\": [{\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 3, \"claim\": null, \"element\": 0}], \"fields\": [{\"element\": 0, \"role\": \"title\", \"text\": \"Use limit\", \"fact_ids\": [], \"current_font_size\": 17.0, \"minimum_font_size\": 18, \"width\": 883, \"height\": 22, \"target_max_characters\": 98}]}, {\"slide\": 4, \"pattern_id\": null, \"findings\": [{\"code\": \"readability\", \"severity\": \"warning\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"slide\": 4, \"element\": 0, \"repaired\": false}], \"repair_issues\": [{\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 4, \"claim\": null, \"element\": 0}], \"fields\": [{\"element\": 0, \"role\": \"title\", \"text\": \"Review request\", \"fact_ids\": [], \"current_font_size\": 17.0, \"minimum_font_size\": 18, \"width\": 883, \"height\": 22, \"target_max_characters\": 98}]}, {\"slide\": 5, \"pattern_id\": null, \"findings\": [{\"code\": \"readability\", \"severity\": \"warning\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"slide\": 5, \"element\": 0, \"repaired\": false}], \"repair_issues\": [{\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 5, \"claim\": null, \"element\": 0}], \"fields\": [{\"element\": 0, \"role\": \"title\", \"text\": \"Provenance\", \"fact_ids\": [], \"current_font_size\": 17.0, \"minimum_font_size\": 18, \"width\": 883, \"height\": 22, \"target_max_characters\": 98}]}], \"previous_semantic_corrections\": []}, \"repair_contracts\": [{\"slide\": 2, \"fixed_bullets\": [{\"index\": 1, \"content\": {\"text\": \"The image reads SAMPLE DATA and SIMULATED SCREEN;\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f2\"}]}}, {\"index\": 2, \"content\": {\"text\": \"its route names, counts, and trend line are decorative test content, not source facts.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f3\"}]}}], \"bullet_count\": 2, \"fixed_title\": null, \"purpose\": \"content\", \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": [], \"source_fact_ids\": [\"f2\", \"f3\"], \"groups\": null, \"target_characters_per_bullet\": 250}, {\"slide\": 3, \"fixed_bullets\": [{\"index\": 1, \"content\": {\"text\": \"The image does not document a real service, control system, or measured result.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f4\"}]}}], \"bullet_count\": 1, \"fixed_title\": null, \"purpose\": \"content\", \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": [], \"source_fact_ids\": [\"f4\"], \"groups\": null, \"target_characters_per_bullet\": 500}, {\"slide\": 4, \"fixed_bullets\": [{\"index\": 1, \"content\": {\"text\": \"Keep the image's full-width dashboard context visible if it is used;\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f5\"}]}}, {\"index\": 2, \"content\": {\"text\": \"cropping away the sample labels could make the mockup appear factual.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f6\"}]}}], \"bullet_count\": 2, \"fixed_title\": null, \"purpose\": \"content\", \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": [], \"source_fact_ids\": [\"f5\", \"f6\"], \"groups\": null, \"target_characters_per_bullet\": 250}, {\"slide\": 5, \"fixed_bullets\": [{\"index\": 1, \"content\": {\"text\": \"The PNG was authored for this corpus from vector drawing primitives and has no external image source.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f7\"}]}}], \"bullet_count\": 1, \"fixed_title\": null, \"purpose\": \"content\", \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": [], \"source_fact_ids\": [\"f7\"], \"groups\": null, \"target_characters_per_bullet\": 500}], \"numeric_evidence_hints\": [], \"instruction\": \"Return replacements ONLY for the allowed slides. Keep total count and order. Preserve every previously corrected qualification. Use fact_id citations only. Do not edit neighbours.\"}}"
+          }
+        ]
+      },
+      "status": 200,
+      "response": {
+        "choices": [
+          {
+            "message": {
+              "role": "assistant",
+              "content": "{\"replacements\": [{\"slide\": 2, \"content\": {\"title\": \"Visible labels\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The image reads SAMPLE DATA and SIMULATED SCREEN;\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f2\"}]}, {\"text\": \"its route names, counts, and trend line are decorative test content, not source facts.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f3\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}}, {\"slide\": 3, \"content\": {\"title\": \"Use limit\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The image does not document a real service, control system, or measured result.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f4\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}}, {\"slide\": 4, \"content\": {\"title\": \"Review request\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"Keep the image's full-width dashboard context visible if it is used;\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f5\"}]}, {\"text\": \"cropping away the sample labels could make the mockup appear factual.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f6\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}}, {\"slide\": 5, \"content\": {\"title\": \"Provenance\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The PNG was authored for this corpus from vector drawing primitives and has no external image source.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f7\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}}]}"
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 100,
+          "completion_tokens": 50,
+          "total_tokens": 150
+        }
+      }
+    },
+    {
+      "request": {
+        "parameters": {
+          "model": "fixture-27b",
+          "temperature": 0.25,
+          "max_tokens": 10000,
+          "response_format": {
+            "type": "json_schema",
+            "json_schema": {
+              "name": "editorial_repair",
+              "schema": {
+                "$defs": {
+                  "Citation": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "fact_id": {
+                        "title": "Fact Id",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "fact_id"
+                    ],
+                    "title": "Citation",
+                    "type": "object"
+                  },
+                  "Claim": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "text": {
+                        "maxLength": 300,
+                        "minLength": 1,
+                        "title": "Text",
+                        "type": "string"
+                      },
+                      "group": {
+                        "default": "",
+                        "maxLength": 80,
+                        "title": "Group",
+                        "type": "string"
+                      },
+                      "parent_group": {
+                        "anyOf": [
+                          {
+                            "maxLength": 80,
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "default": null,
+                        "title": "Parent Group"
+                      },
+                      "evidence": {
+                        "items": {
+                          "$ref": "#/$defs/Citation"
+                        },
+                        "maxItems": 12,
+                        "minItems": 1,
+                        "title": "Evidence",
+                        "type": "array"
+                      }
+                    },
+                    "required": [
+                      "text",
+                      "evidence"
+                    ],
+                    "title": "Claim",
+                    "type": "object"
+                  },
+                  "DataRow": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "fact_id": {
+                        "title": "Fact Id",
+                        "type": "string"
+                      },
+                      "label": {
+                        "maxLength": 200,
+                        "minLength": 1,
+                        "title": "Label",
+                        "type": "string"
+                      },
+                      "value": {
+                        "maxLength": 100,
+                        "minLength": 1,
+                        "title": "Value",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "fact_id",
+                      "label",
+                      "value"
+                    ],
+                    "title": "DataRow",
+                    "type": "object"
+                  },
+                  "EditorialSlide": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "title": {
+                        "maxLength": 140,
+                        "minLength": 1,
+                        "title": "Title",
+                        "type": "string"
+                      },
+                      "purpose": {
+                        "default": "content",
+                        "enum": [
+                          "cover",
+                          "speaker",
+                          "agenda",
+                          "divider",
+                          "context",
+                          "problem",
+                          "solution",
+                          "claim_evidence",
+                          "comparison",
+                          "process",
+                          "timeline",
+                          "metrics",
+                          "trend",
+                          "composition",
+                          "structure",
+                          "recommendations",
+                          "summary",
+                          "closing",
+                          "content"
+                        ],
+                        "title": "Purpose",
+                        "type": "string"
+                      },
+                      "bullets": {
+                        "items": {
+                          "$ref": "#/$defs/Claim"
+                        },
+                        "maxItems": 6,
+                        "minItems": 1,
+                        "title": "Bullets",
+                        "type": "array"
+                      },
+                      "source_table_id": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "default": null,
+                        "title": "Source Table Id"
+                      },
+                      "source_columns": {
+                        "items": {
+                          "type": "integer"
+                        },
+                        "maxItems": 8,
+                        "title": "Source Columns",
+                        "type": "array"
+                      },
+                      "chart_type": {
+                        "default": "auto",
+                        "enum": [
+                          "auto",
+                          "table",
+                          "line",
+                          "column",
+                          "column_stacked",
+                          "bar",
+                          "pie"
+                        ],
+                        "title": "Chart Type",
+                        "type": "string"
+                      },
+                      "relationship": {
+                        "default": "none",
+                        "enum": [
+                          "none",
+                          "comparison",
+                          "time",
+                          "share",
+                          "table"
+                        ],
+                        "title": "Relationship",
+                        "type": "string"
+                      },
+                      "rows": {
+                        "items": {
+                          "$ref": "#/$defs/DataRow"
+                        },
+                        "maxItems": 12,
+                        "title": "Rows",
+                        "type": "array"
+                      }
+                    },
+                    "required": [
+                      "title",
+                      "bullets",
+                      "purpose"
+                    ],
+                    "title": "EditorialSlide",
+                    "type": "object"
+                  },
+                  "Replacement": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "slide": {
+                        "maximum": 30,
+                        "minimum": 1,
+                        "title": "Slide",
+                        "type": "integer",
+                        "enum": [
+                          2,
+                          3,
+                          4,
+                          5
+                        ]
+                      },
+                      "content": {
+                        "$ref": "#/$defs/EditorialSlide"
+                      }
+                    },
+                    "required": [
+                      "slide",
+                      "content"
+                    ],
+                    "title": "Replacement",
+                    "type": "object"
+                  }
+                },
+                "additionalProperties": false,
+                "properties": {
+                  "replacements": {
+                    "items": {
+                      "oneOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "slide": {
+                              "type": "integer",
+                              "const": 2
+                            },
+                            "content": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "title": {
+                                  "maxLength": 140,
+                                  "minLength": 1,
+                                  "title": "Title",
+                                  "type": "string"
+                                },
+                                "purpose": {
+                                  "default": "content",
+                                  "enum": [
+                                    "cover",
+                                    "speaker",
+                                    "agenda",
+                                    "divider",
+                                    "context",
+                                    "problem",
+                                    "solution",
+                                    "claim_evidence",
+                                    "comparison",
+                                    "process",
+                                    "timeline",
+                                    "metrics",
+                                    "trend",
+                                    "composition",
+                                    "structure",
+                                    "recommendations",
+                                    "summary",
+                                    "closing",
+                                    "content"
+                                  ],
+                                  "title": "Purpose",
+                                  "type": "string",
+                                  "const": "content"
+                                },
+                                "bullets": {
+                                  "items": {
+                                    "$ref": "#/$defs/Claim"
+                                  },
+                                  "maxItems": 6,
+                                  "minItems": 1,
+                                  "title": "Bullets",
+                                  "type": "array"
+                                },
+                                "source_table_id": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "default": null,
+                                  "title": "Source Table Id",
+                                  "const": null
+                                },
+                                "source_columns": {
+                                  "items": {
+                                    "type": "integer"
+                                  },
+                                  "maxItems": 8,
+                                  "title": "Source Columns",
+                                  "type": "array",
+                                  "const": []
+                                },
+                                "chart_type": {
+                                  "default": "auto",
+                                  "enum": [
+                                    "auto",
+                                    "table",
+                                    "line",
+                                    "column",
+                                    "column_stacked",
+                                    "bar",
+                                    "pie"
+                                  ],
+                                  "title": "Chart Type",
+                                  "type": "string",
+                                  "const": "auto"
+                                },
+                                "relationship": {
+                                  "default": "none",
+                                  "enum": [
+                                    "none",
+                                    "comparison",
+                                    "time",
+                                    "share",
+                                    "table"
+                                  ],
+                                  "title": "Relationship",
+                                  "type": "string",
+                                  "const": "none"
+                                },
+                                "rows": {
+                                  "items": {
+                                    "$ref": "#/$defs/DataRow"
+                                  },
+                                  "maxItems": 12,
+                                  "title": "Rows",
+                                  "type": "array",
+                                  "const": []
+                                }
+                              },
+                              "required": [
+                                "title",
+                                "bullets",
+                                "purpose"
+                              ],
+                              "title": "EditorialSlide",
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "slide",
+                            "content"
+                          ],
+                          "title": "Replacement",
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "slide": {
+                              "type": "integer",
+                              "const": 3
+                            },
+                            "content": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "title": {
+                                  "maxLength": 140,
+                                  "minLength": 1,
+                                  "title": "Title",
+                                  "type": "string"
+                                },
+                                "purpose": {
+                                  "default": "content",
+                                  "enum": [
+                                    "cover",
+                                    "speaker",
+                                    "agenda",
+                                    "divider",
+                                    "context",
+                                    "problem",
+                                    "solution",
+                                    "claim_evidence",
+                                    "comparison",
+                                    "process",
+                                    "timeline",
+                                    "metrics",
+                                    "trend",
+                                    "composition",
+                                    "structure",
+                                    "recommendations",
+                                    "summary",
+                                    "closing",
+                                    "content"
+                                  ],
+                                  "title": "Purpose",
+                                  "type": "string",
+                                  "const": "content"
+                                },
+                                "bullets": {
+                                  "items": {
+                                    "$ref": "#/$defs/Claim"
+                                  },
+                                  "maxItems": 6,
+                                  "minItems": 1,
+                                  "title": "Bullets",
+                                  "type": "array"
+                                },
+                                "source_table_id": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "default": null,
+                                  "title": "Source Table Id",
+                                  "const": null
+                                },
+                                "source_columns": {
+                                  "items": {
+                                    "type": "integer"
+                                  },
+                                  "maxItems": 8,
+                                  "title": "Source Columns",
+                                  "type": "array",
+                                  "const": []
+                                },
+                                "chart_type": {
+                                  "default": "auto",
+                                  "enum": [
+                                    "auto",
+                                    "table",
+                                    "line",
+                                    "column",
+                                    "column_stacked",
+                                    "bar",
+                                    "pie"
+                                  ],
+                                  "title": "Chart Type",
+                                  "type": "string",
+                                  "const": "auto"
+                                },
+                                "relationship": {
+                                  "default": "none",
+                                  "enum": [
+                                    "none",
+                                    "comparison",
+                                    "time",
+                                    "share",
+                                    "table"
+                                  ],
+                                  "title": "Relationship",
+                                  "type": "string",
+                                  "const": "none"
+                                },
+                                "rows": {
+                                  "items": {
+                                    "$ref": "#/$defs/DataRow"
+                                  },
+                                  "maxItems": 12,
+                                  "title": "Rows",
+                                  "type": "array",
+                                  "const": []
+                                }
+                              },
+                              "required": [
+                                "title",
+                                "bullets",
+                                "purpose"
+                              ],
+                              "title": "EditorialSlide",
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "slide",
+                            "content"
+                          ],
+                          "title": "Replacement",
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "slide": {
+                              "type": "integer",
+                              "const": 4
+                            },
+                            "content": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "title": {
+                                  "maxLength": 140,
+                                  "minLength": 1,
+                                  "title": "Title",
+                                  "type": "string"
+                                },
+                                "purpose": {
+                                  "default": "content",
+                                  "enum": [
+                                    "cover",
+                                    "speaker",
+                                    "agenda",
+                                    "divider",
+                                    "context",
+                                    "problem",
+                                    "solution",
+                                    "claim_evidence",
+                                    "comparison",
+                                    "process",
+                                    "timeline",
+                                    "metrics",
+                                    "trend",
+                                    "composition",
+                                    "structure",
+                                    "recommendations",
+                                    "summary",
+                                    "closing",
+                                    "content"
+                                  ],
+                                  "title": "Purpose",
+                                  "type": "string",
+                                  "const": "content"
+                                },
+                                "bullets": {
+                                  "items": {
+                                    "$ref": "#/$defs/Claim"
+                                  },
+                                  "maxItems": 6,
+                                  "minItems": 1,
+                                  "title": "Bullets",
+                                  "type": "array"
+                                },
+                                "source_table_id": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "default": null,
+                                  "title": "Source Table Id",
+                                  "const": null
+                                },
+                                "source_columns": {
+                                  "items": {
+                                    "type": "integer"
+                                  },
+                                  "maxItems": 8,
+                                  "title": "Source Columns",
+                                  "type": "array",
+                                  "const": []
+                                },
+                                "chart_type": {
+                                  "default": "auto",
+                                  "enum": [
+                                    "auto",
+                                    "table",
+                                    "line",
+                                    "column",
+                                    "column_stacked",
+                                    "bar",
+                                    "pie"
+                                  ],
+                                  "title": "Chart Type",
+                                  "type": "string",
+                                  "const": "auto"
+                                },
+                                "relationship": {
+                                  "default": "none",
+                                  "enum": [
+                                    "none",
+                                    "comparison",
+                                    "time",
+                                    "share",
+                                    "table"
+                                  ],
+                                  "title": "Relationship",
+                                  "type": "string",
+                                  "const": "none"
+                                },
+                                "rows": {
+                                  "items": {
+                                    "$ref": "#/$defs/DataRow"
+                                  },
+                                  "maxItems": 12,
+                                  "title": "Rows",
+                                  "type": "array",
+                                  "const": []
+                                }
+                              },
+                              "required": [
+                                "title",
+                                "bullets",
+                                "purpose"
+                              ],
+                              "title": "EditorialSlide",
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "slide",
+                            "content"
+                          ],
+                          "title": "Replacement",
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "slide": {
+                              "type": "integer",
+                              "const": 5
+                            },
+                            "content": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "title": {
+                                  "maxLength": 140,
+                                  "minLength": 1,
+                                  "title": "Title",
+                                  "type": "string"
+                                },
+                                "purpose": {
+                                  "default": "content",
+                                  "enum": [
+                                    "cover",
+                                    "speaker",
+                                    "agenda",
+                                    "divider",
+                                    "context",
+                                    "problem",
+                                    "solution",
+                                    "claim_evidence",
+                                    "comparison",
+                                    "process",
+                                    "timeline",
+                                    "metrics",
+                                    "trend",
+                                    "composition",
+                                    "structure",
+                                    "recommendations",
+                                    "summary",
+                                    "closing",
+                                    "content"
+                                  ],
+                                  "title": "Purpose",
+                                  "type": "string",
+                                  "const": "content"
+                                },
+                                "bullets": {
+                                  "items": {
+                                    "$ref": "#/$defs/Claim"
+                                  },
+                                  "maxItems": 6,
+                                  "minItems": 1,
+                                  "title": "Bullets",
+                                  "type": "array"
+                                },
+                                "source_table_id": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "default": null,
+                                  "title": "Source Table Id",
+                                  "const": null
+                                },
+                                "source_columns": {
+                                  "items": {
+                                    "type": "integer"
+                                  },
+                                  "maxItems": 8,
+                                  "title": "Source Columns",
+                                  "type": "array",
+                                  "const": []
+                                },
+                                "chart_type": {
+                                  "default": "auto",
+                                  "enum": [
+                                    "auto",
+                                    "table",
+                                    "line",
+                                    "column",
+                                    "column_stacked",
+                                    "bar",
+                                    "pie"
+                                  ],
+                                  "title": "Chart Type",
+                                  "type": "string",
+                                  "const": "auto"
+                                },
+                                "relationship": {
+                                  "default": "none",
+                                  "enum": [
+                                    "none",
+                                    "comparison",
+                                    "time",
+                                    "share",
+                                    "table"
+                                  ],
+                                  "title": "Relationship",
+                                  "type": "string",
+                                  "const": "none"
+                                },
+                                "rows": {
+                                  "items": {
+                                    "$ref": "#/$defs/DataRow"
+                                  },
+                                  "maxItems": 12,
+                                  "title": "Rows",
+                                  "type": "array",
+                                  "const": []
+                                }
+                              },
+                              "required": [
+                                "title",
+                                "bullets",
+                                "purpose"
+                              ],
+                              "title": "EditorialSlide",
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "slide",
+                            "content"
+                          ],
+                          "title": "Replacement",
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "maxItems": 4,
+                    "minItems": 4,
+                    "title": "Replacements",
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "replacements"
+                ],
+                "title": "EditorialPatch",
+                "type": "object"
+              },
+              "strict": true
+            }
+          }
+        },
+        "messages": [
+          {
+            "role": "system",
+            "content": {
+              "sha256": "d846af4e13a4f21c1b856d813a0f3ef0b44c9aa2449ab29ece39ba4f4f1a3f05"
+            }
+          },
+          {
+            "role": "user",
+            "content": "{\"untrusted_input\": {\"source\": {\"title\": \"Transit Control Room Mockup\", \"facts\": [{\"id\": \"f1\", \"text\": \"The attached 16:9 image is a generated control-room mockup included to test landscape screenshot placement.\", \"section\": \"Purpose\", \"source\": \"user_text\", \"line\": 3, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f2\", \"text\": \"The image reads SAMPLE DATA and SIMULATED SCREEN;\", \"section\": \"Visible labels\", \"source\": \"user_text\", \"line\": 5, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f3\", \"text\": \"its route names, counts, and trend line are decorative test content, not source facts.\", \"section\": \"Visible labels\", \"source\": \"user_text\", \"line\": 5, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f4\", \"text\": \"The image does not document a real service, control system, or measured result.\", \"section\": \"Use limit\", \"source\": \"user_text\", \"line\": 7, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f5\", \"text\": \"Keep the image's full-width dashboard context visible if it is used;\", \"section\": \"Review request\", \"source\": \"user_text\", \"line\": 9, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f6\", \"text\": \"cropping away the sample labels could make the mockup appear factual.\", \"section\": \"Review request\", \"source\": \"user_text\", \"line\": 9, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}, {\"id\": \"f7\", \"text\": \"The PNG was authored for this corpus from vector drawing primitives and has no external image source.\", \"section\": \"Provenance\", \"source\": \"user_text\", \"line\": 11, \"list_item\": false, \"emphasis\": \"\", \"kind\": \"body\"}], \"tables\": [], \"warnings\": [], \"quarantined\": [], \"headings\": [], \"directives\": []}, \"slide_range\": [5, 5], \"include_cover\": true, \"audience\": \"\", \"instructions\": \"\", \"characters_per_slide\": 500, \"templates\": [{\"id\": \"native-slide-1\", \"purpose\": \"divider\", \"source_slide\": 1, \"graphic_kind\": \"none\", \"fields\": 0, \"title_max_characters\": 46, \"field_capacity\": []}, {\"id\": \"native-layout-0-0\", \"purpose\": \"cover\", \"source_slide\": 0, \"graphic_kind\": \"none\", \"fields\": 1, \"title_max_characters\": 66, \"field_capacity\": [{\"width\": 490, \"height\": 131, \"target_max_characters\": 270}]}, {\"id\": \"native-layout-0-2\", \"purpose\": \"divider\", \"source_slide\": 0, \"graphic_kind\": \"none\", \"fields\": 0, \"title_max_characters\": 33, \"field_capacity\": []}], \"required_chart_types\": [], \"allowed_slide_indices\": [2, 3, 4, 5], \"previous_plan\": {\"slides\": [{\"title\": \"Transit Control Room Mockup\", \"purpose\": \"cover\", \"bullets\": [{\"text\": \"The attached 16:9 image is a generated control-room mockup included to test landscape screenshot placement.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f1\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}, {\"title\": \"Visible labels\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The image reads SAMPLE DATA and SIMULATED SCREEN;\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f2\"}]}, {\"text\": \"its route names, counts, and trend line are decorative test content, not source facts.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f3\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}, {\"title\": \"Use limit\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The image does not document a real service, control system, or measured result.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f4\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}, {\"title\": \"Review request\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"Keep the image's full-width dashboard context visible if it is used;\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f5\"}]}, {\"text\": \"cropping away the sample labels could make the mockup appear factual.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f6\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}, {\"title\": \"Provenance\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The PNG was authored for this corpus from vector drawing primitives and has no external image source.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f7\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}], \"omitted\": []}, \"revision_feedback\": {\"issues\": [], \"essential_facts_to_restore\": [], \"explanation\": \"Geometry requires repair before semantic review\", \"geometry\": \"Компоновка требует исправления на слайдах 2, 3, 4, 5. Причины и допустимые действия записаны по каждому объекту.\", \"repair_issues\": [{\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 2, \"claim\": null, \"element\": 0}, {\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 3, \"claim\": null, \"element\": 0}, {\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 4, \"claim\": null, \"element\": 0}, {\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 5, \"claim\": null, \"element\": 0}], \"fields\": [{\"slide\": 2, \"pattern_id\": null, \"findings\": [{\"code\": \"readability\", \"severity\": \"warning\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"slide\": 2, \"element\": 0, \"repaired\": false}], \"repair_issues\": [{\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 2, \"claim\": null, \"element\": 0}], \"fields\": [{\"element\": 0, \"role\": \"title\", \"text\": \"Visible labels\", \"fact_ids\": [], \"current_font_size\": 17.0, \"minimum_font_size\": 18, \"width\": 883, \"height\": 103, \"target_max_characters\": 392}]}, {\"slide\": 3, \"pattern_id\": null, \"findings\": [{\"code\": \"readability\", \"severity\": \"warning\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"slide\": 3, \"element\": 0, \"repaired\": false}], \"repair_issues\": [{\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 3, \"claim\": null, \"element\": 0}], \"fields\": [{\"element\": 0, \"role\": \"title\", \"text\": \"Use limit\", \"fact_ids\": [], \"current_font_size\": 17.0, \"minimum_font_size\": 18, \"width\": 883, \"height\": 22, \"target_max_characters\": 98}]}, {\"slide\": 4, \"pattern_id\": null, \"findings\": [{\"code\": \"readability\", \"severity\": \"warning\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"slide\": 4, \"element\": 0, \"repaired\": false}], \"repair_issues\": [{\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 4, \"claim\": null, \"element\": 0}], \"fields\": [{\"element\": 0, \"role\": \"title\", \"text\": \"Review request\", \"fact_ids\": [], \"current_font_size\": 17.0, \"minimum_font_size\": 18, \"width\": 883, \"height\": 22, \"target_max_characters\": 98}]}, {\"slide\": 5, \"pattern_id\": null, \"findings\": [{\"code\": \"readability\", \"severity\": \"warning\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"slide\": 5, \"element\": 0, \"repaired\": false}], \"repair_issues\": [{\"code\": \"readability\", \"message\": \"Текст или подписи данных меньше порога читаемости: проверьте слайд.\", \"action\": \"shorten_text\", \"slide\": 5, \"claim\": null, \"element\": 0}], \"fields\": [{\"element\": 0, \"role\": \"title\", \"text\": \"Provenance\", \"fact_ids\": [], \"current_font_size\": 17.0, \"minimum_font_size\": 18, \"width\": 883, \"height\": 22, \"target_max_characters\": 98}]}], \"previous_semantic_corrections\": []}, \"repair_contracts\": [{\"slide\": 2, \"fixed_bullets\": [{\"index\": 1, \"content\": {\"text\": \"The image reads SAMPLE DATA and SIMULATED SCREEN;\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f2\"}]}}, {\"index\": 2, \"content\": {\"text\": \"its route names, counts, and trend line are decorative test content, not source facts.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f3\"}]}}], \"bullet_count\": 2, \"fixed_title\": null, \"purpose\": \"content\", \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": [], \"source_fact_ids\": [\"f2\", \"f3\"], \"groups\": null, \"target_characters_per_bullet\": 250}, {\"slide\": 3, \"fixed_bullets\": [{\"index\": 1, \"content\": {\"text\": \"The image does not document a real service, control system, or measured result.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f4\"}]}}], \"bullet_count\": 1, \"fixed_title\": null, \"purpose\": \"content\", \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": [], \"source_fact_ids\": [\"f4\"], \"groups\": null, \"target_characters_per_bullet\": 500}, {\"slide\": 4, \"fixed_bullets\": [{\"index\": 1, \"content\": {\"text\": \"Keep the image's full-width dashboard context visible if it is used;\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f5\"}]}}, {\"index\": 2, \"content\": {\"text\": \"cropping away the sample labels could make the mockup appear factual.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f6\"}]}}], \"bullet_count\": 2, \"fixed_title\": null, \"purpose\": \"content\", \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": [], \"source_fact_ids\": [\"f5\", \"f6\"], \"groups\": null, \"target_characters_per_bullet\": 250}, {\"slide\": 5, \"fixed_bullets\": [{\"index\": 1, \"content\": {\"text\": \"The PNG was authored for this corpus from vector drawing primitives and has no external image source.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f7\"}]}}], \"bullet_count\": 1, \"fixed_title\": null, \"purpose\": \"content\", \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": [], \"source_fact_ids\": [\"f7\"], \"groups\": null, \"target_characters_per_bullet\": 500}], \"numeric_evidence_hints\": [], \"instruction\": \"Return replacements ONLY for the allowed slides. Keep total count and order. Preserve every previously corrected qualification. Use fact_id citations only. Do not edit neighbours.\", \"validation_feedback\": \"Match the schema and preserve required ID coverage. No extra fields. Validation issue: Repair repeats an already rejected plan. Change the affected content or evidence to resolve revision_feedback; returning the same slide cannot fix it.\"}}"
+          }
+        ]
+      },
+      "status": 200,
+      "response": {
+        "choices": [
+          {
+            "message": {
+              "role": "assistant",
+              "content": "{\"replacements\": [{\"slide\": 2, \"content\": {\"title\": \"Visible labels\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The image reads SAMPLE DATA and SIMULATED SCREEN;\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f2\"}]}, {\"text\": \"its route names, counts, and trend line are decorative test content, not source facts.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f3\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}}, {\"slide\": 3, \"content\": {\"title\": \"Use limit\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The image does not document a real service, control system, or measured result.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f4\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}}, {\"slide\": 4, \"content\": {\"title\": \"Review request\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"Keep the image's full-width dashboard context visible if it is used;\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f5\"}]}, {\"text\": \"cropping away the sample labels could make the mockup appear factual.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f6\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}}, {\"slide\": 5, \"content\": {\"title\": \"Provenance\", \"purpose\": \"content\", \"bullets\": [{\"text\": \"The PNG was authored for this corpus from vector drawing primitives and has no external image source.\", \"group\": \"\", \"parent_group\": null, \"evidence\": [{\"fact_id\": \"f7\"}]}], \"source_table_id\": null, \"source_columns\": [], \"chart_type\": \"auto\", \"relationship\": \"none\", \"rows\": []}}]}"
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 100,
+          "completion_tokens": 50,
+          "total_tokens": 150
+        }
+      }
+    }
+  ],
+  "ineffective_editorial_repair_allowed": true,
+  "authoring_execution_status": "inconclusive",
+  "quality_oracle": false
+}

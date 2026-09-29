@@ -1,0 +1,272 @@
+{
+  "schema_version": 1,
+  "license": "CC0-1.0; original synthetic fixtures authored for this corpus",
+  "cases": [
+    {
+      "id": "dev-short-brief",
+      "family_id": "owned-family:dev-short-brief",
+      "material_id": "fixture:development:dev-short-brief:v1",
+      "template_file": "repair-pilot-4x3.potx",
+      "template_sha256": "54d3640b11f1101bf315625660dde966cb3f468fa603b87b7e7af0f970e72398",
+      "features": [
+        "layout_inheritance",
+        "master_graphics"
+      ],
+      "source_file": "audit_e2e/fixtures/development/sources/dev-short-brief.md",
+      "source_sha256": "3333aada6485ec728c89c0a7067ef55716ad7de41463d98676c636a677084c3c",
+      "images": []
+    },
+    {
+      "id": "dev-long-title-paragraphs",
+      "family_id": "owned-family:dev-long-title-paragraphs",
+      "material_id": "fixture:development:dev-long-title-paragraphs:v1",
+      "template_file": "river-handoff-dark-wide.pptx",
+      "template_sha256": "412b6d2fa5e85453d2ade8658a80c539b02e8128771a0d1c477cf835a0887538",
+      "features": [
+        "layout_inheritance",
+        "master_graphics",
+        "narrow_regions",
+        "dark_theme"
+      ],
+      "source_file": "audit_e2e/fixtures/development/sources/dev-long-title-paragraphs.md",
+      "source_sha256": "f89608e7f7cdcb994e4f5af76a6ff62ec6e932bfa6ed8ae2e6c7457185130136",
+      "images": []
+    },
+    {
+      "id": "dev-route-comparison",
+      "family_id": "owned-family:dev-route-comparison",
+      "material_id": "fixture:development:dev-route-comparison:v1",
+      "template_file": "mobile-library-split.pptx",
+      "template_sha256": "c74cabc86ef7f9b2b4a2c314147d1ebafddf46c4b8174ea3481c4add08cad8c7",
+      "features": [
+        "layout_inheritance",
+        "master_graphics",
+        "group_shapes",
+        "split_regions"
+      ],
+      "source_file": "audit_e2e/fixtures/development/sources/dev-route-comparison.md",
+      "source_sha256": "1d0b29e103790d66935858cbfa1020424c0a3e3b2a60f60829d5b016535199d2",
+      "images": []
+    },
+    {
+      "id": "dev-project-timeline",
+      "family_id": "owned-family:dev-project-timeline",
+      "material_id": "fixture:development:dev-project-timeline:v1",
+      "template_file": "canal-timeline-4x3.pptx",
+      "template_sha256": "849a26d056dc9886022c06f4c191c112b22355078b07e59ed141f097bc81c510",
+      "features": [
+        "layout_inheritance",
+        "master_graphics",
+        "timeline_rail"
+      ],
+      "source_file": "audit_e2e/fixtures/development/sources/dev-project-timeline.md",
+      "source_sha256": "238b9dab915742afa3af2a4047c886ff0aeafdbeac8418aef4b12d4bf987b5a5",
+      "images": []
+    },
+    {
+      "id": "dev-long-table",
+      "family_id": "owned-family:dev-long-table",
+      "material_id": "fixture:development:dev-long-table:v1",
+      "template_file": "energy-long-ledger.pptx",
+      "template_sha256": "93f4535cba4ec6bb8585ac3e931f441326ad4a7b103b539226c67841b645f21c",
+      "features": [
+        "layout_inheritance",
+        "master_graphics",
+        "native_tables"
+      ],
+      "source_file": "audit_e2e/fixtures/development/sources/dev-long-table.md",
+      "source_sha256": "2ebfba111d54ec80298b0fa453283aeabc89176b3fa152d06bdb7de48f942292",
+      "images": []
+    },
+    {
+      "id": "dev-wide-table",
+      "family_id": "owned-family:dev-wide-table",
+      "material_id": "fixture:development:dev-wide-table:v1",
+      "template_file": "service-wide-matrix.pptx",
+      "template_sha256": "0e9a62ff8abf017ca411afe549749215fd79e777a0de2e0f91a39b63b7b93551",
+      "features": [
+        "layout_inheritance",
+        "master_graphics",
+        "native_tables",
+        "wide_canvas"
+      ],
+      "source_file": "audit_e2e/fixtures/development/sources/dev-wide-table.md",
+      "source_sha256": "0d13e8fec23b41460218e76f74501e056dedb283a916ae27f0277e78ce5c1b72",
+      "images": []
+    },
+    {
+      "id": "dev-labeled-metrics",
+      "family_id": "owned-family:dev-labeled-metrics",
+      "material_id": "fixture:development:dev-labeled-metrics:v1",
+      "template_file": "workshop-source-notes.pptx",
+      "template_sha256": "e1cd914ab898240b174675fd15de48d10b642a4468ae8d1a56c10c51133d4ff6",
+      "features": [
+        "layout_inheritance",
+        "master_graphics",
+        "narrow_regions",
+        "source_notes"
+      ],
+      "source_file": "audit_e2e/fixtures/development/sources/dev-labeled-metrics.md",
+      "source_sha256": "516ba9730ab3b141c051409c12dbed7edf6b5e19104e624ddc81b16547697557",
+      "images": []
+    },
+    {
+      "id": "dev-chart-series",
+      "family_id": "owned-family:dev-chart-series",
+      "material_id": "fixture:development:dev-chart-series:v1",
+      "template_file": "rooftop-multiseries-chart.pptx",
+      "template_sha256": "b1c6d1dd89f82cfddd72f1532df85717015cb44ced6ed62c69587b9478d86be3",
+      "features": [
+        "layout_inheritance",
+        "master_graphics",
+        "native_charts",
+        "embedded_workbook"
+      ],
+      "source_file": "audit_e2e/fixtures/development/sources/dev-chart-series.md",
+      "source_sha256": "992f8891beb15009fba77af3dcf8c02c44867419648d3758ead45eab2ccbdfe6",
+      "images": []
+    },
+    {
+      "id": "dev-screenshot-landscape",
+      "family_id": "owned-family:dev-screenshot-landscape",
+      "material_id": "fixture:development:dev-screenshot-landscape:v1",
+      "template_file": "controlroom-capture.pptx",
+      "template_sha256": "90e05917b9d561c5416fe9adb3e58b58f089e41d1a712a1bea8f3d2d99fd3afa",
+      "features": [
+        "layout_inheritance",
+        "master_graphics",
+        "screenshot_context"
+      ],
+      "source_file": "audit_e2e/fixtures/development/sources/dev-screenshot-landscape.md",
+      "source_sha256": "2adf99978e02fd1f23026eb7ee4e883740afd2f1e341807eb9cae2b0c2b828a6",
+      "images": [
+        {
+          "file": "dev-screenshot-landscape.png",
+          "sha256": "7e1cff94dcc0b4e7fabe4fe74a6a219807d7d782aa34661b8c119df9b0cdfb4d",
+          "source": "Owned simulated screenshot; authored for this corpus",
+          "origin": "owned_synthetic_asset",
+          "width_px": 1600,
+          "height_px": 900,
+          "role": "layout_stress_input"
+        }
+      ]
+    },
+    {
+      "id": "dev-screenshot-portrait",
+      "family_id": "owned-family:dev-screenshot-portrait",
+      "material_id": "fixture:development:dev-screenshot-portrait:v1",
+      "template_file": "fieldcheck-portrait.potx",
+      "template_sha256": "18e62f66cbbe6c04531afd0ae19c3e5f36f29c65d2f1360b87958915298333f1",
+      "features": [
+        "layout_inheritance",
+        "master_graphics",
+        "portrait_canvas",
+        "screenshot_context"
+      ],
+      "source_file": "audit_e2e/fixtures/development/sources/dev-screenshot-portrait.md",
+      "source_sha256": "79f64c73bd36be1c2ce0009cc84b415822bca6e8a495ad34abf24c7554b4634d",
+      "images": [
+        {
+          "file": "dev-screenshot-portrait.png",
+          "sha256": "bc104c9fe02091f987416380bdf652279f39863dbe4b98a75e02ef10118b843b",
+          "source": "Owned simulated screenshot; authored for this corpus",
+          "origin": "owned_synthetic_asset",
+          "width_px": 540,
+          "height_px": 960,
+          "role": "layout_stress_input"
+        }
+      ]
+    },
+    {
+      "id": "dev-screenshot-square",
+      "family_id": "owned-family:dev-screenshot-square",
+      "material_id": "fixture:development:dev-screenshot-square:v1",
+      "template_file": "catalog-square-asset.pptx",
+      "template_sha256": "7f3b62b241b9eb34468fa0c60fc2ab1c4273b63d68cbb58de813ccc91f530d87",
+      "features": [
+        "layout_inheritance",
+        "master_graphics",
+        "screenshot_context"
+      ],
+      "source_file": "audit_e2e/fixtures/development/sources/dev-screenshot-square.md",
+      "source_sha256": "74c32fc4d6f4994e9f2d4052b3950d1cdb0dcdff1e923b16552db30225664e23",
+      "images": [
+        {
+          "file": "dev-screenshot-square.png",
+          "sha256": "f5e0eeefd18829d67bac55eb124f6c08c14853bdb8ec9ca2a67311480d57130d",
+          "source": "Owned simulated screenshot; authored for this corpus",
+          "origin": "owned_synthetic_asset",
+          "width_px": 960,
+          "height_px": 960,
+          "role": "layout_stress_input"
+        }
+      ]
+    },
+    {
+      "id": "dev-narrow-region",
+      "family_id": "owned-family:dev-narrow-region",
+      "material_id": "fixture:development:dev-narrow-region:v1",
+      "template_file": "archive-narrow-columns.pptx",
+      "template_sha256": "b76a6a17a4b3b437bbd878cb9f205d782eabd66f6608a948ce5707ae394b512c",
+      "features": [
+        "layout_inheritance",
+        "master_graphics",
+        "narrow_regions",
+        "multi_column_layout"
+      ],
+      "source_file": "audit_e2e/fixtures/development/sources/dev-narrow-region.md",
+      "source_sha256": "fce8a4aa7b0cd43a45454fbfb58dc099df7675a9d6415e458ac45054a4fb8705",
+      "images": []
+    },
+    {
+      "id": "dev-grouped-process",
+      "family_id": "owned-family:dev-grouped-process",
+      "material_id": "fixture:development:dev-grouped-process:v1",
+      "template_file": "equipment-flow-groups.pptx",
+      "template_sha256": "86acd5b98c862fa469871991273e433fdb010f0e2284589a015ffd2cd62ae88b",
+      "features": [
+        "layout_inheritance",
+        "master_graphics",
+        "group_shapes",
+        "connected_process"
+      ],
+      "source_file": "audit_e2e/fixtures/development/sources/dev-grouped-process.md",
+      "source_sha256": "333444df2eb70f76d71fb9c5d998e6d75331023c275aa84f1d6b8a19ba106aab",
+      "images": []
+    },
+    {
+      "id": "dev-multiple-masters",
+      "family_id": "owned-family:dev-multiple-masters",
+      "material_id": "fixture:development:dev-multiple-masters:v1",
+      "template_file": "coastal-dual-master.pptx",
+      "template_sha256": "77907adaeb52c043036879a417468a87e79886cdef4189ce35f564ef4bd39381",
+      "features": [
+        "layout_inheritance",
+        "master_graphics",
+        "multiple_masters",
+        "team_layouts"
+      ],
+      "source_file": "audit_e2e/fixtures/development/sources/dev-multiple-masters.md",
+      "source_sha256": "c7340137ad9fda073280e0aea3f1e766f9fd2bfc1b41b543bdeeccf03bf1b73e",
+      "images": []
+    },
+    {
+      "id": "dev-chart-workbook-resource",
+      "family_id": "owned-family:dev-chart-workbook-resource",
+      "material_id": "fixture:development:dev-chart-workbook-resource:v1",
+      "template_file": "booking-chart-workbook.pptx",
+      "template_sha256": "0f298d87917ab432243fd34947aadcd64b70b09b9deddfe2ef969a29b06d1162",
+      "features": [
+        "layout_inheritance",
+        "master_graphics",
+        "native_charts",
+        "native_tables",
+        "embedded_workbook",
+        "linked_media"
+      ],
+      "source_file": "audit_e2e/fixtures/development/sources/dev-chart-workbook-resource.md",
+      "source_sha256": "7a0058d39601877a99350c21688863d24b9b0529466573e70526c8762500770b",
+      "images": []
+    }
+  ]
+}

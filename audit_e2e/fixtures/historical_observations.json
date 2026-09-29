@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "classification": "local_only_historical_observations_not_calibration_labels",
+  "read_only_source": "/Users/vadim/Documents/experiments/agentiko_prezi-backend-refactor/test-results/evaluation-implementation/live-core-complete-20260929",
+  "note": "Index hashes and local paths only. Do not copy external brand decks or previews into this repository. These observations come from an uncalibrated judge with a silver reference and do not qualify a detector or defect category.",
+  "observations": [
+    {
+      "id": "binghamton-live-20260929-unsupported-outcome-and-template-drift",
+      "case_id": "binghamton-content",
+      "evidence_status": "observed_by_primary_judge; overall_run_inconclusive; reference_silver; calibration_not_passed",
+      "artifacts": {
+        "run_report": {
+          "path": "/Users/vadim/Documents/experiments/agentiko_prezi-backend-refactor/test-results/evaluation-implementation/live-core-complete-20260929/judgment-842bebd5/report.json",
+          "sha256": "7ee8109786da3ad980f0a207db9ac005b03a327d9e20f9c919ba3e2ee64a0fa3"
+        },
+        "case_bundle": {
+          "path": "/Users/vadim/Documents/experiments/agentiko_prezi-backend-refactor/test-results/evaluation-implementation/live-core-complete-20260929/binghamton-content/bundle/bundle.json",
+          "sha256": "d7186adb176ddd209091c20dfc9d9ef47700c497c0e8b3e8acd3d8c544cb2aad"
+        },
+        "executive_pptx": {
+          "path": "/Users/vadim/Documents/experiments/agentiko_prezi-backend-refactor/test-results/evaluation-implementation/live-core-complete-20260929/binghamton-content/bundle/variants/executive/deck.pptx",
+          "sha256": "5c460030c6af596a9c50f689640d40f09049f0e057373b20d3238184c0bfd8ab"
+        },
+        "executive_pdf": {
+          "path": "/Users/vadim/Documents/experiments/agentiko_prezi-backend-refactor/test-results/evaluation-implementation/live-core-complete-20260929/binghamton-content/bundle/variants/executive/deck.pdf",
+          "sha256": "0ff7d07dc0a2fe8f4bf15f00c05a81708a48ca00cbbba9efcba5304a8c84dc39"
+        },
+        "analytical_pptx": {
+          "path": "/Users/vadim/Documents/experiments/agentiko_prezi-backend-refactor/test-results/evaluation-implementation/live-core-complete-20260929/binghamton-content/bundle/variants/analytical/deck.pptx",
+          "sha256": "be86a1f20ac0bd98a0435d688a08d8a228df5c4507e519caa29e064f7af50714"
+        },
+        "analytical_pdf": {
+          "path": "/Users/vadim/Documents/experiments/agentiko_prezi-backend-refactor/test-results/evaluation-implementation/live-core-complete-20260929/binghamton-content/bundle/variants/analytical/deck.pdf",
+          "sha256": "c5c8be82d98cc151a52ef6dcaf0340e4057730e471b86a0498570fe4285c1735"
+        },
+        "story_pptx": {
+          "path": "/Users/vadim/Documents/experiments/agentiko_prezi-backend-refactor/test-results/evaluation-implementation/live-core-complete-20260929/binghamton-content/bundle/variants/story/deck.pptx",
+          "sha256": "273fd8b857ad08452cca3df78e9c77ce1b82d737b15a38e2e4a644ac3478e62b"
+        },
+        "story_pdf": {
+          "path": "/Users/vadim/Documents/experiments/agentiko_prezi-backend-refactor/test-results/evaluation-implementation/live-core-complete-20260929/binghamton-content/bundle/variants/story/deck.pdf",
+          "sha256": "77af47afc675d4e6282106b37a572efa0c81085abb62076bdf628d5161a94cb7"
+        }
+      },
+      "findings": [
+        {
+          "category": "unsupported",
+          "severity": "minor",
+          "variants": {
+            "executive": [{"slide": 5, "region": "First bullet, claim about the pilot’s result", "text": "Пилот на 40 заявках за 12 недель покажет эффективность"}],
+            "analytical": [{"slide": 5, "region": "First bullet, claim about the pilot’s result", "text": "Пилот на 40 заявках за 12 недель покажет эффективность"}],
+            "story": [{"slide": 5, "region": "First bullet, claim about the pilot’s result", "text": "Пилот на 40 заявках за 12 недель покажет эффективность"}]
+          },
+          "judge_description": "The primary review described this efficacy claim as absent from source material. It is retained as a historical challenge lead, not a gold label."
+        },
+        {
+          "category": "template_fidelity",
+          "severity": "minor",
+          "variants": {
+            "executive": [{"slide": 1, "region": "Full-slide background"}],
+            "analytical": [
+              {"slide": 1, "region": "Full-slide background"},
+              {"slide": 2, "region": "Green left panel and white right column"},
+              {"slide": 4, "region": "Full content layout"}
+            ],
+            "story": [
+              {"slide": 1, "region": "Full-slide background"},
+              {"slide": 2, "region": "Green left panel and white right column"},
+              {"slide": 5, "region": "Top band and content field"}
+            ]
+          },
+          "judge_description": "The primary review cited replacement of the photographic cover background and inconsistent content-page layouts. The original branded source template remains local-only."
+        }
+      ]
+    }
+  ]
+}

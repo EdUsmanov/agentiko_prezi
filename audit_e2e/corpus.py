@@ -12,6 +12,7 @@ from PIL import Image, ImageDraw
 from .reporting import AUDIT_ROOT, ROOT
 
 CASE_FILE = AUDIT_ROOT / "fixtures/cases.json"
+DEVELOPMENT_CASE_FILE = AUDIT_ROOT / "fixtures/development-cases.json"
 _HASH = re.compile(r"^[0-9a-f]{64}$")
 _POINT_KEYS = {"id", "statement", "quote", "required", "origin"}
 
@@ -46,7 +47,7 @@ def _validate_registry(payload):
         if not isinstance(case_id, str) or not case_id or case_id in ids:
             raise ValueError(f"Invalid or duplicate evaluation case id: {case_id!r}")
         ids.add(case_id)
-        if case["suite"] not in {"core", "extended"}:
+        if case["suite"] not in {"core", "extended", "development"}:
             raise ValueError(f"Invalid suite for {case_id}")
         if not isinstance(case["content"], str):
             raise ValueError(f"Case content must be text: {case_id}")
@@ -64,6 +65,21 @@ def _validate_registry(payload):
             raise ValueError(f"Invalid template metadata: {case_id}")
         if not Path(template.get("file", "")).name == template.get("file"):
             raise ValueError(f"Template file must be a basename: {case_id}")
+        owned = case["synthetic_template"].get("kind") == "owned_native"
+        if case["suite"] == "development":
+            asset = Path(case["synthetic_template"].get("asset", ""))
+            if (
+                not owned
+                or asset.is_absolute()
+                or ".." in asset.parts
+                or asset.parts[:1] != ("templates",)
+                or asset.name != template["file"]
+                or template.get("origin") != "owned_native_synthetic"
+                or not template.get("family_id")
+                or not template.get("material_id")
+                or not template.get("features")
+            ):
+                raise ValueError(f"Invalid owned-native fixture metadata: {case_id}")
         if type(case["slides"]) is not int or not 1 <= case["slides"] <= 30 or not case["variants"]:
             raise ValueError(f"Invalid slide or variant count: {case_id}")
         interface = case.get("interface", "http")
@@ -131,15 +147,11 @@ def _validate_registry(payload):
     return payload
 
 
-def load_cases(suite="core"):
-    """Return four core or nine extended cases with references resolved."""
-    if suite not in {"core", "extended"}:
-        raise ValueError("suite must be 'core' or 'extended'")
-    payload = _validate_registry(json.loads(CASE_FILE.read_text(encoding="utf-8")))
+def _resolve_cases(payload, *, core_only=False):
     references = {item["id"]: item["reference"] for item in payload["cases"] if "reference" in item}
     cases = []
     for raw in payload["cases"]:
-        if suite == "core" and raw["suite"] != "core":
+        if core_only and raw["suite"] != "core":
             continue
         case = deepcopy(raw)
         case.setdefault(
@@ -166,6 +178,22 @@ def load_cases(suite="core"):
             raise ValueError(f"Reference quote does not anchor in {case['id']}")
         cases.append(case)
     return cases
+
+
+def load_cases(suite="core"):
+    """Return core (4), extended (9), or development (24) source-anchored cases."""
+    if suite not in {"core", "extended", "development"}:
+        raise ValueError("suite must be 'core', 'extended', or 'development'")
+    payload = _validate_registry(json.loads(CASE_FILE.read_text(encoding="utf-8")))
+    if suite == "core":
+        return _resolve_cases(payload, core_only=True)
+    base_cases = _resolve_cases(payload)
+    if suite == "extended":
+        return base_cases
+    development = _validate_registry(
+        json.loads(DEVELOPMENT_CASE_FILE.read_text(encoding="utf-8"))
+    )
+    return base_cases + _resolve_cases(development)
 
 
 def _inputs_root(corpus_root):
@@ -213,13 +241,35 @@ def materialize_case(case, directory, *, synthetic=False, corpus_root=None):
     if corpus_root is None:
         corpus_root = ROOT / "test-results" / "external-template-corpus"
     corpus_root = Path(corpus_root)
+    owned_native = result.get("synthetic_template", {}).get("kind") == "owned_native"
 
     source_content_path = directory / "source.md"
     source_content_path.write_text(result["content"], encoding="utf-8")
     if _digest(source_content_path.read_bytes()) != content_hash:
         raise ValueError(f"Could not freeze source text: {result['id']}")
 
-    if synthetic:
+    if owned_native:
+        fixture_root = AUDIT_ROOT / "fixtures" / "development"
+        source_template = fixture_root / result["synthetic_template"]["asset"]
+        if not source_template.is_file():
+            raise FileNotFoundError(f"Missing owned development template: {source_template}")
+        if _digest(source_template.read_bytes()) != template_info["sha256"]:
+            raise ValueError(f"Registered template hash mismatch: {result['id']}")
+        template_path = directory / template_info["file"]
+        shutil.copy2(source_template, template_path)
+        image_paths = []
+        for item in image_sources:
+            source_image = fixture_root / "images" / item["file"]
+            if not source_image.is_file():
+                raise FileNotFoundError(f"Missing owned development image: {source_image}")
+            if _digest(source_image.read_bytes()) != item["sha256"]:
+                raise ValueError(f"Registered image hash mismatch: {result['id']}/{item['file']}")
+            image_path = directory / item["file"]
+            shutil.copy2(source_image, image_path)
+            image_paths.append(image_path)
+        template_origin = "owned_native_synthetic"
+        image_origin = "owned_synthetic_asset" if image_paths else "no_input_image"
+    elif synthetic:
         from test_support.inputs import make_template
 
         suffix = ".potx" if template_info["format"] == "POTX" else ".pptx"
@@ -258,7 +308,7 @@ def materialize_case(case, directory, *, synthetic=False, corpus_root=None):
 
     actual_template_hash = _digest(template_path.read_bytes())
     actual_image_hashes = {path.name: _digest(path.read_bytes()) for path in image_paths}
-    if synthetic:
+    if synthetic and not owned_native:
         for item in result.get("reference", {}).get("requirements", []):
             if item.get("id") == "template-fidelity" or item.get("kind") == "template-fidelity":
                 item["applicability"] = "not_applicable_synthetic_template"
@@ -278,6 +328,18 @@ def materialize_case(case, directory, *, synthetic=False, corpus_root=None):
         "images": {item["file"]: item["sha256"] for item in image_sources},
     }
     result["synthetic"] = bool(synthetic)
+    result["template_fidelity_applicability"] = (
+        "owned_native_template" if owned_native else "not_applicable_synthetic_template"
+        if synthetic
+        else "external_template"
+    )
     result["template_origin"] = template_origin
     result["image_origin"] = image_origin
+    result["template_family_id"] = template_info.get("family_id")
+    result["template_material_id"] = template_info.get("material_id")
+    result["template_feature_evidence"] = {
+        "claimed_features": deepcopy(template_info.get("features", [])),
+        "template_sha256": actual_template_hash,
+        "material_id": template_info.get("material_id"),
+    }
     return result

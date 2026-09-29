@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "reference_version": "defect-corpus-1",
+  "diversity_requirement": {
+    "id": "variant-presentations",
+    "kind": "presentation_diversity",
+    "status": "silver",
+    "text": "Each variant must differ in source-material organization and composition; cosmetic changes alone do not qualify; shared covers and tables are allowed."
+  },
+  "categories": [
+    {"id": "omission", "target": "compliance", "description": "A required source point is absent from visible output."},
+    {"id": "number", "target": "duration", "description": "A source number is changed."},
+    {"id": "negation", "target": "caveat", "description": "A source negation is reversed."},
+    {"id": "condition", "target": "decision", "description": "A decision condition is dropped."},
+    {"id": "table_binding", "target": "table", "description": "Table values are attached to the wrong row labels."},
+    {"id": "units", "target": "table", "description": "A table column's unit is changed."},
+    {"id": "provenance", "target": "proposal", "description": "A model proposal is presented as an established result."},
+    {"id": "hidden_text", "target": "compliance", "description": "A required point appears only off-slide, hidden, or in notes."},
+    {"id": "duplicates", "target": "variant", "description": "The three delivered variants are the same exported presentation."},
+    {"id": "template_fidelity", "target": "theme", "description": "The exported deck abandons the source template's visual system."},
+    {"id": "readability", "target": "body", "description": "Required body text is rendered too small to read comfortably."},
+    {"id": "clipping", "target": "geometry", "description": "A required text block extends beyond the slide canvas."},
+    {"id": "overlap", "target": "geometry", "description": "Two unrelated required text blocks cover one another."},
+    {"id": "lowcontrast", "target": "contrast", "description": "Required text is rendered with insufficient contrast."},
+    {"id": "backgroundloss", "target": "background", "description": "A required branded content-page background is lost."},
+    {"id": "foreign_template_content", "target": "template_text", "description": "Unrelated template text appears in the exported presentation."},
+    {"id": "chart_value", "target": "chart", "description": "A chart point disagrees with the source table."},
+    {"id": "chart_axis", "target": "chart", "description": "A chart axis label disagrees with the source table's measure."},
+    {"id": "image_missing", "target": "image", "description": "A required source figure is missing from the exported presentation."},
+    {"id": "image_distorted", "target": "image", "description": "A source figure is visibly stretched from its source aspect ratio."},
+    {"id": "pptx_pdf_mismatch", "target": "pdf_export", "description": "The PDF export disagrees with the delivered PPTX."},
+    {"id": "pptx_html_mismatch", "target": "html_export", "description": "The HTML export disagrees with the delivered PPTX."}
+  ],
+  "sources": [
+    {
+      "id": "queue-pilot",
+      "title": "Queue service pilot",
+      "facts": [
+        {"id": "context", "statement": "The team evaluates a shared service queue.", "quote": "shared service queue.", "paraphrase": "The team studies one shared queue for service requests.", "required": true, "origin": "user_text"},
+        {"id": "duration", "statement": "The service queue pilot runs for 12 weeks.", "quote": "for 12 weeks.", "paraphrase": "The queue-service trial lasts 12 weeks.", "required": true, "origin": "user_text", "numbers": [{"value": "12", "unit": "weeks"}]},
+        {"id": "sample", "statement": "The team records 73 requests.", "quote": "73 requests.", "paraphrase": "Reviewers log 73 requests.", "required": true, "origin": "user_text", "numbers": [{"value": "73", "unit": "requests"}]},
+        {"id": "caveat", "statement": "Team membership changed, so the observed difference does not prove service impact.", "quote": "not prove service impact.", "paraphrase": "Because team membership changed, the observed difference cannot establish service impact.", "required": true, "origin": "user_text", "negation": "does not prove"},
+        {"id": "decision", "statement": "After checking closure share, the team chooses whether to extend the pilot for 8 weeks if service quality holds.", "quote": "if service quality holds.", "paraphrase": "The team considers an 8-week extension after reviewing closure share, provided service quality holds.", "required": true, "origin": "user_text", "numbers": [{"value": "8", "unit": "weeks"}], "condition": "if service quality holds"},
+        {"id": "proposal", "statement": "Model proposal: predictive routing may reduce triage time.", "quote": "predictive routing may reduce triage time.", "paraphrase": "The model suggests predictive routing might shorten triage time.", "required": false, "origin": "model_proposal"},
+        {"id": "compliance", "statement": "A privacy review is required before launch.", "quote": "privacy review is required before launch.", "paraphrase": "Launch requires a privacy review.", "required": true, "origin": "user_text"}
+      ],
+      "table": {"headers": ["Team", "Requests", "Closed", "Hours"], "rows": [["North", "40", "34", "18"], ["South", "28", "24", "21"]], "text": "Preserve each team's recorded values and the hour unit."},
+      "chart": {"title": "Requests by team", "categories": ["North", "South"], "series": "Requests", "values": [40, 28], "category_axis": "Team", "value_axis": "Requests"},
+      "figure": {"title": "Pilot sample", "value": "73", "unit": "REQUESTS", "label": "Recorded during the pilot"},
+      "template": {"background": "173550", "accent": "68C5C0", "text": "FFFFFF", "text_contract": "Keep navy content pages, teal section accents, and the source sample figure."}
+    },
+    {
+      "id": "watershed-survey",
+      "title": "Watershed field survey",
+      "facts": [
+        {"id": "context", "statement": "Crews sample two river sections during a field survey.", "quote": "two river sections during a field survey.", "paraphrase": "Field teams visit both river sections during the survey.", "required": true, "origin": "user_text"},
+        {"id": "duration", "statement": "The watershed survey runs for 6 weeks.", "quote": "runs for 6 weeks.", "paraphrase": "The field survey lasts 6 weeks.", "required": true, "origin": "user_text", "numbers": [{"value": "6", "unit": "weeks"}]},
+        {"id": "sample", "statement": "The team records 54 water samples.", "quote": "54 water samples.", "paraphrase": "The field log contains 54 water samples.", "required": true, "origin": "user_text", "numbers": [{"value": "54", "unit": "samples"}]},
+        {"id": "caveat", "statement": "Site coverage changed, so the difference between sections does not prove a restoration effect.", "quote": "not prove a restoration effect.", "paraphrase": "Because site coverage changed, section differences cannot establish a restoration effect.", "required": true, "origin": "user_text", "negation": "does not prove"},
+        {"id": "decision", "statement": "After checking permit readings, the board chooses whether to continue sampling for 2 months if readings stay within limits.", "quote": "if readings stay within limits.", "paraphrase": "The board considers 2 more months of sampling after reviewing permit readings, provided those readings stay within limits.", "required": true, "origin": "user_text", "numbers": [{"value": "2", "unit": "months"}], "condition": "if readings stay within limits"},
+        {"id": "proposal", "statement": "Working hypothesis: bank planting may reduce sediment at sampled sites.", "quote": "bank planting may reduce sediment at sampled sites.", "paraphrase": "One working hypothesis is that bank planting could reduce sediment at sampled sites.", "required": false, "origin": "model_proposal"},
+        {"id": "compliance", "statement": "A permit review is required before follow-up sampling.", "quote": "permit review is required before follow-up sampling.", "paraphrase": "Follow-up sampling requires a permit review.", "required": true, "origin": "user_text"}
+      ],
+      "table": {"headers": ["Section", "Samples", "Within limit", "Turbidity (NTU)"], "rows": [["East", "30", "27", "4"], ["West", "24", "19", "7"]], "text": "Keep each sample count, permit count, turbidity value, and NTU unit attached to its section."},
+      "chart": {"title": "Samples by section", "categories": ["East", "West"], "series": "Samples", "values": [30, 24], "category_axis": "River section", "value_axis": "Samples"},
+      "figure": {"title": "Survey sample", "value": "54", "unit": "WATER SAMPLES", "label": "Recorded in six weeks"},
+      "template": {"background": "173550", "accent": "68C5C0", "text": "FFFFFF", "text_contract": "Keep navy content pages, teal section accents, and the source sample figure."}
+    },
+    {
+      "id": "onboarding-study",
+      "title": "Onboarding usability study",
+      "facts": [
+        {"id": "context", "statement": "Facilitators observe onboarding on mobile and tablet devices.", "quote": "mobile and tablet devices.", "paraphrase": "Facilitators watch onboarding on phones and tablets.", "required": true, "origin": "user_text"},
+        {"id": "duration", "statement": "The onboarding test runs for 3 days.", "quote": "runs for 3 days.", "paraphrase": "The onboarding study lasts 3 days.", "required": true, "origin": "user_text", "numbers": [{"value": "3", "unit": "days"}]},
+        {"id": "sample", "statement": "Facilitators record 26 task attempts.", "quote": "26 task attempts.", "paraphrase": "The facilitators log 26 task attempts.", "required": true, "origin": "user_text", "numbers": [{"value": "26", "unit": "attempts"}]},
+        {"id": "caveat", "statement": "Participant mix changed, so differences between devices do not prove the redesign caused faster setup.", "quote": "not prove the redesign caused faster setup.", "paraphrase": "Because participant mix changed, device differences cannot establish that the redesign made setup faster.", "required": true, "origin": "user_text", "negation": "do not prove"},
+        {"id": "decision", "statement": "After checking task completion, the team chooses whether to repeat the test in 4 weeks if the accessibility review passes.", "quote": "if the accessibility review passes.", "paraphrase": "The team considers repeating the test in 4 weeks after reviewing task completion, provided accessibility review passes.", "required": true, "origin": "user_text", "numbers": [{"value": "4", "unit": "weeks"}], "condition": "if the accessibility review passes"},
+        {"id": "proposal", "statement": "Working hypothesis: a shorter setup flow may reduce time to first task.", "quote": "shorter setup flow may reduce time to first task.", "paraphrase": "One working hypothesis is that a shorter setup flow might reduce time to the first task.", "required": false, "origin": "model_proposal"},
+        {"id": "compliance", "statement": "An accessibility review is required before release.", "quote": "accessibility review is required before release.", "paraphrase": "Release requires an accessibility review.", "required": true, "origin": "user_text"}
+      ],
+      "table": {"headers": ["Device", "Attempts", "Completed", "Median seconds"], "rows": [["Mobile", "14", "11", "42"], ["Tablet", "12", "9", "55"]], "text": "Preserve each device's attempt and completion counts and the seconds unit."},
+      "chart": {"title": "Attempts by device", "categories": ["Mobile", "Tablet"], "series": "Attempts", "values": [14, 12], "category_axis": "Device", "value_axis": "Attempts"},
+      "figure": {"title": "Usability sample", "value": "26", "unit": "TASK ATTEMPTS", "label": "Logged during the study"},
+      "template": {"background": "173550", "accent": "68C5C0", "text": "FFFFFF", "text_contract": "Keep navy content pages, teal section accents, and the source sample figure."}
+    }
+  ],
+  "source_limited": [
+    {"id": "source-limited-01", "title": "Observed cycle time", "content": "Observed cycle time: 4 days.", "point_id": "cycle-time", "statement": "Observed cycle time is four days.", "quote": "Observed cycle time: 4 days.", "number": "4", "unit": "days"},
+    {"id": "source-limited-02", "title": "Recorded visits", "content": "Recorded visits: 18.", "point_id": "visits", "statement": "The source records eighteen visits.", "quote": "Recorded visits: 18.", "number": "18", "unit": "visits"},
+    {"id": "source-limited-03", "title": "Sample temperature", "content": "Sample temperature: 9 °C.", "point_id": "temperature", "statement": "The measured sample temperature is nine degrees Celsius.", "quote": "Sample temperature: 9 °C.", "number": "9", "unit": "°C"}
+  ],
+  "cosmetic_controls": [
+    {"id": "cosmetic-only-duplicate-01", "style_a": {"background": "173550", "accent": "68C5C0", "font": "Arial"}, "style_b": {"background": "24476A", "accent": "D5A142", "font": "Aptos"}, "style_c": {"background": "163E4A", "accent": "C57C55", "font": "Helvetica"}},
+    {"id": "cosmetic-only-duplicate-02", "style_a": {"background": "173550", "accent": "68C5C0", "font": "Arial"}, "style_b": {"background": "24476A", "accent": "D5A142", "font": "Aptos"}, "style_c": {"background": "163E4A", "accent": "C57C55", "font": "Helvetica"}},
+    {"id": "cosmetic-only-duplicate-03", "style_a": {"background": "173550", "accent": "68C5C0", "font": "Arial"}, "style_b": {"background": "24476A", "accent": "D5A142", "font": "Aptos"}, "style_c": {"background": "163E4A", "accent": "C57C55", "font": "Helvetica"}}
+  ]
+}

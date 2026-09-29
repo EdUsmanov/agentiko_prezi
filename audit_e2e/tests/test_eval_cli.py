@@ -192,6 +192,26 @@ def test_generator_usage_keeps_missing_usage_unknown_and_reports_partial_totals(
     assert cli.generator_usage([])["input_tokens"] is None
 
 
+@pytest.mark.parametrize(
+    "counts,exit_code", [({"missed": 1}, 1), ({"inconclusive": 1}, 2), ({"clean": 1}, 0)]
+)
+def test_native_control_build_exit_does_not_hide_detector_failures(
+    tmp_path, monkeypatch, counts, exit_code
+):
+    module = ModuleType("audit_e2e.defect_corpus")
+    module.build_defect_corpus = lambda *args, **kwargs: {
+        "manifest_path": str(tmp_path / "manifest.json"),
+        "labels_path": str(tmp_path / "labels.json"),
+        "validation_path": str(tmp_path / "validation.json"),
+        "counts": {"total_cases": 1},
+        "matrix": {"counts": counts},
+    }
+    monkeypatch.setitem(sys.modules, module.__name__, module)
+    monkeypatch.setattr(cli, "environment", lambda: {})
+    monkeypatch.setattr(cli, "source_snapshot", lambda: {"tree_sha256": "stable"})
+    assert cli.main(["build-defects", "--output", str(tmp_path), "--timeout", "10"]) == exit_code
+
+
 def test_report_rejects_comparison_evidence_outside_run(tmp_path):
     outside = tmp_path / "outside.json"
     outside.write_text("not JSON: must reject path before reading")

@@ -24,7 +24,7 @@ PROPOSALS = [
 ]
 
 
-def authored_response(stage, data, *, selected_repair=False):
+def authored_response(stage, data, *, selected_repair=False, capture_failure=False):
     """Deliberately mechanical canned answers for test plumbing, not an oracle."""
     if stage == "template_analyst":
         return {
@@ -67,9 +67,18 @@ def authored_response(stage, data, *, selected_repair=False):
             claims = [f for f in rows if not any(f.get("source") == t["id"] for t in tables)]
             if not claims:
                 claims = rows[:1]
+                if tables and len(claims[0]["text"]) > 300:
+                    # The native table carries every cell. Use its source heading
+                    # as a caption instead of duplicating all rows in a bullet.
+                    caption = tables[0].get("section") or section
+                    if not caption or len(caption) > 300:
+                        raise ValueError("Author a grounded caption for the source table")
+                    claims = [{**claims[0], "text": caption}]
             title = source["title"] if index == 0 else section
-            if index == 0 and len(title) > 60:
-                title = "Пилот единого сервиса"
+            if len(title) > 140:
+                raise ValueError(
+                    "Source title exceeds the fixture contract; author a grounded title explicitly"
+                )
             if section.startswith("f") and section[1:].isdigit() and index != 0:
                 title = "Оценка результата пилота"
             if section.startswith("draft"):
@@ -123,6 +132,15 @@ def authored_response(stage, data, *, selected_repair=False):
             "narrative_coherent": True,
             "explanation": "Synthetic fixture only; independent evidence checks evaluate exports.",
         }
+    if stage == "editorial_repair" and capture_failure:
+        # A deliberately ineffective model repair preserves the observed layout
+        # failure. It exercises the product's bounded failure path, not recovery.
+        return {
+            "replacements": [
+                {"slide": index, "content": data["previous_plan"]["slides"][index - 1]}
+                for index in data["allowed_slide_indices"]
+            ]
+        }
     if stage == "deeppresenter":
         for message in data["history"]:
             if message["role"] == "user":
@@ -172,14 +190,16 @@ def authored_response(stage, data, *, selected_repair=False):
 
 
 class AuthoringRecorder:
-    def __init__(self, *, revision=1, selected_repair=False):
+    def __init__(self, *, revision=1, selected_repair=False, capture_failure=False):
         self.selected_repair = selected_repair
+        self.capture_failure = capture_failure
         self.document = {
             "schema_version": 1,
             "fixture_revision": revision,
             "provenance": "Explicitly authored synthetic model replies at the real HTTP boundary. Not a provider recording or a quality oracle. Independent reference ledger is authored separately.",
             "image_matching": "dimensions",
             "exchanges": [],
+            "ineffective_editorial_repair_allowed": capture_failure,
         }
         self.calls, self.mismatches = [], []
         self.lock = Lock()
@@ -192,7 +212,12 @@ class AuthoringRecorder:
         with self.lock:
             try:
                 value = completion(
-                    authored_response(stage, data, selected_repair=self.selected_repair)
+                    authored_response(
+                        stage,
+                        data,
+                        selected_repair=self.selected_repair,
+                        capture_failure=self.capture_failure,
+                    )
                 )
             except (ValueError, KeyError, TypeError) as exc:
                 self.mismatches.append({"stage": stage, "error": str(exc), "data": data})
@@ -232,8 +257,14 @@ def main():
     parser.add_argument("--replace", action="store_true")
     parser.add_argument("--revision", type=int, default=1)
     parser.add_argument("--selected-repair", action="store_true")
+    parser.add_argument("--suite", choices=("core", "extended", "development"), default="extended")
+    parser.add_argument(
+        "--capture-failure",
+        action="store_true",
+        help="Explicitly preserve a finite failed execution for regression; never makes it a passing oracle",
+    )
     args = parser.parse_args()
-    case = next(c for c in load_cases("extended") if c["id"] == args.case)
+    case = next(c for c in load_cases(args.suite) if c["id"] == args.case)
     fixture_id = "browser-selected-repair" if args.selected_repair else case["id"]
     destination = AUDIT_ROOT / "fixtures/cassettes" / (fixture_id + ".json")
     if destination.exists() and not args.replace:
@@ -252,18 +283,28 @@ def main():
     materialized["cassette"] = destination
     if args.selected_repair:
         materialized.update(interface="browser", selected_repair=True)
-    recorder = AuthoringRecorder(revision=args.revision, selected_repair=args.selected_repair)
+    recorder = AuthoringRecorder(
+        revision=args.revision,
+        selected_repair=args.selected_repair,
+        capture_failure=args.capture_failure,
+    )
     with recorder_provider(recorder):
         result = execute_case(materialized, directory / "result", mode="replay", timeout=600)
     write_json(directory / "candidate.json", recorder.document)
     write_json(directory / "authoring-errors.json", recorder.mismatches)
-    if result["status"] != "passed" or recorder.mismatches:
+    if (
+        recorder.mismatches
+        or not recorder.calls
+        or (result["status"] != "passed" and not args.capture_failure)
+    ):
         print(
             json.dumps(
                 {"status": "failed", "artifacts": str(directory), "execution": result}, default=str
             )
         )
         return 1
+    recorder.document["authoring_execution_status"] = result["status"]
+    recorder.document["quality_oracle"] = False
     write_json(destination, recorder.document)
     print(
         json.dumps(
